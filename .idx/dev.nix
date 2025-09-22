@@ -6,11 +6,15 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     # pkgs.go
-    # pkgs.python311
-    # pkgs.python311Packages.pip
+    pkgs.python311
+    pkgs.python311Packages.pip
+    pkgs.python311Packages.docker
     # pkgs.nodejs_20
     # pkgs.nodePackages.nodemon
   ];
+
+  services.docker.enable = true;
+
   # Sets environment variables in the workspace
   env = {};
   idx = {
