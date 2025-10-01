@@ -2,7 +2,7 @@ import pika
 import json
 
 # Kết nối tới RabbitMQ server
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
 # Khai báo một hàng đợi (queue) tên là 'grading_queue'

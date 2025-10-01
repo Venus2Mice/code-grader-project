@@ -1,0 +1,73 @@
+services:
+  # Dịch vụ Frontend (Nginx)
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:80" # Map cổng 3000 của máy host vào cổng 80 của container
+  #   networks:
+  #     - app-network
+
+  # Dịch vụ Backend (Flask)
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app # Mount code để tự động reload khi thay đổi (chỉ cho dev)
+    environment:
+      # Sử dụng tên dịch vụ 'db' và 'rabbitmq' thay vì 'localhost'
+      - DATABASE_URL=postgresql://user:password@db:5432/code_grader_db
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=1
+      - SECRET_KEY=your_secret_key
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - app-network
+
+  # Dịch vụ Grader Worker (Python)
+  worker:
+    build:
+      context: ./grader-engine
+      dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
+    volumes:
+      # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./grader-engine:/app # Mount code để tự động reload
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  # Dịch vụ Database (PostgreSQL)
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # Lưu dữ liệu DB kể cả khi container bị xóa
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=code_grader_db
+    ports:
+      - "5432:5432" # Mở port để có thể kết nối từ ngoài (ví dụ DBeaver)
+    networks:
+      - app-network
+
+  # Dịch vụ Message Queue (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+
+# Định nghĩa network để các container có thể giao tiếp với nhau qua tên dịch vụ
+networks:
+  app-network:
+    driver: bridge
+
+# Định nghĩa volume để lưu trữ dữ liệu database
+volumes:
+  postgres_data:
