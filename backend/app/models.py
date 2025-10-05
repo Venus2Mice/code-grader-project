@@ -2,7 +2,7 @@
 
 from . import db
 from datetime import datetime
-import bcrypt # Cần cài thêm: pip install bcrypt
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Bảng trung gian cho relations many to many (N-N) giữa User và Class
 class_members = db.Table('class_members',
@@ -30,11 +30,12 @@ class User(db.Model):
     submissions = db.relationship('Submission', backref='student', lazy=True)
 
     def set_password(self, password):
-        # Băm mật khẩu trước khi lưu
-        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        """Tạo hash từ mật khẩu và lưu vào password_hash."""
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+        """Kiểm tra mật khẩu người dùng nhập có khớp với hash đã lưu không."""
+        return check_password_hash(self.password_hash, password)
 
 class Class(db.Model):
     __tablename__ = 'classes'
