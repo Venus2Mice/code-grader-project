@@ -3,6 +3,7 @@
 from . import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
 
 # Bảng trung gian cho relations many to many (N-N) giữa User và Class
 class_members = db.Table('class_members',
@@ -26,8 +27,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relations one to many (Techer can taught many classes, Student can submit many problems)
-    classes_taught = db.relationship('Class', backref='teacher', lazy=True)
-    submissions = db.relationship('Submission', backref='student', lazy=True)
+    classes_taught = db.relationship('Class', back_populates='teacher', lazy=True, foreign_keys='Class.teacher_id')
+    submissions = db.relationship('Submission', back_populates='student', lazy=True)
+    #Relations many to many from user
+    classes_joined = db.relationship('Class', secondary=class_members, lazy='subquery', back_populates='students')
 
     def set_password(self, password):
         """Tạo hash từ mật khẩu và lưu vào password_hash."""
@@ -41,14 +44,28 @@ class Class(db.Model):
     __tablename__ = 'classes'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
-    course_code = db.Column(db.String(50), unique=True)
+    # course_code: Mã học phần chính thức (ví dụ: IT4409, CS101).
+    # - Tác dụng: Dùng để định danh, hiển thị và quản lý lớp học theo mã của trường/tổ chức.
+    # - Ví dụ: Giúp giáo viên và sinh viên dễ dàng nhận biết lớp học này tương ứng với học phần nào
+    #   trong chương trình đào tạo chính quy.
+    # - Đây là thông tin mang tính "metadata", không dùng cho cơ chế tham gia lớp.
+    course_code = db.Column(db.String(50), nullable=True)
+
+    # invite_code: Mã mời tham gia lớp học.
+    # - Tác dụng: Là "chìa khóa" bí mật, ngắn gọn, ngẫu nhiên để sinh viên có thể tự tham gia vào lớp.
+    # - Đảm bảo chỉ những người có mã mời mới có thể vào lớp, tăng tính bảo mật và tự động hóa.
+    # - Mỗi lớp có một mã mời duy nhất, không trùng lặp.
+    invite_code = db.Column(db.String(8), unique=True, nullable=False, default=lambda: str(uuid.uuid4())[:8])
+
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    # Mối quan hệ: Một lớp được dạy bởi một teacher
+    teacher = db.relationship('User', back_populates='classes_taught', lazy=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relations one to many (Class can have many problems, Class can have many students)
-    problems = db.relationship('Problem', backref='class_obj', lazy=True, cascade="all, delete-orphan")
+    problems = db.relationship('Problem', back_populates='class_obj', lazy=True, cascade="all, delete-orphan")
     students = db.relationship('User', secondary=class_members, lazy='subquery',
-                               backref=db.backref('enrolled_classes', lazy=True))
+                               back_populates='classes_joined')
 
 class Problem(db.Model):
     __tablename__ = 'problems'
@@ -59,6 +76,7 @@ class Problem(db.Model):
     time_limit_ms = db.Column(db.Integer, default=1000)
     memory_limit_kb = db.Column(db.Integer, default=256000)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
+    class_obj = db.relationship('Class', back_populates='problems')
     
     # Relations one to many (Problem can have many test cases, Problem can have many submissions)
     test_cases = db.relationship('TestCase', backref='problem', lazy=True, cascade="all, delete-orphan")
@@ -80,6 +98,7 @@ class Submission(db.Model):
     source_code = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), nullable=False)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    student = db.relationship('User', back_populates='submissions')
     
     # Relations one to many (Submission can have many submission results)
     results = db.relationship('SubmissionResult', backref='submission', lazy=True, cascade="all, delete-orphan")
