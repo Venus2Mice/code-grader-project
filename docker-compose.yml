@@ -1,5 +1,5 @@
 services:
-  # Dịch vụ Frontend (Nginx)
+  # SERVICE Frontend (Nginx)
   # frontend:
   #   build: ./frontend
   #   ports:
@@ -7,7 +7,7 @@ services:
   #   networks:
   #     - app-network
 
-  # Dịch vụ Backend (Flask)
+  # SERVICE Backend (Flask)
   backend:
     build: ./backend
     ports:
@@ -15,7 +15,7 @@ services:
     volumes:
       - ./backend:/app # Mount code để tự động reload khi thay đổi (chỉ cho dev)
     environment:
-      # Sử dụng tên dịch vụ 'db' và 'rabbitmq' thay vì 'localhost'
+      # Sử dụng tên SERVICE 'db' và 'rabbitmq' thay vì 'localhost'
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - FLASK_APP=run.py
       - FLASK_DEBUG=1
@@ -27,24 +27,35 @@ services:
     networks:
       - app-network
 
-  # Dịch vụ Grader Worker (Python)
+  # SERVICE: DOCKER-IN-DOCKER DAEMON
+  dind-daemon:
+    image: docker:24-dind # Sử dụng image docker:dind chính thức
+    privileged: true # Bắt buộc phải có để DinD hoạt động
+    command: --storage-driver=overlay2 # Cấu hình storage driver
+    expose:
+      - "2375" # Mở cổng giao tiếp cho Docker daemon (không public ra ngoài)
+    networks:
+      - app-network # Đảm bảo nó cùng mạng với 
+
+  # SERVICE Grader Worker (Python)
   worker:
     build:
       context: ./grader-engine
       dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
-      args:
-        # Truyền UID và GID của user hiện tại trên host vào Dockerfile
-        USER_ID: ${CURRENT_UID}
-        GROUP_ID: ${CURRENT_GID}
-    restart: always    
+      # args:
+      #   # Truyền UID và GID của user hiện tại trên host vào Dockerfile
+      #   USER_ID: ${CURRENT_UID}
+      #   GROUP_ID: ${CURRENT_GID}
+    restart: always
     volumes:
       # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
-      - /var/run/docker.sock:/var/run/docker.sock
+      # - /var/run/docker.sock:/var/run/docker.sock #deprecated line bc new service dind
       - ./grader-engine:/app # Mount code để tự động reload
     depends_on:
       - rabbitmq
       - postgres
       - backend
+      - dind-daemon
     networks:
       - app-network
     environment:
@@ -52,8 +63,9 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - BACKEND_API_URL=http://backend:5000
       - PYTHONUNBUFFERED=1
+      - DOCKER_HOST=tcp://dind-daemon:2375
 
-  # Dịch vụ Database (PostgreSQL)
+  # SERVICE Database (PostgreSQL)
   postgres:
     image: postgres:13
     volumes:
@@ -67,7 +79,7 @@ services:
     networks:
       - app-network
 
-  # Dịch vụ Message Queue (RabbitMQ)
+  # SERVICE Message Queue (RabbitMQ)
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -76,7 +88,7 @@ services:
     networks:
       - app-network
 
-# Định nghĩa network để các container có thể giao tiếp với nhau qua tên dịch vụ
+# Định nghĩa network để các container có thể giao tiếp với nhau qua tên SERVICE
 networks:
   app-network:
     driver: bridge
