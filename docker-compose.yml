@@ -16,12 +16,13 @@ services:
       - ./backend:/app # Mount code để tự động reload khi thay đổi (chỉ cho dev)
     environment:
       # Sử dụng tên dịch vụ 'db' và 'rabbitmq' thay vì 'localhost'
-      - DATABASE_URL=postgresql://user:password@db:5432/code_grader_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - FLASK_APP=run.py
       - FLASK_DEBUG=1
-      - SECRET_KEY=your_secret_key
+      - SECRET_KEY=${SECRET_KEY}
+      - RABBITMQ_HOST=rabbitmq
     depends_on:
-      - db
+      - postgres
       - rabbitmq
     networks:
       - app-network
@@ -31,24 +32,36 @@ services:
     build:
       context: ./grader-engine
       dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
+      args:
+        # Truyền UID và GID của user hiện tại trên host vào Dockerfile
+        USER_ID: ${CURRENT_UID}
+        GROUP_ID: ${CURRENT_GID}
+    restart: always    
     volumes:
       # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
       - /var/run/docker.sock:/var/run/docker.sock
       - ./grader-engine:/app # Mount code để tự động reload
     depends_on:
       - rabbitmq
+      - postgres
+      - backend
     networks:
       - app-network
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_HOST=rabbitmq
+      - BACKEND_API_URL=http://backend:5000
+      - PYTHONUNBUFFERED=1
 
   # Dịch vụ Database (PostgreSQL)
-  db:
+  postgres:
     image: postgres:13
     volumes:
       - postgres_data:/var/lib/postgresql/data/ # Lưu dữ liệu DB kể cả khi container bị xóa
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=code_grader_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - "5432:5432" # Mở port để có thể kết nối từ ngoài (ví dụ DBeaver)
     networks:

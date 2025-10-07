@@ -99,6 +99,7 @@ class Submission(db.Model):
     status = db.Column(db.String(50), nullable=False)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     student = db.relationship('User', back_populates='submissions')
+    language = db.Column(db.String(50), nullable=False, default='cpp')
     
     # Relations one to many (Submission can have many submission results)
     results = db.relationship('SubmissionResult', backref='submission', lazy=True, cascade="all, delete-orphan")

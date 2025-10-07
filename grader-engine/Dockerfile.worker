@@ -1,6 +1,13 @@
 FROM python:3.10-slim
 WORKDIR /app
+# Tạo group và user với UID/GID được truyền vào
+# Sử dụng giá trị mặc định (1000) nếu không được truyền
+RUN groupadd -g ${GROUP_ID:-1000} grader && \
+    useradd -u ${USER_ID:-1000} -g grader -m grader
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["python", "-u", "worker.py"]
+# Copy code và gán quyền sở hữu cho user 'grader'
+COPY --chown=grader:grader ./worker ./worker
+# Chuyển sang user không phải root
+USER grader
+CMD ["python", "-m", "worker.main"]

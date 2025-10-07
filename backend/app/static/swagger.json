@@ -11,6 +11,24 @@
       "description": "API Server"
     }
   ],
+  "tag": [
+    {
+      "name": "Authentication",
+      "description": "User registration and login"
+    },
+    {
+      "name": "Classes",
+      "description": "Operations about classes and enrollment"
+    },
+    {
+      "name": "Problems",
+      "description": "Managing programming problems"
+    },
+    {
+      "name": "Submissions",
+      "description": "Submitting code and viewing results"
+    }
+  ],
   "components": {
     "securitySchemes": {
       "BearerAuth": {
@@ -269,6 +287,226 @@
           },
           "409": {
             "description": "Already in class"
+          }
+        }
+      }
+    },
+    "/submissions": {
+      "post": {
+        "summary": "Submit a solution to a problem (Student only)",
+        "tags": [
+          "Submissions"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "problem_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "source_code": {
+                    "type": "string",
+                    "example": "#include <iostream>..."
+                  },
+                  "language": {
+                    "type": "string",
+                    "example": "cpp"
+                  }
+                },
+                "required": [
+                  "problem_id",
+                  "source_code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Submission accepted for grading"
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "403": {
+            "description": "Forbidden, not enrolled in the class"
+          }
+        }
+      }
+    },
+    "/submissions/{submission_id}": {
+      "get": {
+        "summary": "Get the result of a specific submission",
+        "tags": [
+          "Submissions"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation, returns submission details"
+          },
+          "403": {
+            "description": "Forbidden, you do not own this submission"
+          },
+          "404": {
+            "description": "Submission not found"
+          }
+        }
+      }
+    },
+    "/problems/{problem_id}": {
+      "get": {
+        "summary": "Get details of a specific problem",
+        "tags": [
+          "Problems"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "problem_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "404": {
+            "description": "Problem not found"
+          }
+        }
+      }
+    },
+    "/classes/{class_id}/problems": {
+      "post": {
+        "summary": "Create a new problem in a class (Teacher only)",
+        "tags": [
+          "Problems"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "class_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Bài 2: Chuỗi đối xứng"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Kiểm tra xem một chuỗi có phải là palindrome hay không."
+                  },
+                  "time_limit_ms": {
+                    "type": "integer",
+                    "example": 1000
+                  },
+                  "memory_limit_kb": {
+                    "type": "integer",
+                    "example": 256000
+                  },
+                  "test_cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "input": {
+                          "type": "string"
+                        },
+                        "output": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Problem created successfully"
+          },
+          "403": {
+            "description": "Forbidden, you are not the teacher of this class"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all problems in a class",
+        "tags": [
+          "Problems"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "class_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
           }
         }
       }

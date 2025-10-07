@@ -19,7 +19,7 @@ def create_problem_in_class(class_id):
     teacher_id = get_jwt_identity()
 
     # Đảm bảo teacher chỉ có thể tạo bài tập trong lớp của mình
-    if target_class.teacher_id != teacher_id:
+    if str(target_class.teacher_id) != teacher_id:
         return jsonify({"msg": "Forbidden"}), 403
 
     data = request.get_json()

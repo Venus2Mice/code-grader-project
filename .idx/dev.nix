@@ -10,6 +10,7 @@
     pkgs.python311Packages.docker
     pkgs.python311Packages.pika
     pkgs.docker
+    pkgs.getent
   ];  
 
   services.docker.enable = true;
