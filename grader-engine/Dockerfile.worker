@@ -1,13 +1,15 @@
+# Use the official Python 3.10 slim image as the base image
 FROM python:3.10-slim
+# Set the working directory inside the container
 WORKDIR /app
-# Tạo group và user với UID/GID được truyền vào
-# Sử dụng giá trị mặc định (1000) nếu không được truyền
-RUN groupadd -g ${GROUP_ID:-1000} grader && \
-    useradd -u ${USER_ID:-1000} -g grader -m grader
+
+# Copy the requirements.txt file into the container
 COPY requirements.txt requirements.txt
+# Install the Python dependencies listed in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-# Copy code và gán quyền sở hữu cho user 'grader'
-COPY --chown=grader:grader ./worker ./worker
-# Chuyển sang user không phải root
-USER grader
+
+# Copy the worker application code into the container
+COPY ./worker ./worker
+
+# Set the command to run when the container starts
 CMD ["python", "-m", "worker.main"]

@@ -21,17 +21,26 @@ def update_submission_result(submission_id):
     SubmissionResult.query.filter_by(submission_id=submission_id).delete()
 
     # Thêm kết quả chi tiết của từng test case
-    if overall_status not in ["Complie Error", "System Error"]:
-        for res_data in data.get('results', []):
+    if overall_status not in ["Compile Error", "System Error"]:
+        results_data = data.get('results', [])
+        for res_data in results_data:
+            if res_data.get('test_case_id') is None:
+                continue
+
             new_result = SubmissionResult(
                 submission_id=submission_id,
                 test_case_id=res_data.get('test_case_id'),
                 status=res_data.get('status'),
                 execution_time_ms=res_data.get('execution_time_ms'),
                 memory_used_kb=res_data.get('memory_used_kb'),
-                output_received=res_data.get('output_received')
+                output_received=res_data.get('output_received'),
+                error_message=res_data.get('error_message')
             )
             db.session.add(new_result)
+    else:
+        # Nếu là lỗi biên dịch, có thể ghi log lỗi vào bảng submission (nếu có cột)
+        # Ví dụ: submission.error_log = data.get('results', [{}])[0].get('error_message')
+        print(f"Submission {submission_id} failed with status {overall_status}.")        
         
     db.session.commit()
     

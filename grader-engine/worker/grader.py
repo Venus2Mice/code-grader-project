@@ -3,6 +3,7 @@ import docker
 import os
 import uuid
 import shutil
+import time
 from .database import get_db_session
 from .models import Submission, TestCase
 from .config import Config
@@ -33,16 +34,6 @@ def run_single_test_case(container, input_data, time_limit_sec):
     except Exception as e:
         print(f"Error running test case: {e}")
         return -1, str(e)
-
-
-import docker
-import os
-import uuid
-import shutil
-import time
-from .database import get_db_session
-from .models import Submission, TestCase # Đảm bảo import đúng
-from .config import Config # Import Config để lấy DOCKER_IMAGE_NAME
 
 def grade_submission(submission_id):
     """
@@ -133,18 +124,52 @@ def grade_submission(submission_id):
             results_list = []
             
             for tc in test_cases:
+                # Không cần định nghĩa lại các path file này trong vòng lặp
+                # input_file_path = os.path.join(temp_dir_path, "input.txt")
+                
+                # Ghi input vào file trên máy host (sẽ được mount vào container)
                 with open(os.path.join(temp_dir_path, "input.txt"), "w") as f_in:
                     f_in.write(tc.input_data or "")
                 
                 time_limit_sec = problem.time_limit_ms / 1000.0
-                exec_cmd = f"timeout {time_limit_sec} ./main < input.txt"
-                exit_code, output_bytes = container.exec_run(exec_cmd)
                 
-                output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
+                # Chạy lệnh và redirect I/O bằng file bên trong container
+                exec_cmd = f"sh -c 'cat /sandbox/input.txt | timeout {time_limit_sec} ./main > /sandbox/output.txt'"
+                exit_code, _ = container.exec_run(exec_cmd)
+
+                output_str = ""
+                try:
+                    # Lấy nội dung của file output.txt từ container
+                    bits, stat = container.get_archive('/sandbox/output.txt')
+                    
+                    # Sử dụng context manager (with) để đảm bảo file tar được đóng đúng cách
+                    import tarfile
+                    import io
+                    with tarfile.open(fileobj=io.BytesIO(b"".join(bits))) as tar:
+                        # --- SỬA LỖI Ở ĐÂY ---
+                        # Lấy member một cách an toàn bằng tên
+                        # Thay vì tar.getmembers()[0]
+                        member = tar.getmember('output.txt')
+                        # --- KẾT THÚC SỬA LỖI ---
+                        
+                        f = tar.extractfile(member)
+                        if f:
+                            output_str = f.read().decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
+
+                except docker.errors.NotFound:
+                    # Lỗi này xảy ra khi file output.txt không được tạo
+                    print(f"[{submission_id}] output.txt not found for test case #{tc.id} (likely crashed or TLE).")
+                    output_str = ""
+                except (tarfile.TarError, KeyError):
+                    # KeyError xảy ra nếu 'output.txt' không có trong tar
+                    # TarError xảy ra nếu file tar bị hỏng
+                    print(f"[{submission_id}] Failed to extract output.txt for test case #{tc.id}.")
+                    output_str = ""
+                
                 expected_output_str = (tc.expected_output or "").strip().replace('\r\n', '\n')
 
                 tc_status = "Accepted"
-                if exit_code == 124:
+                if exit_code == 124: # exit code của timeout
                     tc_status = "Time Limit Exceeded"
                 elif exit_code != 0:
                     tc_status = "Runtime Error"
@@ -158,7 +183,7 @@ def grade_submission(submission_id):
                     "memory_used_kb": 0,    # Tương tự
                     "output_received": output_str
                 })
-                print(f"[{submission_id}] Test Case #{tc.id}: {tc_status}")
+                print(f"[{submission_id}] Test Case #{tc.id}: Status='{tc_status}', Expected='{expected_output_str}', Received='{output_str}'")
 
                 if tc_status != "Accepted" and overall_status == "Accepted":
                     overall_status = tc_status
