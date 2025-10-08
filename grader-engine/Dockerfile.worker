@@ -1,41 +1,15 @@
-# Sử dụng một base image Python
+# Use the official Python 3.10 slim image as the base image
 FROM python:3.10-slim
-
-# Cài đặt các gói cần thiết để cài Docker client
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Thêm GPG key chính thức của Docker
-RUN install -m 0755 -d /etc/apt/keyrings
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-RUN chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Thêm repository của Docker
-RUN echo \
-  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-  tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Cài đặt Docker client
-RUN apt-get update && apt-get install -y docker-ce-cli
-
-# Cài đặt trình biên dịch C++ (cho image môi trường chấm)
-# Lưu ý: Image này chỉ là để build image cpp-grader-env, không phải để chạy worker
-# Nếu bạn đã build image cpp-grader-env rồi thì không cần dòng này trong Dockerfile của worker
-# RUN apt-get install -y build-essential
-
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy requirements và cài đặt thư viện Python
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+# Copy the requirements.txt file into the container
+COPY requirements.txt requirements.txt
+# Install the Python dependencies listed in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy toàn bộ code của worker
-COPY ./worker /app/worker
+# Copy the worker application code into the container
+COPY ./worker ./worker
 
-# Lệnh để chạy worker
+# Set the command to run when the container starts
 CMD ["python", "-m", "worker.main"]

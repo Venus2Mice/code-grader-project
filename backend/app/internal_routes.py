@@ -14,22 +14,33 @@ def update_submission_result(submission_id):
         return jsonify({"msg": "Submission not found"}), 404
 
     # Cập nhật trạng thái tổng thể
-    submission.status = data.get('overall_status')
+    overall_status = data.get('overall_status', 'System Error')
+    submission.status = overall_status
     
     # Xóa các kết quả cũ (nếu có) để tránh trùng lặp
     SubmissionResult.query.filter_by(submission_id=submission_id).delete()
 
     # Thêm kết quả chi tiết của từng test case
-    for res_data in data.get('results', []):
-        new_result = SubmissionResult(
-            submission_id=submission_id,
-            test_case_id=res_data.get('test_case_id'),
-            status=res_data.get('status'),
-            execution_time_ms=res_data.get('execution_time_ms'),
-            memory_used_kb=res_data.get('memory_used_kb'),
-            output_received=res_data.get('output_received')
-        )
-        db.session.add(new_result)
+    if overall_status not in ["Compile Error", "System Error"]:
+        results_data = data.get('results', [])
+        for res_data in results_data:
+            if res_data.get('test_case_id') is None:
+                continue
+
+            new_result = SubmissionResult(
+                submission_id=submission_id,
+                test_case_id=res_data.get('test_case_id'),
+                status=res_data.get('status'),
+                execution_time_ms=res_data.get('execution_time_ms'),
+                memory_used_kb=res_data.get('memory_used_kb'),
+                output_received=res_data.get('output_received'),
+                error_message=res_data.get('error_message')
+            )
+            db.session.add(new_result)
+    else:
+        # Nếu là lỗi biên dịch, có thể ghi log lỗi vào bảng submission (nếu có cột)
+        # Ví dụ: submission.error_log = data.get('results', [{}])[0].get('error_message')
+        print(f"Submission {submission_id} failed with status {overall_status}.")        
         
     db.session.commit()
     
