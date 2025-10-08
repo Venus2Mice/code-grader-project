@@ -28,30 +28,30 @@ services:
       - app-network
 
   # Dịch vụ Grader Worker (Python)
-  worker:
-    build:
-      context: ./grader-engine
-      dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
-      args:
-        # Truyền UID và GID của user hiện tại trên host vào Dockerfile
-        USER_ID: ${CURRENT_UID}
-        GROUP_ID: ${CURRENT_GID}
-    restart: always    
-    volumes:
-      # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./grader-engine:/app # Mount code để tự động reload
-    depends_on:
-      - rabbitmq
-      - postgres
-      - backend
-    networks:
-      - app-network
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - RABBITMQ_HOST=rabbitmq
-      - BACKEND_API_URL=http://backend:5000
-      - PYTHONUNBUFFERED=1
+  # worker:
+  #   build:
+  #     context: ./grader-engine
+  #     dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
+  #     args:
+  #       # Truyền UID và GID của user hiện tại trên host vào Dockerfile
+  #       USER_ID: ${CURRENT_UID}
+  #       GROUP_ID: ${CURRENT_GID}
+  #   restart: always    
+  #   volumes:
+  #     # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./grader-engine:/app # Mount code để tự động reload
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgres
+  #     - backend
+  #   networks:
+  #     - app-network
+  #   environment:
+  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     - RABBITMQ_HOST=rabbitmq
+  #     - BACKEND_API_URL=http://backend:5000
+  #     - PYTHONUNBUFFERED=1
 
   # Dịch vụ Database (PostgreSQL)
   postgres:
