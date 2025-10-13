@@ -1,22 +1,19 @@
-// src/services/api.js
-
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-if (!API_BASE_URL) {
-    console.error("VITE_API_BASE_URL is not defined in .env file");
-  }
-  
-  const apiClient = axios.create({
-    // Sử dụng biến môi trường ở đây
-    baseURL: API_BASE_URL, 
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-// BƯỚC 2: SAU KHI ĐÃ CÓ BIẾN, BÂY GIỜ MỚI SỬ DỤNG NÓ
-// Interceptor: Tự động đính kèm token vào mỗi request
+if (!import.meta.env.VITE_API_BASE_URL) {
+  console.warn("VITE_API_BASE_URL not defined, using default: http://localhost:5000/api");
+}
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor: Auto-attach token to requests
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -28,7 +25,22 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// BƯỚC 3: EXPORT CÁC HÀM SỬ DỤNG BIẾN ĐÃ CẤU HÌNH HOÀN CHỈNH
+// Optional: Add response error interceptor
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      // Optionally redirect to login
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Export after all configuration
+export { apiClient };
+
+// API functions
 export const login = (credentials) => apiClient.post('/auth/login', credentials);
 export const register = (userData) => apiClient.post('/auth/register', userData);
 export const getProfile = () => apiClient.get('/auth/profile');

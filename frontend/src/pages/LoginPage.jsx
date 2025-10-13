@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { apiClient } from '../services/api';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('teacher.dev@example.com'); // Mặc định để test
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('teacher.test@example.com'); // Mặc định để test
+  const [password, setPassword] = useState('password123');
   const [error, setError] = useState('');
   const { loginAction } = useAuth();
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await api.login({ email, password });
+      const res = await api.login({ email, password });      
       loginAction(res.data);
       navigate('/');
     } catch (err) {
