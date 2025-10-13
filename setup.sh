@@ -4,10 +4,12 @@
 # ==        FINAL "FIRE-AND-FORGET" SETUP SCRIPT FOR CODE GRADER            ==
 # ==============================================================================
 #
-# This script fully automates the setup and launch process in one terminal.
-# 1. Starts core services in the background.
-# 2. Fully configures the database, including test data.
-# 3. Takes over the current terminal to run the worker, showing its live logs.
+# This script fully automates the project setup and launch process.
+# 1. Tears down all existing services and DELETES ALL DATA VOLUMES.
+# 2. Builds the required Docker image for the grader.
+# 3. Starts core services in the background.
+# 4. Fully configures the database, including test data.
+# 5. Takes over the current terminal to run the worker, showing its live logs.
 #
 # ==============================================================================
 
@@ -26,6 +28,7 @@ set -e
 
 # --- 1. Prerequisites Check ---
 print_info "Checking prerequisites..."
+# ... (Phần này không thay đổi) ...
 if ! command -v docker &> /dev/null; then print_error_and_exit "Docker not found."; fi
 if docker compose version &> /dev/null; then COMPOSE_CMD="docker compose"; elif command -v docker-compose &> /dev/null; then COMPOSE_CMD="docker-compose"; else print_error_and_exit "Docker Compose not found."; fi
 print_success "Found Docker Compose: '$COMPOSE_CMD'"
@@ -39,17 +42,17 @@ print_success "Found '.env' file."
 # --- Create the full command with the --env-file flag ---
 COMPOSE_CMD_WITH_ENV="$COMPOSE_CMD --env-file ./.env"
 
-# --- 1. Clean Up Previous Environment ---
+# --- 2. Clean Up Previous Environment ---
 print_info "Tearing down any existing services and DELETING ALL DATA VOLUMES for a clean start..."
 $COMPOSE_CMD_WITH_ENV down -v
 print_success "Cleanup complete."
 
-# --- 2. Start Core Services in Background ---
+# --- 3. Start Core Services in Background ---
 print_info "Starting core services (PostgreSQL, RabbitMQ, Backend) in the background..."
 $COMPOSE_CMD_WITH_ENV up --build -d
 print_success "Core services are running."
 
-# --- 3. Wait for PostgreSQL ---
+# --- 4. Wait for PostgreSQL ---
 DB_USER=$(grep POSTGRES_USER .env | cut -d '=' -f2)
 print_info "Waiting for PostgreSQL to be ready..."
 for i in {1..20}; do
@@ -61,18 +64,24 @@ if [ -z "$DB_READY" ]; then print_error_and_exit "PostgreSQL timed out. Check lo
 print_success "PostgreSQL is ready."
 
 
-# --- 4. Fully Configure Database ---
+# --- 5. Fully Configure Database ---
 print_info "Setting up the database..."
 rm -rf backend/migrations/
-$COMPOSE_CMD_WITH_ENV exec backend flask db init > /dev/null # Redirect output for cleaner logs
+$COMPOSE_CMD_WITH_ENV exec backend flask db init > /dev/null
 $COMPOSE_CMD_WITH_ENV exec backend flask db migrate -m "Initial setup migration"
 $COMPOSE_CMD_WITH_ENV exec backend flask db upgrade
 $COMPOSE_CMD_WITH_ENV exec backend flask seed_db
-$COMPOSE_CMD_WITH_ENV exec backend flask seed_test_data # Chạy lệnh seed test data mới
+$COMPOSE_CMD_WITH_ENV exec backend flask seed_test_data
 print_success "Database is fully configured and seeded with test data."
 
 
-# --- 5. Prepare Worker Environment ---
+# --- 6. Prepare Grader Engine Environment ---
+print_info "Building the C++ grader Docker image..."
+# This image is the sandbox environment for running C++ code.
+# It MUST be built locally before the worker can use it.
+docker build -t cpp-grader-env ./grader-engine > /dev/null
+print_success "Grader image 'cpp-grader-env' is ready."
+
 print_info "Setting up Python virtual environment for the worker..."
 cd grader-engine
 if [ ! -d "venv" ]; then $PYTHON_CMD -m venv venv; fi
@@ -83,7 +92,7 @@ cd ..
 print_success "Worker environment is ready."
 
 
-# --- 6. Final Step: Launch Worker in this Terminal ---
+# --- 7. Final Step: Launch Worker in this Terminal ---
 echo
 echo -e "${BGreen}=======================================================================${Color_Off}"
 echo -e "${BGreen}==           SETUP COMPLETE. ALL SYSTEMS ARE GO!                   ==${Color_Off}"
@@ -99,7 +108,6 @@ print_info "Starting the worker... (Press Ctrl+C to stop)"
 echo "-----------------------------------------------------------------------"
 
 # Chạy worker như là lệnh cuối cùng của script
-# Nó sẽ chiếm lấy terminal này cho đến khi bạn nhấn Ctrl+C
 cd grader-engine
 source venv/bin/activate
 python run_worker.py

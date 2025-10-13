@@ -11,6 +11,7 @@
     pkgs.python311Packages.pika
     pkgs.docker
     pkgs.getent
+    pkgs.nodejs-slim_latest
   ];  
 
   services.docker.enable = true;
