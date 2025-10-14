@@ -25,29 +25,16 @@ def create_app():
 
     # Bắt đầu phần sửa lỗi
     with app.app_context():
-        # Bước 1: Import tất cả các file chứa route của bạn ở đây.
-        # Điều này đảm bảo tất cả các decorator @bp.route đều được chạy
-        # và "đính" vào các biến blueprint tương ứng.
-        from . import auth_routes
-        from . import class_routes
-        from . import problem_routes 
-        from . import submission_routes 
-        from . import internal_routes
-        
-        # Bước 2: Sau khi tất cả các route đã được định nghĩa và đính vào,
-        # bây giờ mới đăng ký các blueprint với ứng dụng.
-        app.register_blueprint(auth_routes.auth_bp)
-        app.register_blueprint(class_routes.class_bp)
-        app.register_blueprint(problem_routes.problem_bp)
-        app.register_blueprint(submission_routes.submission_bp)
-        app.register_blueprint(internal_routes.internal_bp)
-
-        # Import models để migrate có thể "thấy" chúng
+        # Import models
         from . import models
 
         # Đăng ký các lệnh cli
         from . import commands
         commands.init_app(app)
+
+        # Đăng ký các routes
+        from .routes import register_routes
+        register_routes(app)        
 
     ### Swagger UI Setup ###
     SWAGGER_URL = '/api/docs'

@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from .class_routes import class_bp 
-from .models import db, Problem, Class, TestCase
+from .classes import class_bp 
+from ..models import db, Problem, Class, TestCase
+from ..decorators import role_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .decorators import role_required
 
 # Blueprint này vẫn được tạo ra để chứa các route không lồng trong class
 # Ví dụ: /api/problems/123

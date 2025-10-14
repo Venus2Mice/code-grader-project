@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .models import db, Submission, SubmissionResult
+from ..models import db, Submission, SubmissionResult
 
 internal_bp = Blueprint('internal', __name__, url_prefix='/internal')
 
