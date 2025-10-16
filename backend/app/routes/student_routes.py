@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .models import User, Class, Problem, Submission
-from .decorators import role_required
+from ..models import User, Class, Problem, Submission
+from ..decorators import role_required
 
 student_bp = Blueprint('students', __name__, url_prefix='/api/students')
 

@@ -25,24 +25,25 @@ def create_app():
 
     # Bắt đầu phần sửa lỗi
     with app.app_context():
-        # Bước 1: Import tất cả các file chứa route của bạn ở đây.
-        # Điều này đảm bảo tất cả các decorator @bp.route đều được chạy
-        # và "đính" vào các biến blueprint tương ứng.
-        from . import auth_routes
-        from . import class_routes
-        from . import problem_routes 
-        from . import submission_routes 
-        from . import internal_routes
-        from . import student_routes  # NEW
+        # Import tất cả các blueprint từ thư mục routes
+        from .routes import (
+            auth_bp,
+            class_bp,
+            problem_bp,
+            submission_bp,
+            internal_bp,
+            student_bp,
+            health_bp
+        )
         
-        # Bước 2: Sau khi tất cả các route đã được định nghĩa và đính vào,
-        # bây giờ mới đăng ký các blueprint với ứng dụng.
-        app.register_blueprint(auth_routes.auth_bp)
-        app.register_blueprint(class_routes.class_bp)
-        app.register_blueprint(problem_routes.problem_bp)
-        app.register_blueprint(submission_routes.submission_bp)
-        app.register_blueprint(internal_routes.internal_bp)
-        app.register_blueprint(student_routes.student_bp)  # NEW
+        # Đăng ký các blueprint với ứng dụng
+        app.register_blueprint(auth_bp)
+        app.register_blueprint(class_bp)
+        app.register_blueprint(problem_bp)
+        app.register_blueprint(submission_bp)
+        app.register_blueprint(internal_bp)
+        app.register_blueprint(student_bp)
+        app.register_blueprint(health_bp)
 
         # Import models để migrate có thể "thấy" chúng
         from . import models

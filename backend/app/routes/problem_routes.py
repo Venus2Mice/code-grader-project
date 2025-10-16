@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from .class_routes import class_bp 
-from .models import db, Problem, Class, TestCase
+from ..models import db, Problem, Class, TestCase, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .decorators import role_required
+from ..decorators import role_required
 
 # Blueprint này vẫn được tạo ra để chứa các route không lồng trong class
 # Ví dụ: /api/problems/123
@@ -145,7 +145,7 @@ def get_problem_submissions(problem_id):
     if user.role.name != 'teacher' or str(problem.class_obj.teacher_id) != user_id:
         return jsonify({"msg": "Forbidden - Only teacher can view all submissions"}), 403
     
-    from .models import Submission
+    from ..models import Submission
     submissions = Submission.query.filter_by(problem_id=problem_id).order_by(Submission.submitted_at.desc()).all()
     
     submissions_data = []

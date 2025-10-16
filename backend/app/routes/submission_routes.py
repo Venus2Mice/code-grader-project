@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from .models import db, Submission, Problem, User, Class
+from ..models import db, Submission, Problem, User, Class
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .decorators import role_required
-from . import rabbitmq_producer # Sẽ tạo file này ngay sau đây
+from ..decorators import role_required
+from .. import rabbitmq_producer # Sẽ tạo file này ngay sau đây
 
 submission_bp = Blueprint('submissions', __name__, url_prefix='/api/submissions')
 
