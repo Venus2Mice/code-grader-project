@@ -193,7 +193,8 @@ export const getUser = () => {
 
 export const getUserRole = (): 'teacher' | 'student' | null => {
   const user = getUser()
-  return user?.role?.name || null
+  // Backend returns role as a string, not an object
+  return user?.role || null
 }
 
 // Export axios instance for custom requests

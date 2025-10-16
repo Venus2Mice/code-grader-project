@@ -31,8 +31,11 @@ export default function LoginPage() {
       const profileResponse = await authAPI.getProfile()
       const user = profileResponse.data
       
+      console.log('User profile:', user) // Debug log
+      
       // Redirect based on role
-      if (user.role.name === 'teacher') {
+      // Backend returns role as a string, not an object
+      if (user.role === 'teacher') {
         router.push("/teacher/dashboard")
       } else {
         router.push("/student/dashboard")

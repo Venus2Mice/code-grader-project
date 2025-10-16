@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, Users, BookOpen, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,12 +11,24 @@ import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
 
 export default function TeacherDashboard() {
+  const router = useRouter()
   const [classes, setClasses] = useState<any[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [userName, setUserName] = useState("")
 
   useEffect(() => {
+    // Get user info from localStorage
+    const user = localStorage.getItem('user')
+    if (user) {
+      try {
+        const userData = JSON.parse(user)
+        setUserName(userData.username || userData.email || 'Teacher')
+      } catch (e) {
+        console.error('Error parsing user data:', e)
+      }
+    }
     fetchClasses()
   }, [])
 
@@ -47,9 +60,17 @@ export default function TeacherDashboard() {
     }
   }
 
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    // Redirect to login page
+    router.push('/login')
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar userName={userName} userRole="teacher" onLogout={handleLogout} />
 
       <div className="border-b-4 border-border bg-secondary">
         <div className="mx-auto max-w-7xl px-6 py-8">

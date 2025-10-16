@@ -23,12 +23,15 @@ fi
 # Load biến môi trường từ .env
 source .env
 
+# Lấy đường dẫn tuyệt đối của thư mục hiện tại
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Thiết lập biến môi trường cho worker
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
 export RABBITMQ_HOST=localhost
 export BACKEND_API_URL=http://localhost:5000
-export GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
-export HOST_GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
+export GRADER_TEMP_DIR="${CURRENT_DIR}/grader-temp"
+export HOST_GRADER_TEMP_DIR="${CURRENT_DIR}/grader-temp"
 
 # Tạo thư mục tạm nếu chưa có
 mkdir -p "$GRADER_TEMP_DIR"
@@ -63,12 +66,22 @@ print_success "Image 'cpp-grader-env' sẵn sàng"
 cd grader-engine
 if [ ! -d "venv" ]; then
     print_info "Tạo virtual environment..."
-    python3 -m venv venv
-    source venv/bin/activate
+    python -m venv venv
+    # Kiểm tra hệ điều hành để kích hoạt venv đúng cách
+    if [ -f "venv/Scripts/activate" ]; then
+        source venv/Scripts/activate  # Windows
+    else
+        source venv/bin/activate      # Linux/macOS
+    fi
     pip install -q -r requirements.txt
     print_success "Virtual environment đã được tạo"
 else
-    source venv/bin/activate
+    # Kiểm tra hệ điều hành để kích hoạt venv đúng cách
+    if [ -f "venv/Scripts/activate" ]; then
+        source venv/Scripts/activate  # Windows
+    else
+        source venv/bin/activate      # Linux/macOS
+    fi
     print_success "Virtual environment đã kích hoạt"
 fi
 

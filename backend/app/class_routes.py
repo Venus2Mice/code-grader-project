@@ -106,6 +106,20 @@ def get_class_details(class_id):
     if not (is_teacher or is_student):
         return jsonify({"msg": "Forbidden - You don't have access to this class"}), 403
     
+    # Get problems for this class
+    problems_data = []
+    for problem in target_class.problems:
+        problems_data.append({
+            "id": problem.id,
+            "title": problem.title,
+            "description": problem.description,
+            "difficulty": problem.difficulty,
+            "grading_mode": problem.grading_mode,
+            "time_limit_ms": problem.time_limit_ms,
+            "memory_limit_kb": problem.memory_limit_kb,
+            "created_at": problem.created_at.isoformat() if problem.created_at else None
+        })
+    
     return jsonify({
         "id": target_class.id,
         "name": target_class.name,
@@ -118,6 +132,7 @@ def get_class_details(class_id):
             "email": target_class.teacher.email
         },
         "student_count": len(target_class.students),
+        "problems": problems_data,  # Add problems list
         "created_at": target_class.created_at.isoformat() if target_class.created_at else None
     }), 200
 
@@ -144,7 +159,7 @@ def get_class_students(class_id):
         # Try to get enrollment date (would need to query class_members table)
         students_data.append({
             "id": student.id,
-            "name": student.full_name,
+            "full_name": student.full_name,  # Use full_name for consistency
             "email": student.email,
             "enrolled_at": student.created_at.isoformat() if student.created_at else None
         })

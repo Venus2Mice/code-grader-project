@@ -152,9 +152,9 @@ export default function ClassDetailPage() {
                         {problem.description}
                       </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2 md:gap-4 text-xs font-bold text-muted-foreground">
-                        <span>TIME: {problem.time_limit}MS</span>
-                        <span>MEM: {problem.memory_limit}MB</span>
-                        <span className="hidden sm:inline">CREATED: {new Date(problem.created_at).toLocaleDateString()}</span>
+                        <span>TIME: {problem.time_limit_ms || problem.time_limit || 0}MS</span>
+                        <span>MEM: {Math.round((problem.memory_limit_kb || problem.memory_limit || 0) / 1024)}MB</span>
+                        <span className="hidden sm:inline">CREATED: {problem.created_at ? new Date(problem.created_at).toLocaleDateString() : 'N/A'}</span>
                       </div>
                     </div>
                     <Link href={`/teacher/problem/${problem.id}`}>
@@ -208,12 +208,14 @@ export default function ClassDetailPage() {
                     <div className="flex items-center gap-3 md:gap-4">
                       <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center border-4 border-black bg-brutal-accent text-xs md:text-sm font-black uppercase">
                         {student.full_name
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .join("")}
+                          ? student.full_name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")
+                          : "?"}
                       </div>
                       <div>
-                        <p className="font-black uppercase text-xs md:text-sm text-foreground">{student.full_name}</p>
+                        <p className="font-black uppercase text-xs md:text-sm text-foreground">{student.full_name || 'Unknown'}</p>
                         <p className="text-xs font-bold text-muted-foreground">{student.email}</p>
                       </div>
                     </div>

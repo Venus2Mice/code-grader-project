@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, BookOpen, CheckCircle, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,13 +11,25 @@ import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
 
 export default function StudentDashboard() {
+  const router = useRouter()
   const [enrolledClasses, setEnrolledClasses] = useState<any[]>([])
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [userName, setUserName] = useState("")
 
   // Fetch classes on mount
   useEffect(() => {
+    // Get user info from localStorage
+    const user = localStorage.getItem('user')
+    if (user) {
+      try {
+        const userData = JSON.parse(user)
+        setUserName(userData.username || userData.email || 'Student')
+      } catch (e) {
+        console.error('Error parsing user data:', e)
+      }
+    }
     fetchClasses()
   }, [])
 
@@ -44,13 +57,21 @@ export default function StudentDashboard() {
     }
   }
 
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    // Redirect to login page
+    router.push('/login')
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute top-40 right-10 w-24 h-24 border-4 border-border bg-accent rotate-12" />
       <div className="absolute bottom-20 left-10 w-32 h-32 border-4 border-border bg-secondary rounded-full" />
 
-      <Navbar />
+      <Navbar userName={userName} userRole="student" onLogout={handleLogout} />
 
       <div className="border-b-4 border-border bg-secondary">
         <div className="mx-auto max-w-7xl px-6 py-8">
