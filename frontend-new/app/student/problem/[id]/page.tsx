@@ -336,13 +336,14 @@ int main() {
               </div>
 
               <div className="space-y-2">
-                {testResults.results.map((result: any) => (
-                  <Card
-                    key={result.id}
-                    className={`border-4 p-3 ${
-                      result.status === "passed" ? "border-green-600 bg-green-100" : "border-red-600 bg-red-100"
-                    }`}
-                  >
+                {testResults.results && Array.isArray(testResults.results) ? (
+                  testResults.results.map((result: any) => (
+                    <Card
+                      key={result.id}
+                      className={`border-4 p-3 ${
+                        result.status === "passed" ? "border-green-600 bg-green-100" : "border-red-600 bg-red-100"
+                      }`}
+                    >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-black uppercase text-foreground">TEST {result.id}</span>
@@ -384,7 +385,10 @@ int main() {
                       </div>
                     )}
                   </Card>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">No test results available</div>
+                )}
               </div>
             </div>
           )}
