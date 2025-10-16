@@ -35,6 +35,7 @@ int main() {
 
   const [language, setLanguage] = useState("cpp")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRunning, setIsRunning] = useState(false)
   const [testResults, setTestResults] = useState<any>(null)
 
   useEffect(() => {
@@ -57,6 +58,83 @@ int main() {
     }
   }
 
+  const handleRun = async () => {
+    setIsRunning(true)
+    setTestResults(null)
+    try {
+      const response = await submissionAPI.runCode({
+        problem_id: Number(problemId),
+        source_code: code,
+        language: language
+      })
+      
+      const submissionId = response.data.submission_id
+      
+      // Show running status
+      setTestResults({
+        status: "running",
+        message: "Running your code...",
+        isTest: true
+      })
+      
+      // Poll for results every 2 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const resultResponse = await submissionAPI.getById(submissionId)
+          const submissionData = resultResponse.data
+          
+          // Check if grading is complete
+          if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
+            clearInterval(pollInterval)
+            setIsRunning(false)
+            
+            // Display results
+            setTestResults({
+              status: submissionData.status === 'Completed' ? 'accepted' : 'error',
+              message: submissionData.status,
+              isTest: true,
+              score: submissionData.score || 0,
+              passedTests: submissionData.passed_tests || 0,
+              totalTests: submissionData.total_tests || 0,
+              results: submissionData.results || []
+            })
+          }
+        } catch (pollErr) {
+          console.error('Error polling results:', pollErr)
+          clearInterval(pollInterval)
+          setIsRunning(false)
+          setTestResults({
+            status: "error",
+            message: "Failed to get test results",
+            isTest: true
+          })
+        }
+      }, 2000) // Poll every 2 seconds
+      
+      // Stop polling after 30 seconds (timeout)
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (isRunning) {
+          setIsRunning(false)
+          setTestResults({
+            status: "error",
+            message: "Test timeout - please try again",
+            isTest: true
+          })
+        }
+      }, 30000)
+      
+    } catch (err: any) {
+      console.error('Error running code:', err)
+      setTestResults({
+        status: "error",
+        message: err.response?.data?.msg || 'Failed to run code',
+        isTest: true
+      })
+      setIsRunning(false)
+    }
+  }
+
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
@@ -69,7 +147,8 @@ int main() {
       // Poll for results or show success
       setTestResults({
         status: "pending",
-        message: "Submission queued for grading"
+        message: "Submission queued for grading",
+        isTest: false
       })
       
       // Refresh submissions list
@@ -172,12 +251,22 @@ int main() {
             </Button>
 
             <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="gap-2 font-black uppercase text-xs md:text-sm"
+              variant="outline"
+              onClick={handleRun}
+              disabled={isRunning || isSubmitting}
+              className="gap-2 font-black uppercase text-xs md:text-sm bg-brutal-yellow hover:bg-brutal-yellow/80"
             >
               <Play className="h-4 w-4 md:h-5 md:w-5" />
-              {isSubmitting ? "RUN..." : "SUBMIT"}
+              {isRunning ? "RUNNING..." : "RUN"}
+            </Button>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || isRunning}
+              className="gap-2 font-black uppercase text-xs md:text-sm"
+            >
+              <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
+              {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
             </Button>
           </div>
         </div>
@@ -320,72 +409,90 @@ int main() {
           {testResults && (
             <div className="border-t-4 border-black bg-background p-2 md:p-4 max-h-48 md:max-h-64 overflow-y-auto">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-black uppercase text-foreground">RESULTS</h3>
+                <h3 className="font-black uppercase text-foreground">
+                  {testResults.isTest ? "TEST RESULTS" : "SUBMISSION RESULTS"}
+                </h3>
                 <div
-                  className={`flex items-center gap-2 font-black uppercase text-foreground ${testResults.status === "accepted" ? "text-green-600" : "text-red-600"}`}
+                  className={`flex items-center gap-2 font-black uppercase text-foreground ${
+                    testResults.status === "accepted" 
+                      ? "text-green-600" 
+                      : testResults.status === "running" || testResults.status === "pending"
+                        ? "text-blue-600"
+                        : testResults.status === "info"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                  }`}
                 >
                   {testResults.status === "accepted" ? (
                     <CheckCircle className="h-6 w-6" />
+                  ) : testResults.status === "running" || testResults.status === "pending" ? (
+                    <Clock className="h-6 w-6 animate-spin" />
+                  ) : testResults.status === "info" ? (
+                    <AlertCircle className="h-6 w-6" />
                   ) : (
                     <XCircle className="h-6 w-6" />
                   )}
                   <span>
-                    {testResults.passedTests}/{testResults.totalTests} PASSED - {testResults.score}/100
+                    {testResults.passedTests !== undefined && testResults.totalTests !== undefined
+                      ? `${testResults.passedTests}/${testResults.totalTests} PASSED - ${testResults.score || 0}/100`
+                      : testResults.message || testResults.status.toUpperCase()
+                    }
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                {testResults.results && Array.isArray(testResults.results) ? (
-                  testResults.results.map((result: any) => (
+                {testResults.results && Array.isArray(testResults.results) && testResults.results.length > 0 ? (
+                  testResults.results.map((result: any, index: number) => (
                     <Card
-                      key={result.id}
+                      key={result.test_case_id || index}
                       className={`border-4 p-3 ${
-                        result.status === "passed" ? "border-green-600 bg-green-100" : "border-red-600 bg-red-100"
+                        result.status === "Passed" ? "border-green-600 bg-green-100" : "border-red-600 bg-red-100"
                       }`}
                     >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black uppercase text-foreground">TEST {result.id}</span>
+                        <span className="text-sm font-black uppercase text-foreground">TEST CASE #{result.test_case_id}</span>
                         <span
-                          className={`text-xs font-black uppercase text-foreground ${result.status === "passed" ? "text-green-600" : "text-red-600"}`}
+                          className={`text-xs font-black uppercase text-foreground ${result.status === "Passed" ? "text-green-600" : "text-red-600"}`}
                         >
-                          {result.status === "passed" ? "PASSED" : "FAILED"}
+                          {result.status}
                         </span>
                       </div>
-                      {result.status === "passed" && (
+                      {result.status === "Passed" && (
                         <div className="text-xs font-bold text-muted-foreground">
-                          {result.time}MS | {result.memory}MB
+                          {result.execution_time_ms}MS | {Math.round(result.memory_used_kb / 1024)}MB
                         </div>
                       )}
                     </div>
 
-                    {result.status === "failed" && (
+                    {result.status !== "Passed" && (
                       <div className="mt-2 space-y-2 text-xs">
-                        <div>
-                          <div className="font-black uppercase mb-1 text-foreground">INPUT:</div>
-                          <pre className="bg-background border-2 border-black p-2 font-mono text-foreground">
-                            {result.input}
-                          </pre>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        {result.output_received && (
                           <div>
                             <div className="font-black uppercase mb-1 text-foreground">YOUR OUTPUT:</div>
-                            <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono">
-                              {result.output}
+                            <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap">
+                              {result.output_received}
                             </pre>
                           </div>
+                        )}
+                        {result.error_message && (
                           <div>
-                            <div className="font-black uppercase mb-1 text-foreground">EXPECTED:</div>
-                            <pre className="bg-background border-2 border-green-600 p-2 text-green-600 font-mono">
-                              {result.expected}
+                            <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
+                            <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap">
+                              {result.error_message}
                             </pre>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </Card>
                   ))
+                ) : testResults.status === "running" || testResults.status === "pending" ? (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    <Clock className="mx-auto mb-2 h-8 w-8 animate-spin text-blue-600" />
+                    <p className="font-bold">{testResults.message}</p>
+                  </div>
                 ) : (
                   <div className="text-sm text-muted-foreground">No test results available</div>
                 )}

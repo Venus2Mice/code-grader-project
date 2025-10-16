@@ -166,6 +166,11 @@ export const submissionAPI = {
   getCode: async (id: number) => {
     return api.get(`/api/submissions/${id}/code`)
   },
+
+  // NEW: Run code without saving to database (for testing before submit)
+  runCode: async (data: { problem_id: number; source_code: string; language?: string }) => {
+    return api.post('/api/submissions/run', data)
+  },
 }
 
 // ==================== STUDENT APIs ====================

@@ -171,3 +171,60 @@ def get_submission_code(submission_id):
         "code": submission.source_code,
         "language": submission.language
     }), 200
+
+
+@submission_bp.route('/run', methods=['POST'])
+@jwt_required()
+@role_required('student')
+def run_code():
+    """Chạy thử code và lưu vào database với flag is_test=True - để test trước khi submit."""
+    data = request.get_json()
+    problem_id = data.get('problem_id')
+    source_code = data.get('source_code')
+    language = data.get('language', 'cpp')
+    
+    if not problem_id or not source_code:
+        return jsonify({"msg": "problem_id and source_code are required"}), 400
+        
+    student_id = get_jwt_identity()
+    
+    # Kiểm tra quyền: Sinh viên có thuộc lớp học chứa bài tập này không?
+    problem = Problem.query.get(problem_id)
+    if not problem:
+        return jsonify({"msg": "Problem not found"}), 404
+    
+    student = User.query.get(student_id)
+    target_class = problem.class_obj
+    
+    if target_class not in student.classes_joined:
+        return jsonify({"msg": "You are not a member of the class for this problem"}), 403
+
+    # Tạo test submission và lưu vào DB với is_test=True
+    test_submission = Submission(
+        problem_id=problem_id,
+        student_id=student_id,
+        source_code=source_code,
+        language=language,
+        status='Pending',
+        is_test=True  # Đánh dấu đây là test run
+    )
+    db.session.add(test_submission)
+    db.session.commit()
+    
+    # Gửi task chấm điểm tới RabbitMQ (giống như submit bình thường)
+    task_data = {'submission_id': test_submission.id}
+    
+    try:
+        rabbitmq_producer.publish_task(task_data)
+        
+        # Trả về submission_id để client có thể poll kết quả
+        return jsonify({
+            "msg": "Code is being tested",
+            "submission_id": test_submission.id,
+            "status": "Pending"
+        }), 202
+    except Exception as e:
+        # Nếu gửi task thất bại, xóa submission
+        db.session.delete(test_submission)
+        db.session.commit()
+        return jsonify({"msg": f"Error running code: {str(e)}"}), 500

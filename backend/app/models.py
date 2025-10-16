@@ -111,6 +111,7 @@ class Submission(Base):
     source_code = Column(Text, nullable=False)
     language = Column(String(50), nullable=False, default='cpp')
     status = Column(String(50), default='Pending')
+    is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
     submitted_at = Column(DateTime, default=datetime.utcnow)
     
     problem = relationship('Problem', back_populates='submissions')
