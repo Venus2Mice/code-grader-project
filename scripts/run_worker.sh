@@ -27,7 +27,8 @@ source .env
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Thiết lập biến môi trường cho worker
-export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
+# Use 127.0.0.1 instead of localhost to force IPv4 connection (avoid IPv6 ::1 issues)
+export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
 export RABBITMQ_HOST=localhost
 export BACKEND_API_URL=http://localhost:5000
 export GRADER_TEMP_DIR="${CURRENT_DIR}/grader-temp"
