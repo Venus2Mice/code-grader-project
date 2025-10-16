@@ -1,103 +1,52 @@
 services:
-  # SERVICE Frontend OLD (Nginx) - DISABLED
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - app-network
-
-  # SERVICE Frontend NEW (Next.js)
-  frontend-new:
-    build: ./frontend-new
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend-new:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:5000
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
-  # SERVICE Backend (Flask)
+  # Backend (Flask API)
   backend:
     build: ./backend
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app # Mount code để tự động reload khi thay đổi (chỉ cho dev)
+      - ./backend:/app  # Hot reload for development
     environment:
-      # Sử dụng tên SERVICE 'db' và 'rabbitmq' thay vì 'localhost'
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - FLASK_APP=run.py
       - FLASK_DEBUG=1
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=backend-secret-key-change-in-production
       - RABBITMQ_HOST=rabbitmq
     depends_on:
       - postgres
       - rabbitmq
     networks:
       - app-network
+    restart: unless-stopped
 
-  # Dịch vụ Grader Worker (Python)
-  # DISABLED: Worker chạy độc lập qua setup.sh để dễ debug
-  # worker:
-  #   build:
-  #     context: ./grader-engine
-  #     dockerfile: Dockerfile.worker
-  #   restart: always    
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - ./grader-engine:/app
-  #     - ./grader-temp:/tmp/grader_submissions
-  #   depends_on:
-  #     - rabbitmq
-  #     - postgres
-  #     - backend
-  #   networks:
-  #     - app-network
-  #   environment:
-  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-  #     - RABBITMQ_HOST=rabbitmq
-  #     - BACKEND_API_URL=http://backend:5000
-  #     - PYTHONUNBUFFERED=1
-  #     - GRADER_TEMP_DIR=/tmp/grader_submissions
-  #     - HOST_GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
-
-  # SERVICE Database (PostgreSQL)
+  # Database (PostgreSQL)
   postgres:
     image: postgres:13
     volumes:
-      - postgres_data:/var/lib/postgresql/data/ # Lưu dữ liệu DB kể cả khi container bị xóa
+      - postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     ports:
-      - "5432:5432" # Mở port để có thể kết nối từ ngoài (ví dụ DBeaver)
+      - "5432:5432"  # Exposed for external connections (DBeaver, worker, etc.)
     networks:
       - app-network
+    restart: unless-stopped
 
-  # SERVICE Message Queue (RabbitMQ)
+  # Message Queue (RabbitMQ)
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"   # AMQP port for worker
+      - "15672:15672" # Management UI
     networks:
       - app-network
+    restart: unless-stopped
 
-# Định nghĩa network để các container có thể giao tiếp với nhau qua tên SERVICE
 networks:
   app-network:
     driver: bridge
 
-# Định nghĩa volume để lưu trữ dữ liệu database
 volumes:
   postgres_data:

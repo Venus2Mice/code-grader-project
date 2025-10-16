@@ -1,102 +1,159 @@
-# Code Grader - Hệ thống Chấm bài Lập trình C++ Tự động
+# 📚 Code Grader Project
 
-> ⚠️ **LƯU Ý QUAN TRỌNG:** Worker bây giờ chạy **độc lập ngoài Docker**.  
-> 📚 **Đọc hướng dẫn đầy đủ:** [COMPLETE_GUIDE.md](./COMPLETE_GUIDE.md)
+> **Hệ thống Chấm bài Lập trình Tự động**  
+> Multi-language support: C++, C, Python, Java
 
-**Code Grader** là một nền tảng ứng dụng web được thiết kế để tự động hóa quy trình chấm điểm các bài tập lập trình C++. # Code Grader Project
+---
 
-Hệ thống chấm bài tự động cho các bài tập lập trình.
+## 🎯 Giới Thiệu
 
-## 📁 Cấu trúc dự án
+**Code Grader** là một nền tảng web để tự động hóa quy trình chấm điểm các bài tập lập trình. Hệ thống sử dụng Docker sandbox để chạy code an toàn và RabbitMQ để xử lý queue chấm bài.
+
+### ✨ Tính Năng Chính
+
+- ✅ **Auto Grading**: Tự động chấm điểm với test cases
+- ✅ **Multi-language**: C++, C, Python, Java
+- ✅ **Docker Sandbox**: Chạy code an toàn, cô lập
+- ✅ **Class Management**: Teacher tạo lớp, student join bằng invite code
+- ✅ **Monaco Editor**: Code editor chuyên nghiệp với syntax highlighting
+- ✅ **Progress Tracking**: Theo dõi tiến độ học sinh
+
+---
+
+## 📁 Cấu Trúc Dự Án
 
 ```
 code-grader-project/
-├── backend/              # Flask backend API
-├── frontend-old/         # Frontend cũ (React + Vite) - backup
-├── frontend-new/         # Frontend mới (Next.js 15 + TypeScript)
-├── grader-engine/        # RabbitMQ worker cho chấm bài
-├── docs/                 # 📚 Tài liệu dự án
-│   ├── START_HERE.md
-│   ├── COMPLETE_GUIDE.md
-│   ├── FRONTEND_BACKEND_COMPARISON.md
-│   ├── INTEGRATION_TODO.md
-│   └── ...
+├── backend/              # Flask API (Python)
+├── frontend-new/         # Next.js 15 + TypeScript
+├── frontend-old/         # React + Vite (backup)
+├── grader-engine/        # Worker + Docker sandbox
+├── docs/                 # 📚 Tài liệu đầy đủ
+│   └── DOCUMENTATION.md  # ⭐ Tài liệu tổng hợp duy nhất
 ├── scripts/              # 🔧 Scripts tiện ích
 │   ├── setup.sh
 │   └── run_worker.sh
-└── README.md             # File này
+├── docker-compose.yml
+└── README.md
 ```
-
-## 🚀 Quick Start
-
-Xem [docs/START_HERE.md](docs/START_HERE.md) để bắt đầu nhanh.
-
-## 📚 Documentation
-
-Tất cả tài liệu được tổ chức trong thư mục [`docs/`](docs/):
-- **Quick Start**: [START_HERE.md](docs/START_HERE.md)
-- **Full Guide**: [COMPLETE_GUIDE.md](docs/COMPLETE_GUIDE.md)
-- **Frontend Integration**: [FRONTEND_BACKEND_COMPARISON.md](docs/FRONTEND_BACKEND_COMPARISON.md)
-- **TODO List**: [INTEGRATION_TODO.md](docs/INTEGRATION_TODO.md)
-
-## 🔧 Scripts
-
-Scripts tiện ích trong thư mục [`scripts/`](scripts/):
-- `setup.sh` - Setup môi trường phát triển
-- `run_worker.sh` - Chạy grader worker
 
 ---
 
 ## 🚀 QUICK START
 
-### 🎯 Chọn môi trường của bạn:
+### ⚡ Cách 1: Setup Tự Động (Khuyên dùng)
 
-#### 1️⃣ **Local Development** (Khuyên dùng cho development)
 ```bash
-# Setup environment
-./setup-env.sh local
-
-# Terminal 1: Start backend services
-docker-compose up -d postgres rabbitmq backend
-
-# Terminal 2: Start frontend
-cd frontend-new
-pnpm install
-pnpm dev
-
-# Access: http://localhost:3000
+# Chạy script setup tự động
+./setup.sh
 ```
 
-#### 2️⃣ **Docker Compose** (Tất cả trong containers)
+**Script sẽ tự động:**
+- ✅ Build và khởi động tất cả services
+- ✅ Chạy migrations và seed database
+- ✅ Tạo dữ liệu test
+- ✅ Build Docker image cho grader
+- ✅ Chạy worker
+
+**Sau khi setup thành công:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- Swagger Docs: http://localhost:5000/api/docs
+- RabbitMQ: http://localhost:15672
+
+**Tài khoản test:**
+- Teacher: `teacher.dev@example.com` / `password`
+- Student: `student.dev@example.com` / `password`
+
+---
+
+### 🔄 Chạy Lại (Khi đã setup)
+
 ```bash
-# Setup environment
-./setup-env.sh docker
+# Start services
+docker-compose up -d
 
-# Start all services
-docker-compose -f docker-compose.dev.yml up -d
-
-# Access: http://localhost:3000
-```
-
-#### 3️⃣ **GitHub Codespaces** (Cloud development)
-```bash
-# Setup environment
-./setup-env.sh codespaces
-
-# Terminal 1: Start backend in Docker
-docker-compose up -d backend postgres rabbitmq
-
-# Terminal 2: Start frontend locally
-cd frontend-new
-pnpm install
-pnpm dev
-
-# Codespaces will auto-forward ports
+# Chạy worker (terminal riêng)
+./run_worker.sh
 ```
 
 ---
 
-## 🔧 Environment Configuration
+## 📚 TÀI LIỆU HOÀN CHỈNH
+
+**→ XEM TẤT CẢ HƯỚNG DẪN CHI TIẾT TẠI: [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md)**
+
+Tài liệu bao gồm:
+- ✅ Giới thiệu chi tiết
+- ✅ Quick Start & Setup
+- ✅ Kiến trúc hệ thống
+- ✅ Hướng dẫn sử dụng (Teacher & Student)
+- ✅ API Documentation (tất cả endpoints)
+- ✅ Testing Guide (E2E scenarios)
+- ✅ Troubleshooting (fix lỗi thường gặp)
+- ✅ Technical Details (Database, Security, Performance)
+
+---
+
+## 🏗️ Tech Stack
+
+**Frontend:**
+- Next.js 15 + TypeScript
+- Radix UI + Tailwind CSS
+- Monaco Editor
+
+**Backend:**
+- Flask + SQLAlchemy
+- PostgreSQL
+- JWT Authentication
+- RabbitMQ
+
+**Grading Engine:**
+- Python + Docker SDK
+- Docker Sandbox (isolated execution)
+
+---
+
+## 🔧 Scripts Tiện Ích
+
+```bash
+# Setup tự động toàn bộ hệ thống
+./setup.sh
+
+# Chạy worker độc lập
+./run_worker.sh
+
+# Setup environment cho các môi trường khác nhau
+./setup-env.sh [local|docker|codespaces]
+```
+
+---
+
+## 📖 Đọc Thêm
+
+- **Tài liệu đầy đủ**: [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) ⭐
+- **Scripts README**: [`scripts/README.md`](scripts/README.md)
+
+---
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Tạo feature branch: `git checkout -b feature/amazing-feature`
+3. Commit: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. Tạo Pull Request
+
+---
+
+## � License
+
+MIT License
+
+---
+
+**🎉 Happy Coding!**
+
 
 Dự án hỗ trợ 3 môi trường với cấu hình khác nhau:
 

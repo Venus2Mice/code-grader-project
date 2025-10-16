@@ -3,6 +3,10 @@ import axios, { AxiosInstance, AxiosError } from 'axios'
 // Base API URL - sẽ lấy từ env variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
+// Debug log
+console.log('🔗 API Base URL:', API_BASE_URL)
+console.log('🔑 ENV Value:', process.env.NEXT_PUBLIC_API_URL)
+
 // Create axios instance with default config
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -2,11 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install
+# Install dependencies
+RUN pnpm install
 
 # Copy app files
 COPY . .
@@ -15,4 +18,4 @@ COPY . .
 EXPOSE 3000
 
 # Start development server
-CMD ["pnpm", "run", "dev"]
+CMD ["npx", "pnpm", "dev"]
