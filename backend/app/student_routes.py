@@ -57,14 +57,22 @@ def get_problems_status_in_class(class_id):
                 elif score > 0:
                     status = "failed"
         
+        # Return format matching frontend expectations
         problems_status.append({
-            "problem_id": problem.id,
-            "title": problem.title,
-            "difficulty": problem.difficulty,
-            "grading_mode": problem.grading_mode,
-            "status": status,
-            "best_score": best_score,
-            "attempts": attempts
+            "problem": {
+                "id": problem.id,
+                "title": problem.title,
+                "description": problem.description,
+                "difficulty": problem.difficulty,
+                "grading_mode": problem.grading_mode,
+                "time_limit": problem.time_limit_ms,
+                "memory_limit": problem.memory_limit_kb // 1024  # Convert KB to MB
+            },
+            "submission": {
+                "status": status,
+                "score": best_score
+            } if attempts > 0 else None,
+            "attempts_count": attempts
         })
     
     return jsonify(problems_status), 200

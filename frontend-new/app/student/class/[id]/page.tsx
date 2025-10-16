@@ -101,11 +101,30 @@ export default function StudentClassPage() {
         </div>
 
         <div className="grid gap-6">
-          {problems.map((problemData) => {
-            // problemData from API has: problem (details), submission (status), attempts_count
-            const problem = problemData.problem
-            const submission = problemData.submission
-            const attempts = problemData.attempts_count || 0
+          {problems.map((problemData, index) => {
+            // Backend returns flat structure, adapt to expected format
+            const problem = problemData.problem || {
+              id: problemData.problem_id,
+              title: problemData.title,
+              description: problemData.description || '',
+              difficulty: problemData.difficulty,
+              grading_mode: problemData.grading_mode,
+              time_limit: problemData.time_limit || 1000,
+              memory_limit: problemData.memory_limit || 256
+            }
+            
+            const submission = problemData.submission || (problemData.status !== 'not_started' ? {
+              status: problemData.status,
+              score: problemData.best_score || 0
+            } : null)
+            
+            const attempts = problemData.attempts_count || problemData.attempts || 0
+
+            // Safe guard: Skip if problem data is missing
+            if (!problem || !problem.id) {
+              console.error('Invalid problem data at index:', index, problemData)
+              return null
+            }
 
             return (
               <Link key={problem.id} href={`/student/problem/${problem.id}`}>
@@ -158,7 +177,7 @@ export default function StudentClassPage() {
                       ) : (
                         <div className="flex items-center gap-2 border-4 border-red-600 bg-red-400 px-4 py-2 text-black">
                           <XCircle className="h-5 w-5" />
-                          <span className="font-black uppercase">{submission.status.toUpperCase()}</span>
+                          <span className="font-black uppercase">{submission.status?.toUpperCase() || 'PENDING'}</span>
                         </div>
                       )}
                       <Button variant="outline" size="sm" className="mt-2 gap-2 bg-transparent">

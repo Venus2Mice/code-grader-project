@@ -82,7 +82,7 @@ int main() {
     }
   }
 
-  const getStatusDisplay = (status: string) => {
+  const getStatusDisplay = (status: string | undefined) => {
     switch (status) {
       case "accepted":
         return { icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", label: "Accepted" }
@@ -93,7 +93,7 @@ int main() {
       case "time_limit":
         return { icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10", label: "Time Limit" }
       default:
-        return { icon: Clock, color: "text-muted-foreground", bg: "bg-muted", label: "Running" }
+        return { icon: Clock, color: "text-muted-foreground", bg: "bg-muted", label: "Pending" }
     }
   }
 
@@ -151,15 +151,12 @@ int main() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={setLanguage} disabled>
               <SelectTrigger className="w-24 md:w-32 font-black uppercase text-xs md:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="cpp">C++</SelectItem>
-                <SelectItem value="c">C</SelectItem>
-                <SelectItem value="python">PYTHON</SelectItem>
-                <SelectItem value="java">JAVA</SelectItem>
               </SelectContent>
             </Select>
 
@@ -282,13 +279,13 @@ int main() {
                                 <StatusIcon className="h-5 w-5" />
                                 <span>{statusDisplay.label}</span>
                               </div>
-                              <span className="text-sm font-bold">SCORE: {submission.score}/100</span>
+                              <span className="text-sm font-bold">SCORE: {submission.score || 0}/100</span>
                               <span className="text-sm font-bold">
-                                {submission.passedTests}/{submission.totalTests} TESTS
+                                {submission.passedTests || 0}/{submission.totalTests || 0} TESTS
                               </span>
                             </div>
                             <div className="text-xs font-bold text-muted-foreground">
-                              {submission.submittedAt.toLocaleString()}
+                              {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'}
                             </div>
                           </div>
                           <Button
@@ -416,16 +413,18 @@ int main() {
                         <span
                           className={`rounded-full px-2 py-1 text-xs font-medium ${statusDisplay.bg} ${statusDisplay.color}`}
                         >
-                          {submission.language.toUpperCase()}
+                          {submission.language?.toUpperCase() || 'CPP'}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-1">
-                        <span>Score: {submission.score}/100</span>
+                        <span>Score: {submission.score || 0}/100</span>
                         <span>
-                          {submission.passedTests}/{submission.totalTests} tests passed
+                          {submission.passedTests || 0}/{submission.totalTests || 0} tests passed
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">{submission.submittedAt.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'}
+                      </div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => viewSubmission(submission)}>
                       Load Code
