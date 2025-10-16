@@ -46,27 +46,30 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
   };
-
-  const value = { 
-    token, 
-    user, 
-    loading, 
+  // Provide a safe user object to avoid null reference errors
+  const safeUser = user ?? {}; // <-- ensure consumers can read .role without throwing
+  const value = {
+    token,
+    // provide safe user object to avoid "cannot read properties of null"
+    user: safeUser,
+    loading,
     error,
-    loginAction, 
+    loginAction,
     logoutAction,
+    // keep auth boolean based on actual user presence
     isAuthenticated: !!token && !!user,
-    isTeacher: user?.role === 'teacher',
-    isStudent: user?.role === 'student'
+    isTeacher: safeUser.role === 'teacher',
+    isStudent: safeUser.role === 'student'
   };
 
   // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh'
       }}>
         <div>Loading...</div>
       </div>

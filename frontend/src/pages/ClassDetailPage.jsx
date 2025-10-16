@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const ClassDetailPage = () => {
   const { classId } = useParams();
-  const { user } = useAuth();
+  const { user, isTeacher } = useAuth();
   const [problems, setProblems] = useState([]);
   
   // Form states for creating problem
@@ -70,7 +70,7 @@ const ClassDetailPage = () => {
       )}
 
       {/* --- Form tạo bài tập (Chỉ cho Teacher) --- */}
-      {user.role === 'teacher' && (
+      {isTeacher && (
         <div style={{ marginTop: '2rem', borderTop: '1px solid #ccc', paddingTop: '1rem' }}>
           <h3>Create New Problem</h3>
           <form onSubmit={handleCreateProblem}>

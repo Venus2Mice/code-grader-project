@@ -4,7 +4,7 @@ import * as api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, isTeacher, isStudent } = useAuth(); // <-- lấy thêm isTeacher, isStudent
   const [classes, setClasses] = useState([]);
   
   // Form states
@@ -55,7 +55,7 @@ const DashboardPage = () => {
       <h1>Dashboard</h1>
       
       {/* --- Phần dành cho TEACHER --- */}
-      {user.role === 'teacher' && (
+      {isTeacher && (
         <div style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '2rem' }}>
           <h3>Create New Class</h3>
           <form onSubmit={handleCreateClass}>
@@ -72,7 +72,7 @@ const DashboardPage = () => {
       )}
 
       {/* --- Phần dành cho STUDENT --- */}
-      {user.role === 'student' && (
+      {isStudent && (
         <div style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '2rem' }}>
           <h3>Join a Class</h3>
           <form onSubmit={handleJoinClass}>

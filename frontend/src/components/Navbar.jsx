@@ -1,10 +1,9 @@
-// src/components/Navbar.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Navbar = () => {
-  const { user, logoutAction } = useAuth();
+  const { user, logoutAction, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -16,9 +15,9 @@ const Navbar = () => {
     <nav className="navbar">
       <Link to="/" className="nav-brand">Code Grader</Link>
       <div className="nav-links">
-        {user ? (
+        {isAuthenticated ? (
           <>
-            <span>Welcome, {user.email} ({user.role})</span>
+            <span>Welcome, {user?.email ?? 'User'} ({user?.role ?? 'N/A'})</span>
             <button onClick={handleLogout}>Logout</button>
           </>
         ) : (

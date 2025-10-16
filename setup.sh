@@ -107,7 +107,14 @@ echo -e "${BRed}This terminal will now be used by the Worker.${Color_Off}"
 print_info "Starting the worker... (Press Ctrl+C to stop)"
 echo "-----------------------------------------------------------------------"
 
+# Thiết lập biến môi trường cho worker chạy độc lập
+export DATABASE_URL=$(grep DATABASE_URL .env | cut -d '=' -f2 | sed "s/\${POSTGRES_USER}/$(grep POSTGRES_USER .env | cut -d '=' -f2)/g" | sed "s/\${POSTGRES_PASSWORD}/$(grep POSTGRES_PASSWORD .env | cut -d '=' -f2)/g" | sed "s/\${POSTGRES_DB}/$(grep POSTGRES_DB .env | cut -d '=' -f2)/g" | sed 's/@db:/@localhost:/g')
+export RABBITMQ_HOST=localhost
+export BACKEND_API_URL=http://localhost:5000
+export GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
+export HOST_GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
+
 # Chạy worker như là lệnh cuối cùng của script
 cd grader-engine
 source venv/bin/activate
-python run_worker.py
+python run.py

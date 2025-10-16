@@ -30,26 +30,29 @@ services:
       - app-network
 
   # Dịch vụ Grader Worker (Python)
-  worker:
-    build:
-      context: ./grader-engine
-      dockerfile: Dockerfile.worker # Đặt tên khác để không nhầm với Dockerfile chấm C++
-    restart: always    
-    volumes:
-      # Mount socket của Docker để worker có thể điều khiển Docker trên máy host
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./grader-engine:/app # Mount code để tự động reload
-    depends_on:
-      - rabbitmq
-      - postgres
-      - backend
-    networks:
-      - app-network
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - RABBITMQ_HOST=rabbitmq
-      - BACKEND_API_URL=http://backend:5000
-      - PYTHONUNBUFFERED=1
+  # DISABLED: Worker chạy độc lập qua setup.sh để dễ debug
+  # worker:
+  #   build:
+  #     context: ./grader-engine
+  #     dockerfile: Dockerfile.worker
+  #   restart: always    
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./grader-engine:/app
+  #     - ./grader-temp:/tmp/grader_submissions
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgres
+  #     - backend
+  #   networks:
+  #     - app-network
+  #   environment:
+  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     - RABBITMQ_HOST=rabbitmq
+  #     - BACKEND_API_URL=http://backend:5000
+  #     - PYTHONUNBUFFERED=1
+  #     - GRADER_TEMP_DIR=/tmp/grader_submissions
+  #     - HOST_GRADER_TEMP_DIR=/workspaces/code-grader-project/grader-temp
 
   # SERVICE Database (PostgreSQL)
   postgres:

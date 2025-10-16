@@ -1,8 +1,66 @@
 # Code Grader - Hệ thống Chấm bài Lập trình C++ Tự động
 
+> ⚠️ **LƯU Ý QUAN TRỌNG:** Worker bây giờ chạy **độc lập ngoài Docker**.  
+> 📚 **Đọc hướng dẫn đầy đủ:** [COMPLETE_GUIDE.md](./COMPLETE_GUIDE.md)
+
 **Code Grader** là một nền tảng ứng dụng web được thiết kế để tự động hóa quy trình chấm điểm các bài tập lập trình C++. Hệ thống cho phép giáo viên tạo lớp học, ra đề bài kèm theo các bộ dữ liệu kiểm thử (test case), và sinh viên có thể nộp bài làm của mình để nhận được phản hồi tức thì.
 
-Dự án này giải quyết vấn đề chấm bài thủ công tốn thời gian, đảm bảo tính công bằng và cung cấp một môi trường học tập và rèn luyện kỹ năng lập trình hiệu quả.
+---
+
+## 🚀 QUICK START
+
+### Cài đặt và Chạy (Một lệnh duy nhất)
+
+```bash
+# Clone project
+git clone https://github.com/Venus2Mice/code-grader-project.git
+cd code-grader-project
+
+# Tạo file .env
+cp .env.example .env
+
+# Chạy setup tự động (sẽ setup và chạy worker)
+./setup.sh
+```
+
+**Hoặc chạy riêng từng bước:**
+
+```bash
+# 1. Khởi động các services (PostgreSQL, RabbitMQ, Backend, Frontend)
+docker-compose up -d
+
+# 2. Build image cho môi trường chấm C++
+docker build -t cpp-grader-env ./grader-engine
+
+# 3. Chạy worker (trong terminal riêng)
+./run_worker.sh
+```
+
+### Truy cập
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5000
+- **RabbitMQ Management:** http://localhost:15672 (guest/guest)
+
+### Tài khoản Test
+
+- **Teacher:** `teacher.dev@example.com` / `password`
+- **Student:** `student.dev@example.com` / `password`
+
+---
+
+## 📚 TÀI LIỆU CHI TIẾT
+
+Xem hướng dẫn đầy đủ tại: **[COMPLETE_GUIDE.md](./COMPLETE_GUIDE.md)**
+
+Tài liệu bao gồm:
+- ✅ Giải thích vấn đề đã fix (Docker-in-Docker mount path)
+- ✅ Hướng dẫn setup chi tiết
+- ✅ Cách test và kiểm tra
+- ✅ Troubleshooting đầy đủ
+- ✅ Giải thích kỹ thuật
+
+---
 
 ## ✨ Tính năng Nổi bật
 

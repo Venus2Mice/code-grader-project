@@ -61,16 +61,20 @@ def grade_submission(submission_id):
         print(f"[{submission_id}] Grading submission for problem '{problem.title}'. Found {len(test_cases)} test cases.")
 
         # 2. Tạo một thư mục tạm thời để chứa code và I/O
+        # Sử dụng thư mục được mount từ host để Docker daemon có thể truy cập
         temp_dir_name = f"submission_{submission_id}_{uuid.uuid4()}"
-        temp_dir_path = os.path.abspath(temp_dir_name)
+        temp_dir_path = os.path.join(Config.GRADER_TEMP_DIR, temp_dir_name)
         os.makedirs(temp_dir_path, exist_ok=True)
         
         with open(os.path.join(temp_dir_path, "main.cpp"), "w") as f:
             f.write(submission.source_code)
 
         # 3. Chạy và chuẩn bị container
-        mount_volume = docker.types.Mount(target="/sandbox", source=temp_dir_path, type="bind")
+        # Khi mount volume cho Docker-in-Docker, cần sử dụng đường dẫn thực tế trên host
+        host_temp_dir_path = os.path.join(Config.HOST_GRADER_TEMP_DIR, temp_dir_name)
+        mount_volume = docker.types.Mount(target="/sandbox", source=host_temp_dir_path, type="bind")
         print(f"[{submission_id}] Creating sandbox container from image '{Config.DOCKER_IMAGE_NAME}'...")
+        print(f"[{submission_id}] Mounting host path: {host_temp_dir_path} -> /sandbox")
         container = client.containers.run(
             Config.DOCKER_IMAGE_NAME,
             command=["sleep", "3600"],
