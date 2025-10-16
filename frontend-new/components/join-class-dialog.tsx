@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,19 +29,22 @@ export function JoinClassDialog({ open, onOpenChange, onJoinClass }: JoinClassDi
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Join a Class</DialogTitle>
+          <DialogDescription>
+            Enter the invite code provided by your teacher to join their class
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="classCode">Class Code</Label>
+            <Label htmlFor="classCode">Invite Code</Label>
             <Input
               id="classCode"
-              placeholder="e.g., CS301"
+              placeholder="e.g., 094da10d"
               value={classCode}
-              onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+              onChange={(e) => setClassCode(e.target.value)}
               className="font-mono text-lg"
               required
             />
-            <p className="text-xs text-muted-foreground">Enter the class code provided by your teacher</p>
+            <p className="text-xs text-muted-foreground">Enter the invite code provided by your teacher (case-sensitive)</p>
           </div>
 
           <div className="flex justify-end gap-3">

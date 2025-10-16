@@ -2,10 +2,11 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Users, BookOpen, Settings } from "lucide-react"
+import { ArrowLeft, Plus, Users, BookOpen, Settings, Share2, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 
 export default function ClassDetailPage() {
@@ -16,6 +17,8 @@ export default function ClassDetailPage() {
   const [students, setStudents] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -40,6 +43,17 @@ export default function ClassDetailPage() {
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCopyInviteCode = async () => {
+    try {
+      await navigator.clipboard.writeText(classData.invite_code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      alert('Failed to copy invite code')
     }
   }
 
@@ -231,25 +245,106 @@ export default function ClassDetailPage() {
           <TabsContent value="settings" className="space-y-4">
             <Card className="p-6">
               <h2 className="mb-6 text-2xl font-black uppercase text-foreground">CLASS SETTINGS</h2>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <p className="text-sm font-black uppercase">CLASS CODE</p>
-                  <p className="mt-2 text-sm font-bold">
-                    STUDENTS USE THIS CODE:{" "}
+                  <p className="text-sm font-black uppercase mb-3">INVITE CODE</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="border-4 border-black bg-primary px-6 py-3">
+                      <p className="text-2xl font-black text-primary-foreground tracking-wider">
+                        {classData.invite_code || 'N/A'}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="gap-2 font-black uppercase"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      SHARE CODE
+                    </Button>
+                  </div>
+                  <p className="mt-3 text-xs font-bold text-muted-foreground">
+                    Students use this code to join your class
+                  </p>
+                </div>
+
+                <div className="border-t-4 border-border pt-6">
+                  <p className="text-sm font-black uppercase mb-2">CLASS CODE</p>
+                  <p className="text-sm font-bold">
                     <span className="border-4 border-black bg-brutal-accent px-3 py-1 font-black">
                       {classData.course_code}
                     </span>
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm font-black uppercase">CREATED</p>
-                  <p className="mt-2 text-sm font-bold">{new Date(classData.created_at).toLocaleDateString()}</p>
+
+                <div className="border-t-4 border-border pt-6">
+                  <p className="text-sm font-black uppercase mb-2">CREATED</p>
+                  <p className="text-sm font-bold">
+                    {classData.created_at ? new Date(classData.created_at).toLocaleDateString() : 'Just now'}
+                  </p>
                 </div>
               </div>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Share Invite Code Modal */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="sm:max-w-md border-4 border-border">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full p-3 bg-primary/10">
+                <Share2 className="h-6 w-6 text-primary" />
+              </div>
+              <DialogTitle className="text-xl font-black uppercase">
+                SHARE INVITE CODE
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-muted-foreground mt-3">
+              Share this code with your students so they can join the class
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6 space-y-4">
+            <div className="border-4 border-border bg-primary/5 p-6 text-center">
+              <p className="text-xs font-black uppercase text-muted-foreground mb-2">INVITE CODE</p>
+              <p className="text-4xl font-black text-primary tracking-widest">
+                {classData.invite_code}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCopyInviteCode}
+                className="flex-1 gap-2 font-black uppercase"
+                variant={copied ? "default" : "outline"}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    COPIED!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    COPY CODE
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="border-4 border-border bg-muted p-4">
+              <p className="text-xs font-black uppercase text-foreground mb-2">📌 INSTRUCTIONS FOR STUDENTS:</p>
+              <ol className="text-xs font-bold text-foreground space-y-1 list-decimal list-inside">
+                <li>Go to Student Dashboard</li>
+                <li>Click "Join Class" button</li>
+                <li>Enter the invite code: <span className="bg-primary/20 px-2 py-0.5 font-black">{classData.invite_code}</span></li>
+                <li>Start solving problems!</li>
+              </ol>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

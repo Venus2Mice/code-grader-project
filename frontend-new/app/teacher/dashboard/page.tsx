@@ -124,7 +124,7 @@ export default function TeacherDashboard() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5" />
-                        <span>{new Date(classItem.created_at).toLocaleDateString()}</span>
+                        <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : 'Just now'}</span>
                       </div>
                     </div>
                   </Card>
