@@ -42,6 +42,8 @@ def create_class():
 @jwt_required()
 def get_my_classes():
     """Lấy danh sách các lớp học mà user đang tham gia hoặc giảng dạy."""
+    from ..models import Problem, Submission
+    
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -50,14 +52,48 @@ def get_my_classes():
     else: # student
         classes = user.classes_joined
     
-    class_list = [{
-        "id": c.id, 
-        "name": c.name, 
-        "course_code": c.course_code,
-        "description": c.description,  # NEW: Include description
-        "teacher_name": c.teacher.full_name,
-        "student_count": len(c.students)  # NEW: Include student count
-        } for c in classes]
+    class_list = []
+    for c in classes:
+        class_data = {
+            "id": c.id, 
+            "name": c.name, 
+            "code": c.course_code or c.invite_code,  # Use course_code or invite_code as display code
+            "course_code": c.course_code,
+            "description": c.description,
+            "teacher_name": c.teacher.full_name,
+            "student_count": len(c.students)
+        }
+        
+        # For students, add problem statistics
+        if user.role.name == 'student':
+            problems = Problem.query.filter_by(class_id=c.id).all()
+            total_problems = len(problems)
+            completed_problems = 0
+            
+            for problem in problems:
+                # Check if student has any 100% submission for this problem
+                submissions = Submission.query.filter_by(
+                    problem_id=problem.id,
+                    student_id=user_id
+                ).all()
+                
+                for submission in submissions:
+                    total_points = sum(tc.points for tc in problem.test_cases)
+                    if total_points > 0:
+                        earned_points = sum(
+                            tc.points for tc in problem.test_cases
+                            if any(r.status == 'Passed' and r.test_case_id == tc.id for r in submission.results)
+                        )
+                        score = int((earned_points / total_points * 100))
+                        if score == 100:
+                            completed_problems += 1
+                            break  # Count each problem only once
+            
+            class_data["problems_done"] = completed_problems
+            class_data["problems_todo"] = total_problems - completed_problems
+            class_data["total_problems"] = total_problems
+        
+        class_list.append(class_data)
         
     return jsonify(class_list), 200
 

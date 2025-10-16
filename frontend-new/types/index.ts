@@ -15,6 +15,10 @@ export interface Class {
   teacherId: string
   createdAt: Date
   studentCount: number
+  // Student-specific statistics
+  problems_done?: number
+  problems_todo?: number
+  total_problems?: number
 }
 
 export interface Problem {

@@ -121,11 +121,11 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-4 text-sm font-bold">
                       <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                         <CheckCircle className="h-5 w-5" />
-                        <span>3 Done</span>
+                        <span>{classItem.problems_done || 0} Done</span>
                       </div>
                       <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
                         <Clock className="h-5 w-5" />
-                        <span>2 Todo</span>
+                        <span>{classItem.problems_todo || 0} Todo</span>
                       </div>
                     </div>
                   </Card>
