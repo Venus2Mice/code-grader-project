@@ -33,6 +33,7 @@ def create_app():
         from . import problem_routes 
         from . import submission_routes 
         from . import internal_routes
+        from . import student_routes  # NEW
         
         # Bước 2: Sau khi tất cả các route đã được định nghĩa và đính vào,
         # bây giờ mới đăng ký các blueprint với ứng dụng.
@@ -41,6 +42,7 @@ def create_app():
         app.register_blueprint(problem_routes.problem_bp)
         app.register_blueprint(submission_routes.submission_bp)
         app.register_blueprint(internal_routes.internal_bp)
+        app.register_blueprint(student_routes.student_bp)  # NEW
 
         # Import models để migrate có thể "thấy" chúng
         from . import models

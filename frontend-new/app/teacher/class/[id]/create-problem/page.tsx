@@ -1,0 +1,367 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { classAPI, problemAPI } from "@/services/api"
+
+interface TestCase {
+  id: string
+  input: string
+  expectedOutput: string
+  isHidden: boolean
+  points: number
+}
+
+export default function CreateProblemPage() {
+  const params = useParams()
+  const router = useRouter()
+  const classId = params.id as string
+  const [classData, setClassData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    difficulty: "medium",
+    timeLimit: 1000,
+    memoryLimit: 256,
+    gradingMode: "stdio",
+    functionSignature: "",
+  })
+
+  const [testCases, setTestCases] = useState<TestCase[]>([
+    { id: "1", input: "", expectedOutput: "", isHidden: false, points: 10 },
+  ])
+
+  useEffect(() => {
+    fetchClassData()
+  }, [classId])
+
+  const fetchClassData = async () => {
+    try {
+      const response = await classAPI.getById(Number(classId))
+      setClassData(response.data)
+    } catch (err) {
+      console.error('Error fetching class:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const addTestCase = () => {
+    setTestCases([
+      ...testCases,
+      {
+        id: String(testCases.length + 1),
+        input: "",
+        expectedOutput: "",
+        isHidden: false,
+        points: 10,
+      },
+    ])
+  }
+
+  const removeTestCase = (id: string) => {
+    if (testCases.length > 1) {
+      setTestCases(testCases.filter((tc) => tc.id !== id))
+    }
+  }
+
+  const updateTestCase = (id: string, field: keyof TestCase, value: any) => {
+    setTestCases(testCases.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc)))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      // Create problem with test cases
+      const problemData = {
+        title: formData.title,
+        description: formData.description,
+        difficulty: formData.difficulty as 'easy' | 'medium' | 'hard',
+        time_limit_ms: formData.timeLimit,
+        memory_limit_kb: formData.memoryLimit * 1024, // Convert MB to KB
+        grading_mode: formData.gradingMode as 'stdio' | 'function',
+        function_signature: formData.gradingMode === 'function' ? formData.functionSignature : undefined,
+        test_cases: testCases.map(tc => ({
+          input: tc.input,
+          output: tc.expectedOutput,
+          is_hidden: tc.isHidden,
+          points: tc.points
+        }))
+      }
+
+      await problemAPI.create(Number(classId), problemData)
+      router.push(`/teacher/class/${classId}`)
+    } catch (err: any) {
+      console.error('Error creating problem:', err)
+      alert(err.response?.data?.msg || 'Failed to create problem')
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (!classData) {
+    return <div>Class not found</div>
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="border-b-4 border-border bg-card relative overflow-hidden">
+        <div className="absolute -right-16 top-0 h-32 w-32 border-4 border-accent bg-accent/20" />
+
+        <div className="relative mx-auto max-w-5xl px-6 py-8">
+          <Link
+            href={`/teacher/class/${classId}`}
+            className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-muted px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            BACK TO CLASS
+          </Link>
+
+          <div className="mt-4">
+            <h1 className="text-4xl font-black uppercase tracking-tight text-foreground">CREATE ASSIGNMENT</h1>
+            <p className="mt-3 text-lg font-bold text-muted-foreground">{classData.name}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card className="border-4 border-border bg-card p-8">
+            <h2 className="mb-6 border-l-8 border-primary pl-4 text-2xl font-black uppercase text-foreground">
+              PROBLEM DETAILS
+            </h2>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Problem Title</Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., Two Sum"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Problem Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the problem, input format, output format, and constraints..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={8}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Use clear formatting to explain the problem statement</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Difficulty</Label>
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+                  >
+                    <SelectTrigger id="difficulty">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timeLimit">Time Limit (ms)</Label>
+                  <Input
+                    id="timeLimit"
+                    type="number"
+                    value={formData.timeLimit}
+                    onChange={(e) => setFormData({ ...formData, timeLimit: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
+                  <Input
+                    id="memoryLimit"
+                    type="number"
+                    value={formData.memoryLimit}
+                    onChange={(e) => setFormData({ ...formData, memoryLimit: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border-4 border-border bg-card p-8">
+            <h2 className="mb-6 border-l-8 border-secondary pl-4 text-2xl font-black uppercase text-foreground">
+              GRADING CONFIGURATION
+            </h2>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="gradingMode">Grading Mode</Label>
+                <Select
+                  value={formData.gradingMode}
+                  onValueChange={(value) => setFormData({ ...formData, gradingMode: value })}
+                >
+                  <SelectTrigger id="gradingMode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stdio">Standard I/O</SelectItem>
+                    <SelectItem value="function">Function-based</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.gradingMode === "stdio"
+                    ? "Students submit a complete program that reads from stdin and writes to stdout"
+                    : "Students implement a specific function signature"}
+                </p>
+              </div>
+
+              {formData.gradingMode === "function" && (
+                <div className="space-y-2">
+                  <Label htmlFor="functionSignature">Function Signature</Label>
+                  <Input
+                    id="functionSignature"
+                    placeholder="e.g., vector<int> twoSum(vector<int>& nums, int target)"
+                    value={formData.functionSignature}
+                    onChange={(e) => setFormData({ ...formData, functionSignature: e.target.value })}
+                    className="font-mono text-sm"
+                    required={formData.gradingMode === "function"}
+                  />
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card className="border-4 border-border bg-card p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="border-l-8 border-accent pl-4 text-2xl font-black uppercase text-foreground">
+                TEST CASES
+              </h2>
+              <Button type="button" variant="outline" size="sm" onClick={addTestCase} className="gap-2 bg-transparent">
+                <Plus className="h-4 w-4" />
+                ADD TEST CASE
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              {testCases.map((testCase, index) => (
+                <Card key={testCase.id} className="border-4 border-border bg-muted/50 p-6">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="font-semibold text-foreground">Test Case {index + 1}</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={testCase.isHidden}
+                          onCheckedChange={(checked) => updateTestCase(testCase.id, "isHidden", checked)}
+                        />
+                        <Label className="text-sm">
+                          {testCase.isHidden ? (
+                            <span className="flex items-center gap-1">
+                              <EyeOff className="h-3 w-3" />
+                              Hidden
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              Visible
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                      {testCases.length > 1 && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeTestCase(testCase.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Input</Label>
+                      <Textarea
+                        placeholder="Test input..."
+                        value={testCase.input}
+                        onChange={(e) => updateTestCase(testCase.id, "input", e.target.value)}
+                        rows={4}
+                        className="font-mono text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Expected Output</Label>
+                      <Textarea
+                        placeholder="Expected output..."
+                        value={testCase.expectedOutput}
+                        onChange={(e) => updateTestCase(testCase.id, "expectedOutput", e.target.value)}
+                        rows={4}
+                        className="font-mono text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <Label>Points</Label>
+                    <Input
+                      type="number"
+                      value={testCase.points}
+                      onChange={(e) => updateTestCase(testCase.id, "points", Number(e.target.value))}
+                      className="w-32"
+                      min="0"
+                      required
+                    />
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="mt-6 border-4 border-border bg-primary/10 p-6">
+              <p className="text-lg font-black uppercase text-foreground">
+                TOTAL POINTS: <span className="text-primary">{testCases.reduce((sum, tc) => sum + tc.points, 0)}</span>
+              </p>
+            </div>
+          </Card>
+
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              CANCEL
+            </Button>
+            <Button type="submit">CREATE ASSIGNMENT</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

@@ -3,7 +3,47 @@
 > ⚠️ **LƯU Ý QUAN TRỌNG:** Worker bây giờ chạy **độc lập ngoài Docker**.  
 > 📚 **Đọc hướng dẫn đầy đủ:** [COMPLETE_GUIDE.md](./COMPLETE_GUIDE.md)
 
-**Code Grader** là một nền tảng ứng dụng web được thiết kế để tự động hóa quy trình chấm điểm các bài tập lập trình C++. Hệ thống cho phép giáo viên tạo lớp học, ra đề bài kèm theo các bộ dữ liệu kiểm thử (test case), và sinh viên có thể nộp bài làm của mình để nhận được phản hồi tức thì.
+**Code Grader** là một nền tảng ứng dụng web được thiết kế để tự động hóa quy trình chấm điểm các bài tập lập trình C++. # Code Grader Project
+
+Hệ thống chấm bài tự động cho các bài tập lập trình.
+
+## 📁 Cấu trúc dự án
+
+```
+code-grader-project/
+├── backend/              # Flask backend API
+├── frontend-old/         # Frontend cũ (React + Vite) - backup
+├── frontend-new/         # Frontend mới (Next.js 15 + TypeScript)
+├── grader-engine/        # RabbitMQ worker cho chấm bài
+├── docs/                 # 📚 Tài liệu dự án
+│   ├── START_HERE.md
+│   ├── COMPLETE_GUIDE.md
+│   ├── FRONTEND_BACKEND_COMPARISON.md
+│   ├── INTEGRATION_TODO.md
+│   └── ...
+├── scripts/              # 🔧 Scripts tiện ích
+│   ├── setup.sh
+│   └── run_worker.sh
+└── README.md             # File này
+```
+
+## 🚀 Quick Start
+
+Xem [docs/START_HERE.md](docs/START_HERE.md) để bắt đầu nhanh.
+
+## 📚 Documentation
+
+Tất cả tài liệu được tổ chức trong thư mục [`docs/`](docs/):
+- **Quick Start**: [START_HERE.md](docs/START_HERE.md)
+- **Full Guide**: [COMPLETE_GUIDE.md](docs/COMPLETE_GUIDE.md)
+- **Frontend Integration**: [FRONTEND_BACKEND_COMPARISON.md](docs/FRONTEND_BACKEND_COMPARISON.md)
+- **TODO List**: [INTEGRATION_TODO.md](docs/INTEGRATION_TODO.md)
+
+## 🔧 Scripts
+
+Scripts tiện ích trong thư mục [`scripts/`](scripts/):
+- `setup.sh` - Setup môi trường phát triển
+- `run_worker.sh` - Chạy grader worker
 
 ---
 

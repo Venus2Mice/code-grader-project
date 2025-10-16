@@ -64,18 +64,110 @@ def get_submission_result(submission_id):
     # Kiểm tra user có quyền xem bài nộp này không (là chủ nhân hoặc là giáo viên của lớp)
     if str(submission.student_id) != user_id and str(submission.problem.class_obj.teacher_id) != user_id:
         return jsonify({"msg": "Forbidden"}), 403
-        
+    
+    # Calculate score based on test case points
+    total_points = sum(tc.points for tc in submission.problem.test_cases)
+    earned_points = 0
+    passed_tests = 0
+    total_tests = len(submission.problem.test_cases)
+    
+    for result in submission.results:
+        if result.status == 'Passed':
+            passed_tests += 1
+            # Find the test case to get its points
+            test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
+            if test_case:
+                earned_points += test_case.points
+    
+    score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+    
     results = [{
         "test_case_id": res.test_case_id,
         "status": res.status,
         "execution_time_ms": res.execution_time_ms,
-        "memory_used_kb": res.memory_used_kb
+        "memory_used_kb": res.memory_used_kb,
+        "output_received": res.output_received,
+        "error_message": res.error_message
     } for res in submission.results]
     
     return jsonify({
         "id": submission.id,
         "problem_id": submission.problem_id,
+        "student_id": submission.student_id,
         "status": submission.status,
+        "score": score,  # NEW: Computed score
+        "passed_tests": passed_tests,  # NEW
+        "total_tests": total_tests,  # NEW
+        "language": submission.language,
         "submitted_at": submission.submitted_at.isoformat(),
         "results": results
     })
+
+
+# NEW ENDPOINTS for Frontend Integration
+
+@submission_bp.route('/me', methods=['GET'])
+@jwt_required()
+@role_required('student')
+def get_my_submissions():
+    """Lấy submissions của student hiện tại, có thể filter theo problem_id."""
+    student_id = get_jwt_identity()
+    problem_id = request.args.get('problem_id', type=int)
+    
+    query = Submission.query.filter_by(student_id=student_id)
+    
+    if problem_id:
+        query = query.filter_by(problem_id=problem_id)
+    
+    submissions = query.order_by(Submission.submitted_at.desc()).all()
+    
+    submissions_data = []
+    for submission in submissions:
+        # Calculate score
+        total_points = sum(tc.points for tc in submission.problem.test_cases)
+        earned_points = 0
+        passed_tests = 0
+        
+        for result in submission.results:
+            if result.status == 'Passed':
+                passed_tests += 1
+                test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
+                if test_case:
+                    earned_points += test_case.points
+        
+        score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+        
+        submissions_data.append({
+            "id": submission.id,
+            "problem_id": submission.problem_id,
+            "problem_title": submission.problem.title,
+            "status": submission.status,
+            "score": score,
+            "passed_tests": passed_tests,
+            "total_tests": len(submission.problem.test_cases),
+            "language": submission.language,
+            "code": submission.source_code,  # Include source code
+            "submitted_at": submission.submitted_at.isoformat()
+        })
+    
+    return jsonify(submissions_data), 200
+
+
+@submission_bp.route('/<int:submission_id>/code', methods=['GET'])
+@jwt_required()
+def get_submission_code(submission_id):
+    """Lấy source code của một submission."""
+    user_id = get_jwt_identity()
+    submission = Submission.query.get_or_404(submission_id)
+    
+    # Check access: owner or teacher of the class
+    is_owner = str(submission.student_id) == user_id
+    is_teacher = str(submission.problem.class_obj.teacher_id) == user_id
+    
+    if not (is_owner or is_teacher):
+        return jsonify({"msg": "Forbidden"}), 403
+    
+    return jsonify({
+        "code": submission.source_code,
+        "language": submission.language
+    }), 200

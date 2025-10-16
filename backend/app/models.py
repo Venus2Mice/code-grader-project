@@ -64,6 +64,7 @@ class Class(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     course_code = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)  # NEW: Class description
     invite_code = Column(String(8), unique=True, nullable=False, default=lambda: str(uuid.uuid4())[:8])
     teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -78,6 +79,9 @@ class Problem(Base):
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    difficulty = Column(String(20), default='medium')  # NEW: 'easy', 'medium', 'hard'
+    grading_mode = Column(String(20), default='stdio')  # NEW: 'stdio', 'function'
+    function_signature = Column(Text, nullable=True)  # NEW: For function grading mode
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     due_date = Column(DateTime, nullable=True)
@@ -94,6 +98,7 @@ class TestCase(Base):
     input_data = Column(Text)
     expected_output = Column(Text)
     is_hidden = Column(Boolean, default=False)
+    points = Column(Integer, default=10)  # NEW: Points for this test case
     
     problem = relationship('Problem', back_populates='test_cases')
     results = relationship('SubmissionResult', back_populates='test_case')
