@@ -87,12 +87,37 @@ int main() {
       }
       
       // Fetch user's submissions for this problem
-      const subsResponse = await submissionAPI.getMySubmissions(Number(problemId))
-      setSubmissions(subsResponse.data)
+      await refreshSubmissions()
     } catch (err) {
       console.error('Error fetching problem:', err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const refreshSubmissions = async () => {
+    try {
+      console.log('[REFRESH] Fetching submissions for problem:', problemId)
+      const subsResponse = await submissionAPI.getMySubmissions(Number(problemId))
+      console.log('[REFRESH] Submissions received:', subsResponse.data)
+      console.log('[REFRESH] Number of submissions:', subsResponse.data.length)
+      
+      // Debug: log each submission
+      subsResponse.data.forEach((sub: any, index: number) => {
+        console.log(`[REFRESH] Submission ${index + 1}:`, {
+          id: sub.id,
+          status: sub.status,
+          score: sub.score,
+          passedTests: sub.passedTests,
+          totalTests: sub.totalTests,
+          hasCode: !!sub.code,
+          submittedAt: sub.submittedAt
+        })
+      })
+      
+      setSubmissions(subsResponse.data)
+    } catch (err) {
+      console.error('Error fetching submissions:', err)
     }
   }
 
@@ -146,15 +171,52 @@ int main() {
               }
             }
             
-            // Display results
+            // Compute passed/total/score locally from results to avoid backend inconsistencies
+            const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
+            const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
+            const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
+              const s = String(r.status || '').toLowerCase()
+              if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
+              return acc
+            }, 0)
+
+            // Compute score by points when problem test_cases available, otherwise by count
+            let scoreComputed = 0
+            try {
+              const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
+                ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
+                : 0
+
+              if (totalPoints > 0) {
+                const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
+                  const s = String(r.status || '').toLowerCase()
+                  if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
+                    const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
+                    return sum + (tc ? (tc.points || 0) : 0)
+                  }
+                  return sum
+                }, 0)
+                scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
+              } else if (totalTestsComputed > 0) {
+                scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
+              } else {
+                scoreComputed = submissionData.score || 0
+              }
+            } catch (e) {
+              scoreComputed = submissionData.score || 0
+            }
+
+            const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
+
+            // Display results with computed values
             setTestResults({
-              status: submissionData.status === 'Completed' ? 'accepted' : 'error',
+              status: finalStatus,
               message: submissionData.status,
               isTest: true,
-              score: submissionData.score || 0,
-              passedTests: submissionData.passed_tests || 0,
-              totalTests: submissionData.total_tests || 0,
-              results: submissionData.results || []
+              score: scoreComputed,
+              passedTests: passedTestsComputed,
+              totalTests: totalTestsComputed,
+              results: resultsArr
             })
           }
         } catch (pollErr) {
@@ -204,8 +266,13 @@ int main() {
         language: language
       })
       
-      const submissionId = response.data.id || response.data.submission_id
-      console.log('[SUBMIT] Submission ID:', submissionId)
+      const submissionId = response.data.submission_id || response.data.id
+      console.log('[SUBMIT] Submission created with ID:', submissionId)
+      console.log('[SUBMIT] Response data:', response.data)
+      
+      // Immediately refresh submissions list to show pending submission
+      console.log('[SUBMIT] Adding pending submission to list...')
+      await refreshSubmissions()
       
       // Show pending status
       setTestResults({
@@ -242,20 +309,60 @@ int main() {
                 })
               }
             }
-            
-            // Display results
+
+            // Compute results locally similar to run handler
+            const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
+            const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
+            const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
+              const s = String(r.status || '').toLowerCase()
+              if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
+              return acc
+            }, 0)
+
+            let scoreComputed = 0
+            try {
+              const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
+                ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
+                : 0
+
+              if (totalPoints > 0) {
+                const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
+                  const s = String(r.status || '').toLowerCase()
+                  if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
+                    const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
+                    return sum + (tc ? (tc.points || 0) : 0)
+                  }
+                  return sum
+                }, 0)
+                scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
+              } else if (totalTestsComputed > 0) {
+                scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
+              } else {
+                scoreComputed = submissionData.score || 0
+              }
+            } catch (e) {
+              scoreComputed = submissionData.score || 0
+            }
+
+            const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
+
             setTestResults({
-              status: submissionData.status === 'Completed' ? 'accepted' : 'error',
+              status: finalStatus,
               message: submissionData.status,
               isTest: false,
-              score: submissionData.score || 0,
-              passedTests: submissionData.passed_tests || 0,
-              totalTests: submissionData.total_tests || 0,
-              results: submissionData.results || []
+              score: scoreComputed,
+              passedTests: passedTestsComputed,
+              totalTests: totalTestsComputed,
+              results: resultsArr
             })
             
-            // Refresh submissions list
-            await fetchProblemData()
+            // Refresh submissions list immediately after completion
+            console.log('[SUBMIT] Submission completed. Refreshing submissions list...')
+            refreshSubmissions().then(() => {
+              console.log('[SUBMIT] Submissions refreshed successfully')
+            }).catch(err => {
+              console.error('[SUBMIT] Failed to refresh submissions:', err)
+            })
           }
         } catch (pollErr) {
           console.error('Error polling submission results:', pollErr)
@@ -294,31 +401,77 @@ int main() {
   }
 
   const getStatusDisplay = (status: string | undefined) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase()
+    
+    switch (normalizedStatus) {
       case "accepted":
         return { icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", label: "Accepted" }
       case "wrong_answer":
+      case "wrong answer":
         return { icon: XCircle, color: "text-red-600", bg: "bg-red-100", label: "Wrong Answer" }
       case "compile_error":
+      case "compile error":
         return { icon: AlertCircle, color: "text-orange-500", bg: "bg-orange-500/10", label: "Compile Error" }
       case "time_limit":
+      case "time limit exceeded":
         return { icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10", label: "Time Limit" }
+      case "runtime_error":
+      case "runtime error":
+        return { icon: XCircle, color: "text-red-500", bg: "bg-red-100", label: "Runtime Error" }
+      case "pending":
+        return { icon: Clock, color: "text-blue-600", bg: "bg-blue-100", label: "Pending" }
+      case "running":
+        return { icon: Clock, color: "text-blue-600", bg: "bg-blue-100", label: "Running" }
       default:
-        return { icon: Clock, color: "text-muted-foreground", bg: "bg-muted", label: "Pending" }
+        return { icon: Clock, color: "text-muted-foreground", bg: "bg-muted", label: status || "Pending" }
     }
   }
 
   const viewSubmission = async (submission: any) => {
     setSelectedSubmission(submission)
-    // Fetch the code for this submission
-    try {
-      const codeResponse = await submissionAPI.getCode(submission.id)
-      setCode(codeResponse.data.source_code)
+    console.log('[VIEW] Loading submission:', submission)
+    
+    // If code is already in submission object, use it directly
+    if (submission.code) {
+      console.log('[VIEW] Using code from submission object')
+      setCode(submission.code)
       setLanguage(submission.language || 'cpp')
+      setIsHistoryOpen(false)
+      return
+    }
+    
+    // Otherwise fetch the code for this submission
+    try {
+      console.log('[VIEW] Fetching code from API for submission:', submission.id)
+      const codeResponse = await submissionAPI.getCode(submission.id)
+      console.log('[VIEW] Code response:', codeResponse.data)
+      // Backend returns "code", not "source_code"
+      setCode(codeResponse.data.code || codeResponse.data.source_code || '')
+      setLanguage(codeResponse.data.language || submission.language || 'cpp')
     } catch (err) {
       console.error('Error fetching submission code:', err)
     }
     setIsHistoryOpen(false)
+  }
+
+  // Format date to Vietnam timezone
+  const formatVietnameseDate = (dateString: string) => {
+    if (!dateString) return 'N/A'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+    } catch (err) {
+      return 'N/A'
+    }
   }
 
   if (isLoading) {
@@ -524,7 +677,7 @@ int main() {
                               </span>
                             </div>
                             <div className="text-xs font-bold text-muted-foreground">
-                              {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'}
+                              {formatVietnameseDate(submission.submittedAt)}
                             </div>
                           </div>
                           <Button
@@ -594,19 +747,24 @@ int main() {
               <div className="space-y-2">
                 {testResults.results && Array.isArray(testResults.results) && testResults.results.length > 0 ? (
                   testResults.results.map((result: any, index: number) => {
-                    // Special handling for compile errors (no test_case_id)
-                    const isCompileError = result.status === "Compile Error" || !result.test_case_id
-                    
+                    // Normalize status for robust checks
+                    const rawStatus = String(result.status || '')
+                    const statusNorm = rawStatus.toLowerCase()
+                    const isPassed = ['passed', 'accepted', 'ok', 'success'].includes(statusNorm)
+                    const isCompileError = statusNorm.includes('compile') || result.test_case_id === null || result.test_case_id === undefined
+
+                    const cardClass = isPassed
+                      ? 'border-green-600 bg-green-100'
+                      : isCompileError
+                        ? 'border-orange-600 bg-orange-100'
+                        : 'border-red-600 bg-red-100'
+
+                    const labelClass = isPassed ? 'text-green-600' : (isCompileError ? 'text-orange-600' : 'text-red-600')
+
                     return (
                       <Card
-                        key={result.test_case_id || `error-${index}`}
-                        className={`border-4 p-3 ${
-                          result.status === "Passed" 
-                            ? "border-green-600 bg-green-100" 
-                            : isCompileError
-                              ? "border-orange-600 bg-orange-100"
-                              : "border-red-600 bg-red-100"
-                        }`}
+                        key={result.test_case_id ?? `error-${index}`}
+                        className={`border-4 p-3 ${cardClass}`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -620,24 +778,20 @@ int main() {
                                 <span className="text-sm font-black uppercase text-foreground">
                                   TEST CASE #{result.test_case_id}
                                 </span>
-                                <span
-                                  className={`text-xs font-black uppercase text-foreground ${
-                                    result.status === "Passed" ? "text-green-600" : "text-red-600"
-                                  }`}
-                                >
-                                  {result.status}
+                                <span className={`text-xs font-black uppercase text-foreground ${labelClass}`}>
+                                  {isPassed ? 'ACCEPTED' : rawStatus}
                                 </span>
                               </>
                             )}
                           </div>
-                          {result.status === "Passed" && (
+                          {isPassed && (
                             <div className="text-xs font-bold text-muted-foreground">
-                              {result.execution_time_ms}MS | {Math.round(result.memory_used_kb / 1024)}MB
+                              {result.execution_time_ms}MS | {Math.round((result.memory_used_kb || 0) / 1024)}MB
                             </div>
                           )}
                         </div>
 
-                        {result.status !== "Passed" && (
+                        {!isPassed && (
                           <div className="mt-2 space-y-2 text-xs">
                             {result.output_received && result.output_received.trim() !== '' && (
                               <div>
@@ -721,7 +875,7 @@ int main() {
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'}
+                        {formatVietnameseDate(submission.submittedAt)}
                       </div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => viewSubmission(submission)}>

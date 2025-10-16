@@ -43,12 +43,14 @@ def create_submission():
     )
     db.session.add(new_submission)
     db.session.commit()
+    db.session.refresh(new_submission)  # Ensure all fields are loaded
     
     # 2. Gửi task chấm điểm tới RabbitMQ
     task_data = {'submission_id': new_submission.id}
     rabbitmq_producer.publish_task(task_data)
     
     return jsonify({
+        "id": new_submission.id,
         "submission_id": new_submission.id,
         "status": new_submission.status
     }), 202 # 202 Accepted: Yêu cầu đã được chấp nhận để xử lý
@@ -72,7 +74,8 @@ def get_submission_result(submission_id):
     total_tests = len(submission.problem.test_cases)
     
     for result in submission.results:
-        if result.status == 'Passed':
+        # Check for both 'Passed' and 'Accepted' status
+        if result.status in ['Passed', 'Accepted']:
             passed_tests += 1
             # Find the test case to get its points
             test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
@@ -95,11 +98,11 @@ def get_submission_result(submission_id):
         "problem_id": submission.problem_id,
         "student_id": submission.student_id,
         "status": submission.status,
-        "score": score,  # NEW: Computed score
-        "passed_tests": passed_tests,  # NEW
-        "total_tests": total_tests,  # NEW
+        "score": score,
+        "passedTests": passed_tests,  # Changed to camelCase
+        "totalTests": total_tests,    # Changed to camelCase
         "language": submission.language,
-        "submitted_at": submission.submitted_at.isoformat(),
+        "submittedAt": submission.submitted_at.isoformat(),  # Changed to camelCase
         "results": results
     })
 
@@ -130,7 +133,8 @@ def get_my_submissions():
         passed_tests = 0
         
         for result in submission.results:
-            if result.status == 'Passed':
+            # Check for both 'Passed' and 'Accepted' status
+            if result.status in ['Passed', 'Accepted']:
                 passed_tests += 1
                 test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
                 if test_case:
@@ -144,11 +148,11 @@ def get_my_submissions():
             "problem_title": submission.problem.title,
             "status": submission.status,
             "score": score,
-            "passed_tests": passed_tests,
-            "total_tests": len(submission.problem.test_cases),
+            "passedTests": passed_tests,
+            "totalTests": len(submission.problem.test_cases),
             "language": submission.language,
             "code": submission.source_code,  # Include source code
-            "submitted_at": submission.submitted_at.isoformat()
+            "submittedAt": submission.submitted_at.isoformat()
         })
     
     return jsonify(submissions_data), 200
