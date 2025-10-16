@@ -47,6 +47,27 @@ def create_problem_in_class(class_id):
     if grading_mode == 'function' and not function_signature:
         return jsonify({"msg": "function_signature is required for function grading mode"}), 400
 
+    # Validate test cases points
+    if not test_cases or len(test_cases) == 0:
+        return jsonify({"msg": "At least one test case is required"}), 400
+    
+    total_points = 0
+    for tc_data in test_cases:
+        points = tc_data.get('points', 10)
+        
+        # Check for negative points
+        if points < 0:
+            return jsonify({"msg": "Test case points cannot be negative"}), 400
+        
+        total_points += points
+    
+    # Check total points
+    if total_points == 0:
+        return jsonify({"msg": "Total points must be greater than 0"}), 400
+    
+    if total_points > 100:
+        return jsonify({"msg": f"Total points ({total_points}) cannot exceed 100"}), 400
+
     new_problem = Problem(
         title=title,
         description=description,

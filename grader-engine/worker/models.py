@@ -94,6 +94,7 @@ class TestCase(Base):
     input_data = Column(Text)
     expected_output = Column(Text)
     is_hidden = Column(Boolean, default=False)
+    points = Column(Integer, default=10)  # Points for this test case
     
     problem = relationship('Problem', back_populates='test_cases')
     results = relationship('SubmissionResult', back_populates='test_case')

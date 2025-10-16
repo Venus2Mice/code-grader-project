@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 
 interface TestCase {
@@ -43,6 +44,14 @@ export default function CreateProblemPage() {
   const [testCases, setTestCases] = useState<TestCase[]>([
     { id: "1", input: "", expectedOutput: "", isHidden: false, points: 10 },
   ])
+
+  // State for validation modal
+  const [validationModal, setValidationModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "error" as "error" | "warning"
+  })
 
   useEffect(() => {
     fetchClassData()
@@ -79,11 +88,76 @@ export default function CreateProblemPage() {
   }
 
   const updateTestCase = (id: string, field: keyof TestCase, value: any) => {
+    // Validate points: must be non-negative
+    if (field === 'points') {
+      const points = Number(value)
+      if (points < 0) {
+        setValidationModal({
+          isOpen: true,
+          title: "Invalid Points",
+          message: "Test case points cannot be negative. Please enter a value of 0 or greater.",
+          type: "error"
+        })
+        return
+      }
+      
+      // Calculate total points with this new value
+      const updatedTestCases = testCases.map((tc) => 
+        tc.id === id ? { ...tc, [field]: points } : tc
+      )
+      const totalPoints = updatedTestCases.reduce((sum, tc) => sum + tc.points, 0)
+      
+      if (totalPoints > 100) {
+        setValidationModal({
+          isOpen: true,
+          title: "Points Limit Exceeded",
+          message: `Total points would be ${totalPoints}, which exceeds the maximum of 100 points. Please reduce the points to stay within the limit.`,
+          type: "error"
+        })
+        return
+      }
+    }
+    
     setTestCases(testCases.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc)))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate total points before submission
+    const totalPoints = testCases.reduce((sum, tc) => sum + tc.points, 0)
+    
+    if (totalPoints === 0) {
+      setValidationModal({
+        isOpen: true,
+        title: "No Points Assigned",
+        message: "Total points must be greater than 0. Please assign points to your test cases.",
+        type: "warning"
+      })
+      return
+    }
+    
+    if (totalPoints > 100) {
+      setValidationModal({
+        isOpen: true,
+        title: "Points Limit Exceeded",
+        message: `Total points is ${totalPoints}, which exceeds the maximum of 100 points. Please adjust your test case points.`,
+        type: "error"
+      })
+      return
+    }
+    
+    // Check for negative points
+    const hasNegativePoints = testCases.some(tc => tc.points < 0)
+    if (hasNegativePoints) {
+      setValidationModal({
+        isOpen: true,
+        title: "Invalid Points",
+        message: "Some test cases have negative points. Please ensure all points are 0 or greater.",
+        type: "error"
+      })
+      return
+    }
     
     try {
       // Create problem with test cases
@@ -279,20 +353,20 @@ export default function CreateProblemPage() {
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="font-semibold text-foreground">Test Case {index + 1}</h3>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 border-2 border-border bg-background px-3 py-1.5 rounded">
                         <Switch
                           checked={testCase.isHidden}
                           onCheckedChange={(checked) => updateTestCase(testCase.id, "isHidden", checked)}
                         />
-                        <Label className="text-sm">
+                        <Label className="text-sm font-bold cursor-pointer">
                           {testCase.isHidden ? (
-                            <span className="flex items-center gap-1">
-                              <EyeOff className="h-3 w-3" />
+                            <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                              <EyeOff className="h-4 w-4" />
                               Hidden
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
+                            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                              <Eye className="h-4 w-4" />
                               Visible
                             </span>
                           )}
@@ -340,6 +414,7 @@ export default function CreateProblemPage() {
                       onChange={(e) => updateTestCase(testCase.id, "points", Number(e.target.value))}
                       className="w-32"
                       min="0"
+                      max="100"
                       required
                     />
                   </div>
@@ -347,11 +422,47 @@ export default function CreateProblemPage() {
               ))}
             </div>
 
-            <div className="mt-6 border-4 border-border bg-primary/10 p-6">
-              <p className="text-lg font-black uppercase text-foreground">
-                TOTAL POINTS: <span className="text-primary">{testCases.reduce((sum, tc) => sum + tc.points, 0)}</span>
-              </p>
-            </div>
+            {(() => {
+              const totalPoints = testCases.reduce((sum, tc) => sum + tc.points, 0)
+              const isValid = totalPoints > 0 && totalPoints <= 100
+              const isEmpty = totalPoints === 0
+              const isOverLimit = totalPoints > 100
+              
+              return (
+                <div className={`mt-6 border-4 border-border p-6 ${
+                  isOverLimit ? 'bg-destructive/10' : 
+                  isEmpty ? 'bg-orange-500/10' : 
+                  'bg-primary/10'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-lg font-black uppercase text-foreground">
+                      TOTAL POINTS: <span className={
+                        isOverLimit ? 'text-destructive' : 
+                        isEmpty ? 'text-orange-600' : 
+                        'text-primary'
+                      }>{totalPoints}</span>
+                      <span className="text-muted-foreground"> / 100</span>
+                    </p>
+                    {!isValid && (
+                      <span className={`text-sm font-bold uppercase ${
+                        isOverLimit ? 'text-destructive' : 'text-orange-600'
+                      }`}>
+                        {isOverLimit ? '⚠️ EXCEEDS LIMIT!' : '⚠️ MUST BE > 0'}
+                      </span>
+                    )}
+                  </div>
+                  {!isValid && (
+                    <p className={`mt-2 text-xs font-medium ${
+                      isOverLimit ? 'text-destructive' : 'text-orange-600'
+                    }`}>
+                      {isOverLimit 
+                        ? 'Please reduce the points. Total must not exceed 100.' 
+                        : 'Please assign points to test cases. Total must be greater than 0.'}
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
           </Card>
 
           <div className="flex justify-end gap-4">
@@ -362,6 +473,41 @@ export default function CreateProblemPage() {
           </div>
         </form>
       </div>
+
+      {/* Validation Modal */}
+      <Dialog open={validationModal.isOpen} onOpenChange={(open) => setValidationModal({ ...validationModal, isOpen: open })}>
+        <DialogContent className="sm:max-w-md border-4 border-border">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className={`rounded-full p-2 ${
+                validationModal.type === 'error' 
+                  ? 'bg-destructive/10' 
+                  : 'bg-orange-500/10'
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${
+                  validationModal.type === 'error' 
+                    ? 'text-destructive' 
+                    : 'text-orange-600'
+                }`} />
+              </div>
+              <DialogTitle className="text-xl font-black uppercase">
+                {validationModal.title}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-base text-foreground mt-4">
+              {validationModal.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button 
+              onClick={() => setValidationModal({ ...validationModal, isOpen: false })}
+              className="w-full"
+            >
+              GOT IT
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
