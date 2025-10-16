@@ -48,26 +48,56 @@ export default function TeacherProblemDetailPage() {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase()
+    
+    switch (normalizedStatus) {
       case "accepted":
         return <CheckCircle2 className="h-5 w-5 text-green-500" />
       case "wrong_answer":
+      case "wrong answer":
         return <XCircle className="h-5 w-5 text-red-500" />
       case "compile_error":
+      case "compile error":
       case "runtime_error":
+      case "runtime error":
         return <AlertCircle className="h-5 w-5 text-orange-500" />
       case "time_limit":
+      case "time limit exceeded":
         return <Clock className="h-5 w-5 text-yellow-500" />
+      case "pending":
+      case "running":
+        return <Clock className="h-5 w-5 text-blue-500" />
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />
     }
   }
 
   const getStatusText = (status: string) => {
+    if (!status) return "Unknown"
     return status
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ")
+  }
+
+  // Format date to Vietnam timezone
+  const formatVietnameseDate = (dateString: string) => {
+    if (!dateString) return 'N/A'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+    } catch (err) {
+      return 'N/A'
+    }
   }
 
   return (
@@ -136,9 +166,12 @@ export default function TeacherProblemDetailPage() {
                               Score: <span className="font-semibold text-foreground">{submission.score || 0}/100</span>
                             </span>
                             <span className="text-muted-foreground">
-                              Language: {submission.language || 'N/A'}
+                              Tests: <span className="font-semibold text-foreground">{submission.passedTests || submission.passed_tests || 0}/{submission.totalTests || submission.total_tests || 0}</span>
                             </span>
-                            <span className="text-muted-foreground">{new Date(submission.submitted_at).toLocaleString()}</span>
+                            <span className="text-muted-foreground">
+                              Language: {submission.language || 'CPP'}
+                            </span>
+                            <span className="text-muted-foreground">{formatVietnameseDate(submission.submittedAt || submission.submitted_at)}</span>
                           </div>
                         </div>
                       </div>

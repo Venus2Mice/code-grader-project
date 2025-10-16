@@ -179,7 +179,8 @@ def get_problem_submissions(problem_id):
         passed_tests = 0
         
         for result in submission.results:
-            if result.status == 'Passed':
+            # Check for both 'Passed' and 'Accepted' status
+            if result.status in ['Passed', 'Accepted']:
                 passed_tests += 1
                 test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
                 if test_case:
@@ -189,17 +190,17 @@ def get_problem_submissions(problem_id):
         
         submissions_data.append({
             "id": submission.id,
-            "student": {
+            "user": {  # Changed from 'student' to 'user' to match frontend
                 "id": submission.student.id,
-                "name": submission.student.full_name,
+                "full_name": submission.student.full_name,
                 "email": submission.student.email
             },
             "status": submission.status,
             "score": score,
-            "passed_tests": passed_tests,
-            "total_tests": len(problem.test_cases),
+            "passedTests": passed_tests,  # Changed to camelCase
+            "totalTests": len(problem.test_cases),  # Changed to camelCase
             "language": submission.language,
-            "submitted_at": submission.submitted_at.isoformat()
+            "submittedAt": submission.submitted_at.isoformat()  # Changed to camelCase
         })
     
     return jsonify(submissions_data), 200
