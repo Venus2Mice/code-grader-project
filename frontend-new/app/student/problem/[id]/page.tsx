@@ -20,6 +20,9 @@ export default function ProblemSolvePage() {
   const [submissions, setSubmissions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   
+  // Store classId from URL search params or localStorage as fallback
+  const [classId, setClassId] = useState<string | null>(null)
+  
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null)
 
@@ -38,6 +41,27 @@ int main() {
   const [isRunning, setIsRunning] = useState(false)
   const [testResults, setTestResults] = useState<any>(null)
 
+  // Get classId from URL params or localStorage
+  useEffect(() => {
+    // Try to get from URL search params first
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const classIdFromUrl = urlParams.get('classId')
+      
+      if (classIdFromUrl) {
+        setClassId(classIdFromUrl)
+        // Save to localStorage for future use
+        localStorage.setItem(`problem_${problemId}_classId`, classIdFromUrl)
+      } else {
+        // Fallback to localStorage
+        const savedClassId = localStorage.getItem(`problem_${problemId}_classId`)
+        if (savedClassId) {
+          setClassId(savedClassId)
+        }
+      }
+    }
+  }, [problemId])
+
   useEffect(() => {
     fetchProblemData()
   }, [problemId])
@@ -46,7 +70,14 @@ int main() {
     try {
       setIsLoading(true)
       const response = await problemAPI.getById(Number(problemId))
-      setProblem(response.data)
+      const problemData = response.data
+      setProblem(problemData)
+      
+      // Store classId if available from API response
+      if (problemData.class_id) {
+        setClassId(String(problemData.class_id))
+        localStorage.setItem(`problem_${problemId}_classId`, String(problemData.class_id))
+      }
       
       // Fetch user's submissions for this problem
       const subsResponse = await submissionAPI.getMySubmissions(Number(problemId))
@@ -207,13 +238,24 @@ int main() {
       <div className="border-b-4 border-black bg-background">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-6 py-4">
           <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-            <Link
-              href={`/student/class/${problem.class_id}`}
-              className="inline-flex items-center gap-2 text-xs md:text-sm font-black uppercase hover:text-brutal-accent"
-            >
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="hidden sm:inline">BACK</span>
-            </Link>
+            {classId ? (
+              <Link
+                href={`/student/class/${classId}`}
+                className="inline-flex items-center gap-2 text-xs md:text-sm font-black uppercase hover:text-brutal-accent"
+              >
+                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden sm:inline">BACK</span>
+              </Link>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-2 text-xs md:text-sm font-black uppercase hover:text-brutal-accent"
+              >
+                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden sm:inline">BACK</span>
+              </Button>
+            )}
             <div className="hidden md:block h-8 w-1 bg-foreground" />
             <h1 className="text-sm md:text-lg font-black uppercase text-foreground line-clamp-1">{problem.title}</h1>
             <span

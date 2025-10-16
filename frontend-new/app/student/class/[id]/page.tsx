@@ -127,7 +127,7 @@ export default function StudentClassPage() {
             }
 
             return (
-              <Link key={problem.id} href={`/student/problem/${problem.id}`}>
+              <Link key={problem.id} href={`/student/problem/${problem.id}?classId=${classId}`}>
                 <Card className="group cursor-pointer border-4 border-border bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-[300px]">

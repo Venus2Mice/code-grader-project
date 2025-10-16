@@ -118,6 +118,7 @@ def get_problem_details(problem_id):
     
     return jsonify({
         "id": problem.id,
+        "class_id": problem.class_id,  # FIXED: Add class_id for navigation
         "title": problem.title,
         "description": problem.description,
         "difficulty": problem.difficulty,  # NEW
