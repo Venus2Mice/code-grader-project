@@ -1,9 +1,25 @@
 services:
-  # SERVICE Frontend (Nginx)
-  frontend:
-    build: ./frontend
+  # SERVICE Frontend OLD (Nginx) - DISABLED
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - app-network
+
+  # SERVICE Frontend NEW (Next.js)
+  frontend-new:
+    build: ./frontend-new
     ports:
-      - "3000:80" # Map cổng 3000 của máy host vào cổng 80 của container
+      - "3000:3000"
+    volumes:
+      - ./frontend-new:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
     depends_on:
       - backend
     networks:

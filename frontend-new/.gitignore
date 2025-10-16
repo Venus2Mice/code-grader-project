@@ -18,6 +18,9 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.docker
+!.env.codespaces
+.env.local.backup
 
 # vercel
 .vercel

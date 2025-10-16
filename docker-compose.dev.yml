@@ -1,0 +1,66 @@
+# Docker Compose for Full Development Environment
+# Frontend, Backend, Database, RabbitMQ all in containers
+
+services:
+  frontend-new:
+    build: ./frontend-new
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-new:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+      - WATCHPACK_POLLING=true  # Enable hot reload in Docker
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    command: pnpm dev
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=1
+      - SECRET_KEY=${SECRET_KEY}
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

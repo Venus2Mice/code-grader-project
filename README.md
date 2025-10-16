@@ -49,6 +49,70 @@ Scripts tiện ích trong thư mục [`scripts/`](scripts/):
 
 ## 🚀 QUICK START
 
+### 🎯 Chọn môi trường của bạn:
+
+#### 1️⃣ **Local Development** (Khuyên dùng cho development)
+```bash
+# Setup environment
+./setup-env.sh local
+
+# Terminal 1: Start backend services
+docker-compose up -d postgres rabbitmq backend
+
+# Terminal 2: Start frontend
+cd frontend-new
+pnpm install
+pnpm dev
+
+# Access: http://localhost:3000
+```
+
+#### 2️⃣ **Docker Compose** (Tất cả trong containers)
+```bash
+# Setup environment
+./setup-env.sh docker
+
+# Start all services
+docker-compose -f docker-compose.dev.yml up -d
+
+# Access: http://localhost:3000
+```
+
+#### 3️⃣ **GitHub Codespaces** (Cloud development)
+```bash
+# Setup environment
+./setup-env.sh codespaces
+
+# Terminal 1: Start backend in Docker
+docker-compose up -d backend postgres rabbitmq
+
+# Terminal 2: Start frontend locally
+cd frontend-new
+pnpm install
+pnpm dev
+
+# Codespaces will auto-forward ports
+```
+
+---
+
+## 🔧 Environment Configuration
+
+Dự án hỗ trợ 3 môi trường với cấu hình khác nhau:
+
+| Environment | Frontend API URL | Frontend Location | Backend Location |
+|-------------|------------------|-------------------|------------------|
+| **Local** | `http://localhost:5000` | Local (npm) | Docker/Local |
+| **Docker** | `http://backend:5000` | Container | Container |
+| **Codespaces** | `http://localhost:5000` | Local (npm) | Container |
+
+**Chuyển đổi môi trường:**
+```bash
+./setup-env.sh [local|docker|codespaces]
+```
+
+---
+
 ### Cài đặt và Chạy (Một lệnh duy nhất)
 
 ```bash
