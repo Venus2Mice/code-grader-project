@@ -79,7 +79,7 @@ def get_submission_result(submission_id):
             if test_case:
                 earned_points += test_case.points
     
-    score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+    score = round((earned_points / total_points * 100)) if total_points > 0 else 0
     
     results = [{
         "test_case_id": res.test_case_id,
@@ -135,7 +135,7 @@ def get_my_submissions():
                 if test_case:
                     earned_points += test_case.points
         
-        score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+        score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
         submissions_data.append({
             "id": submission.id,

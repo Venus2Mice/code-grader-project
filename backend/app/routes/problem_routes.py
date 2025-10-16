@@ -23,6 +23,7 @@ def create_problem_in_class(class_id):
         return jsonify({"msg": "Forbidden"}), 403
 
     data = request.get_json()
+    
     title = data.get('title')
     description = data.get('description')
     difficulty = data.get('difficulty', 'medium')  # NEW: easy/medium/hard
@@ -183,7 +184,7 @@ def get_problem_submissions(problem_id):
                 if test_case:
                     earned_points += test_case.points
         
-        score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+        score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
         submissions_data.append({
             "id": submission.id,

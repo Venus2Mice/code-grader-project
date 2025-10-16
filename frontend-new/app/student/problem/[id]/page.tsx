@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CodeEditor } from "@/components/code-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { problemAPI, submissionAPI } from "@/services/api"
 
 export default function ProblemSolvePage() {
@@ -25,6 +25,13 @@ export default function ProblemSolvePage() {
   
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null)
+  
+  // Error modal state
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "",
+    message: ""
+  })
 
   const [code, setCode] = useState(`#include <iostream>
 #include <vector>
@@ -119,6 +126,24 @@ int main() {
             clearInterval(pollInterval)
             setIsRunning(false)
             
+            console.log('[DEBUG] Submission completed:', submissionData)
+            console.log('[DEBUG] Status:', submissionData.status)
+            console.log('[DEBUG] Results:', submissionData.results)
+            
+            // Check for compile error and show modal
+            if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
+              const compileError = submissionData.results.find((r: any) => r.error_message)
+              console.log('[DEBUG] Compile error found:', compileError)
+              if (compileError && compileError.error_message) {
+                console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
+                setErrorModal({
+                  isOpen: true,
+                  title: "Compilation Error",
+                  message: compileError.error_message
+                })
+              }
+            }
+            
             // Display results
             setTestResults({
               status: submissionData.status === 'Completed' ? 'accepted' : 'error',
@@ -168,6 +193,7 @@ int main() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    setTestResults(null)
     try {
       const response = await submissionAPI.create({
         problem_id: Number(problemId),
@@ -175,19 +201,90 @@ int main() {
         language: language
       })
       
-      // Poll for results or show success
+      const submissionId = response.data.id || response.data.submission_id
+      
+      // Show pending status
       setTestResults({
         status: "pending",
-        message: "Submission queued for grading",
+        message: "Submission queued for grading...",
         isTest: false
       })
       
-      // Refresh submissions list
-      await fetchProblemData()
+      // Poll for results every 2 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const resultResponse = await submissionAPI.getById(submissionId)
+          const submissionData = resultResponse.data
+          
+          // Check if grading is complete
+          if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
+            clearInterval(pollInterval)
+            setIsSubmitting(false)
+            
+            console.log('[DEBUG] Submission completed:', submissionData)
+            console.log('[DEBUG] Status:', submissionData.status)
+            console.log('[DEBUG] Results:', submissionData.results)
+            
+            // Check for compile error and show modal
+            if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
+              const compileError = submissionData.results.find((r: any) => r.error_message)
+              console.log('[DEBUG] Compile error found:', compileError)
+              if (compileError && compileError.error_message) {
+                console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
+                setErrorModal({
+                  isOpen: true,
+                  title: "Compilation Error",
+                  message: compileError.error_message
+                })
+              }
+            }
+            
+            // Display results
+            setTestResults({
+              status: submissionData.status === 'Completed' ? 'accepted' : 'error',
+              message: submissionData.status,
+              isTest: false,
+              score: submissionData.score || 0,
+              passedTests: submissionData.passed_tests || 0,
+              totalTests: submissionData.total_tests || 0,
+              results: submissionData.results || []
+            })
+            
+            // Refresh submissions list
+            await fetchProblemData()
+          }
+        } catch (pollErr) {
+          console.error('Error polling submission results:', pollErr)
+          clearInterval(pollInterval)
+          setIsSubmitting(false)
+          setTestResults({
+            status: "error",
+            message: "Failed to get submission results",
+            isTest: false
+          })
+        }
+      }, 2000) // Poll every 2 seconds
+      
+      // Stop polling after 30 seconds (timeout)
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (isSubmitting) {
+          setIsSubmitting(false)
+          setTestResults({
+            status: "error",
+            message: "Grading timeout - please check submission history",
+            isTest: false
+          })
+        }
+      }, 30000)
+      
     } catch (err: any) {
       console.error('Error submitting code:', err)
-      alert(err.response?.data?.msg || 'Failed to submit code')
-    } finally {
+      setTestResults({
+        status: "error",
+        message: err.response?.data?.msg || 'Failed to submit code',
+        isTest: false
+      })
       setIsSubmitting(false)
     }
   }
@@ -354,41 +451,48 @@ int main() {
                 <div>
                   <h3 className="mb-3 text-lg font-black uppercase text-foreground">TEST CASES</h3>
                   <div className="space-y-4">
-                    <Card className="border-4 border-black bg-brutal-yellow/30 p-4">
-                      <div className="mb-2 text-sm font-black uppercase text-foreground">TEST CASE 1</div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
-                            <code>5 10{"\n"}1 2 3 4 5</code>
-                          </pre>
-                        </div>
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">OUTPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
-                            <code>3 4</code>
-                          </pre>
-                        </div>
+                    {problem.test_cases && problem.test_cases.length > 0 ? (
+                      problem.test_cases
+                        .filter((tc: any) => !tc.is_hidden) // Only show non-hidden test cases
+                        .map((testCase: any, index: number) => (
+                          <Card 
+                            key={testCase.id} 
+                            className={`border-4 border-black p-4 ${
+                              index % 3 === 0 ? "bg-brutal-yellow/30" : 
+                              index % 3 === 1 ? "bg-brutal-pink/30" : 
+                              "bg-brutal-blue/30"
+                            }`}
+                          >
+                            <div className="mb-2 text-sm font-black uppercase text-foreground">
+                              TEST CASE {index + 1}
+                              {testCase.points > 0 && (
+                                <span className="ml-2 text-xs bg-black text-white px-2 py-1 rounded">
+                                  {testCase.points} PTS
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <div>
+                                <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
+                                <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
+                                  <code>{testCase.input || "(empty)"}</code>
+                                </pre>
+                              </div>
+                              <div>
+                                <div className="mb-1 text-xs font-black uppercase text-foreground">EXPECTED OUTPUT:</div>
+                                <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
+                                  <code>{testCase.expected_output || "(empty)"}</code>
+                                </pre>
+                              </div>
+                            </div>
+                          </Card>
+                        ))
+                    ) : (
+                      <div className="text-center py-8 border-4 border-dashed border-black bg-background">
+                        <AlertCircle className="mx-auto mb-3 h-16 w-16 text-foreground" />
+                        <p className="font-black uppercase text-foreground">NO TEST CASES AVAILABLE</p>
                       </div>
-                    </Card>
-
-                    <Card className="border-4 border-black bg-brutal-pink/30 p-4">
-                      <div className="mb-2 text-sm font-black uppercase text-foreground">TEST CASE 2</div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
-                            <code>3 6{"\n"}1 2 3</code>
-                          </pre>
-                        </div>
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">OUTPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
-                            <code>-1</code>
-                          </pre>
-                        </div>
-                      </div>
-                    </Card>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -485,51 +589,88 @@ int main() {
 
               <div className="space-y-2">
                 {testResults.results && Array.isArray(testResults.results) && testResults.results.length > 0 ? (
-                  testResults.results.map((result: any, index: number) => (
-                    <Card
-                      key={result.test_case_id || index}
-                      className={`border-4 p-3 ${
-                        result.status === "Passed" ? "border-green-600 bg-green-100" : "border-red-600 bg-red-100"
-                      }`}
-                    >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-black uppercase text-foreground">TEST CASE #{result.test_case_id}</span>
-                        <span
-                          className={`text-xs font-black uppercase text-foreground ${result.status === "Passed" ? "text-green-600" : "text-red-600"}`}
-                        >
-                          {result.status}
-                        </span>
-                      </div>
-                      {result.status === "Passed" && (
-                        <div className="text-xs font-bold text-muted-foreground">
-                          {result.execution_time_ms}MS | {Math.round(result.memory_used_kb / 1024)}MB
+                  testResults.results.map((result: any, index: number) => {
+                    // Special handling for compile errors (no test_case_id)
+                    const isCompileError = result.status === "Compile Error" || !result.test_case_id
+                    
+                    return (
+                      <Card
+                        key={result.test_case_id || `error-${index}`}
+                        className={`border-4 p-3 ${
+                          result.status === "Passed" 
+                            ? "border-green-600 bg-green-100" 
+                            : isCompileError
+                              ? "border-orange-600 bg-orange-100"
+                              : "border-red-600 bg-red-100"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {isCompileError ? (
+                              <>
+                                <AlertCircle className="h-5 w-5 text-orange-600" />
+                                <span className="text-sm font-black uppercase text-foreground">COMPILATION ERROR</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-sm font-black uppercase text-foreground">
+                                  TEST CASE #{result.test_case_id}
+                                </span>
+                                <span
+                                  className={`text-xs font-black uppercase text-foreground ${
+                                    result.status === "Passed" ? "text-green-600" : "text-red-600"
+                                  }`}
+                                >
+                                  {result.status}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          {result.status === "Passed" && (
+                            <div className="text-xs font-bold text-muted-foreground">
+                              {result.execution_time_ms}MS | {Math.round(result.memory_used_kb / 1024)}MB
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {result.status !== "Passed" && (
-                      <div className="mt-2 space-y-2 text-xs">
-                        {result.output_received && (
-                          <div>
-                            <div className="font-black uppercase mb-1 text-foreground">YOUR OUTPUT:</div>
-                            <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap">
-                              {result.output_received}
-                            </pre>
+                        {result.status !== "Passed" && (
+                          <div className="mt-2 space-y-2 text-xs">
+                            {result.output_received && result.output_received.trim() !== '' && (
+                              <div>
+                                <div className="font-black uppercase mb-1 text-foreground">YOUR OUTPUT:</div>
+                                <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                  {result.output_received}
+                                </pre>
+                              </div>
+                            )}
+                            {result.error_message && (
+                              <div>
+                                <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
+                                <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                  {result.error_message}
+                                </pre>
+                                {isCompileError && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 gap-2 font-black uppercase text-xs"
+                                    onClick={() => setErrorModal({
+                                      isOpen: true,
+                                      title: "Compilation Error Details",
+                                      message: result.error_message
+                                    })}
+                                  >
+                                    <AlertCircle className="h-4 w-4" />
+                                    VIEW FULL ERROR
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
-                        {result.error_message && (
-                          <div>
-                            <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
-                            <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap">
-                              {result.error_message}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Card>
-                  ))
+                      </Card>
+                    )
+                  })
                 ) : testResults.status === "running" || testResults.status === "pending" ? (
                   <div className="text-center py-4 text-sm text-muted-foreground">
                     <Clock className="mx-auto mb-2 h-8 w-8 animate-spin text-blue-600" />
@@ -586,6 +727,47 @@ int main() {
                 </Card>
               )
             })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compile Error Modal */}
+      <Dialog open={errorModal.isOpen} onOpenChange={(open) => setErrorModal({ ...errorModal, isOpen: open })}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              {errorModal.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border-4 border-red-600 p-4 rounded">
+              <p className="text-sm font-bold text-red-900 mb-3">
+                Your code has compilation errors. Please fix them before submitting:
+              </p>
+              <pre className="bg-background border-2 border-red-400 p-4 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+{errorModal.message}
+              </pre>
+            </div>
+            
+            <div className="bg-blue-50 border-4 border-blue-600 p-4 rounded">
+              <p className="text-sm font-bold text-blue-900 mb-2">💡 Common Issues:</p>
+              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                <li>Check for typos in variable or function names</li>
+                <li>Make sure all variables are declared before use</li>
+                <li>Verify that all statements end with semicolons</li>
+                <li>Check matching brackets and parentheses</li>
+                <li>Include necessary header files (#include)</li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button 
+              onClick={() => setErrorModal({ ...errorModal, isOpen: false })}
+              className="font-black uppercase"
+            >
+              GOT IT
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

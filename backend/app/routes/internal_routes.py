@@ -20,9 +20,26 @@ def update_submission_result(submission_id):
     # Xóa các kết quả cũ (nếu có) để tránh trùng lặp
     SubmissionResult.query.filter_by(submission_id=submission_id).delete()
 
-    # Thêm kết quả chi tiết của từng test case
-    if overall_status not in ["Compile Error", "System Error"]:
-        results_data = data.get('results', [])
+    # Thêm kết quả chi tiết
+    results_data = data.get('results', [])
+    
+    if overall_status in ["Compile Error", "System Error"]:
+        # Lưu compile error hoặc system error vào SubmissionResult
+        # Không có test_case_id cho compile error
+        for res_data in results_data:
+            new_result = SubmissionResult(
+                submission_id=submission_id,
+                test_case_id=res_data.get('test_case_id'),  # Will be None for compile errors
+                status=res_data.get('status', overall_status),
+                execution_time_ms=res_data.get('execution_time_ms', 0),
+                memory_used_kb=res_data.get('memory_used_kb', 0),
+                output_received=res_data.get('output_received', ''),
+                error_message=res_data.get('error_message', '')
+            )
+            db.session.add(new_result)
+        print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
+    else:
+        # Thêm kết quả chi tiết của từng test case
         for res_data in results_data:
             if res_data.get('test_case_id') is None:
                 continue
@@ -37,10 +54,6 @@ def update_submission_result(submission_id):
                 error_message=res_data.get('error_message')
             )
             db.session.add(new_result)
-    else:
-        # Nếu là lỗi biên dịch, có thể ghi log lỗi vào bảng submission (nếu có cột)
-        # Ví dụ: submission.error_log = data.get('results', [{}])[0].get('error_message')
-        print(f"Submission {submission_id} failed with status {overall_status}.")        
         
     db.session.commit()
     

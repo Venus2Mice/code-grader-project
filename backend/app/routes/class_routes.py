@@ -84,7 +84,7 @@ def get_my_classes():
                             tc.points for tc in problem.test_cases
                             if any(r.status == 'Passed' and r.test_case_id == tc.id for r in submission.results)
                         )
-                        score = int((earned_points / total_points * 100))
+                        score = round((earned_points / total_points * 100))
                         if score == 100:
                             completed_problems += 1
                             break  # Count each problem only once

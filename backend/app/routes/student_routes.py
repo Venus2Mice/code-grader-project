@@ -48,7 +48,7 @@ def get_problems_status_in_class(class_id):
                         if test_case:
                             earned_points += test_case.points
                 
-                score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+                score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 best_score = max(best_score, score)
                 
                 # Update status based on best submission
@@ -109,7 +109,7 @@ def get_my_progress():
                     tc.points for tc in problem.test_cases
                     if any(r.status == 'Passed' and r.test_case_id == tc.id for r in submission.results)
                 )
-                score = int((earned_points / total_points * 100)) if total_points > 0 else 0
+                score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 if score == 100:
                     completed_problems += 1
                     break  # Count each problem only once
