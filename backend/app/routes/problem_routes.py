@@ -168,7 +168,8 @@ def get_problem_submissions(problem_id):
         return jsonify({"msg": "Forbidden - Only teacher can view all submissions"}), 403
     
     from ..models import Submission
-    submissions = Submission.query.filter_by(problem_id=problem_id).order_by(Submission.submitted_at.desc()).all()
+    # Only get actual submissions, not test runs
+    submissions = Submission.query.filter_by(problem_id=problem_id, is_test=False).order_by(Submission.submitted_at.desc()).all()
     
     submissions_data = []
     for submission in submissions:

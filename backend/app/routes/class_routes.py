@@ -71,10 +71,11 @@ def get_my_classes():
             completed_problems = 0
             
             for problem in problems:
-                # Check if student has any 100% submission for this problem
+                # Check if student has any 100% submission for this problem (only actual submissions)
                 submissions = Submission.query.filter_by(
                     problem_id=problem.id,
-                    student_id=user_id
+                    student_id=user_id,
+                    is_test=False
                 ).all()
                 
                 for submission in submissions:

@@ -100,6 +100,7 @@ int main() {
     setIsRunning(true)
     setTestResults(null)
     try {
+      console.log('[RUN] Testing code - this will NOT be saved to history')
       const response = await submissionAPI.runCode({
         problem_id: Number(problemId),
         source_code: code,
@@ -107,11 +108,12 @@ int main() {
       })
       
       const submissionId = response.data.submission_id
+      console.log('[RUN] Test submission ID:', submissionId)
       
       // Show running status
       setTestResults({
         status: "running",
-        message: "Running your code...",
+        message: "Testing your code...",
         isTest: true
       })
       
@@ -195,6 +197,7 @@ int main() {
     setIsSubmitting(true)
     setTestResults(null)
     try {
+      console.log('[SUBMIT] Submitting code - this WILL be saved to history')
       const response = await submissionAPI.create({
         problem_id: Number(problemId),
         source_code: code,
@@ -202,6 +205,7 @@ int main() {
       })
       
       const submissionId = response.data.id || response.data.submission_id
+      console.log('[SUBMIT] Submission ID:', submissionId)
       
       // Show pending status
       setTestResults({

@@ -114,7 +114,8 @@ def get_my_submissions():
     student_id = get_jwt_identity()
     problem_id = request.args.get('problem_id', type=int)
     
-    query = Submission.query.filter_by(student_id=student_id)
+    # Chỉ lấy actual submissions, không lấy test runs
+    query = Submission.query.filter_by(student_id=student_id, is_test=False)
     
     if problem_id:
         query = query.filter_by(problem_id=problem_id)

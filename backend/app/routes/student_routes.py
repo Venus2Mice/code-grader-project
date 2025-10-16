@@ -23,10 +23,11 @@ def get_problems_status_in_class(class_id):
     problems_status = []
     
     for problem in problems:
-        # Get student's submissions for this problem
+        # Get student's submissions for this problem (only actual submissions, not test runs)
         submissions = Submission.query.filter_by(
             problem_id=problem.id,
-            student_id=student_id
+            student_id=student_id,
+            is_test=False
         ).order_by(Submission.submitted_at.desc()).all()
         
         # Determine status and best score
@@ -96,9 +97,11 @@ def get_my_progress():
         total_problems += len(problems)
         
         for problem in problems:
+            # Only count actual submissions, not test runs
             submissions = Submission.query.filter_by(
                 problem_id=problem.id,
-                student_id=student_id
+                student_id=student_id,
+                is_test=False
             ).all()
             total_submissions += len(submissions)
             
