@@ -78,6 +78,9 @@ class Problem(Base):
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
+    grading_mode = Column(String(20), default='stdio')  # 'stdio', 'function'
+    function_signature = Column(Text, nullable=True)  # For function grading mode
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     due_date = Column(DateTime, nullable=True)
