@@ -113,7 +113,7 @@ def get_my_progress():
                 total_points = sum(tc.points for tc in problem.test_cases)
                 earned_points = sum(
                     tc.points for tc in problem.test_cases
-                    if any(r.status == 'Passed' and r.test_case_id == tc.id for r in submission.results)
+                    if any(r.status in ['Passed', 'Accepted'] and r.test_case_id == tc.id for r in submission.results)
                 )
                 score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 if score == 100:

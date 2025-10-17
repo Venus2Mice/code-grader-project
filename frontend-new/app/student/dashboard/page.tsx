@@ -66,21 +66,35 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-40 right-10 w-24 h-24 border-4 border-border bg-accent rotate-12" />
-      <div className="absolute bottom-20 left-10 w-32 h-32 border-4 border-border bg-secondary rounded-full" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+      {/* Decorative geometric shapes - Student themed */}
+      <div className="absolute top-20 right-20 w-32 h-32 border-4 border-blue-400 bg-blue-400/10 rotate-12 animate-pulse" />
+      <div className="absolute top-60 right-40 w-20 h-20 border-4 border-purple-400 bg-purple-400/10 rounded-full" />
+      <div className="absolute bottom-20 left-10 w-40 h-40 border-4 border-indigo-400 bg-indigo-400/10 -rotate-12" />
+      <div className="absolute bottom-40 left-40 w-24 h-24 border-4 border-cyan-400 bg-cyan-400/10 rounded-full animate-pulse" />
 
       <Navbar userName={userName} userRole="student" onLogout={handleLogout} />
 
-      <div className="border-b-4 border-border bg-secondary">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="flex items-center justify-between">
+      {/* Header with gradient and pattern - Different from teacher */}
+      <div className="border-b-4 border-border bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 relative overflow-hidden">
+        {/* Animated pattern background */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMCAzNmMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBvcGFjaXR5PSIuMSIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
+        
+        <div className="mx-auto max-w-7xl px-6 py-10 relative z-10">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-black uppercase text-secondary-foreground">My Classes</h1>
-              <p className="mt-2 text-base font-bold text-secondary-foreground/80">View your enrolled courses</p>
+              <h1 className="text-5xl font-black uppercase text-white tracking-tight drop-shadow-lg">
+                My Classes
+              </h1>
+              <p className="mt-3 text-lg font-bold text-white/90">
+                Continue your learning journey, {userName}
+              </p>
             </div>
-            <Button onClick={() => setIsJoinDialogOpen(true)} className="gap-2">
+            <Button 
+              onClick={() => setIsJoinDialogOpen(true)} 
+              size="lg"
+              className="gap-2 bg-white text-blue-600 hover:bg-white/90 border-4 border-white font-black uppercase shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] transition-all"
+            >
               <Plus className="h-5 w-5" />
               Join Class
             </Button>
@@ -91,12 +105,12 @@ export default function StudentDashboard() {
       <div className="mx-auto max-w-7xl px-6 py-12 relative z-10">
         {isLoading ? (
           <div className="text-center py-20">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
-            <p className="mt-4 font-bold">Loading classes...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500"></div>
+            <p className="mt-4 font-bold text-blue-600 dark:text-blue-400">Loading classes...</p>
           </div>
         ) : error ? (
-          <div className="text-center py-20 border-4 border-red-500 bg-red-100">
-            <p className="font-bold text-red-700">{error}</p>
+          <div className="text-center py-20 border-4 border-red-500 bg-red-100 dark:bg-red-900/20">
+            <p className="font-bold text-red-700 dark:text-red-400">{error}</p>
             <Button onClick={fetchClasses} className="mt-4">Retry</Button>
           </div>
         ) : (
@@ -104,26 +118,30 @@ export default function StudentDashboard() {
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {enrolledClasses.map((classItem) => (
                 <Link key={classItem.id} href={`/student/class/${classItem.id}`}>
-                  <Card className="group cursor-pointer p-6 transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none">
+                  <Card className="group cursor-pointer p-6 transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.5)] dark:hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.3)] border-4 border-border bg-white dark:bg-gray-900">
                     <div className="mb-6 flex items-start justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center border-4 border-border bg-primary">
-                        <BookOpen className="h-7 w-7 text-primary-foreground" />
+                      <div className="flex h-14 w-14 items-center justify-center border-4 border-border bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+                        <BookOpen className="h-7 w-7 text-white" />
                       </div>
-                      <span className="border-4 border-border bg-muted px-3 py-1 text-xs font-black uppercase">
+                      <span className="border-4 border-border bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 px-3 py-1 text-xs font-black uppercase text-blue-700 dark:text-blue-300">
                         {classItem.code}
                       </span>
                     </div>
 
-                    <h3 className="mb-3 text-2xl font-black uppercase group-hover:text-primary">{classItem.name}</h3>
+                    <h3 className="mb-3 text-2xl font-black uppercase group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {classItem.name}
+                    </h3>
 
-                    <p className="mb-6 line-clamp-2 text-sm font-bold text-muted-foreground">{classItem.description}</p>
+                    <p className="mb-6 line-clamp-2 text-sm font-bold text-muted-foreground">
+                      {classItem.description}
+                    </p>
 
                     <div className="flex items-center gap-4 text-sm font-bold">
                       <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                         <CheckCircle className="h-5 w-5" />
                         <span>{classItem.problems_done || 0} Done</span>
                       </div>
-                      <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                      <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                         <Clock className="h-5 w-5" />
                         <span>{classItem.problems_todo || 0} Todo</span>
                       </div>
@@ -134,11 +152,17 @@ export default function StudentDashboard() {
             </div>
 
             {enrolledClasses.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-4 border-border bg-card">
-                <BookOpen className="mb-6 h-20 w-20" />
-                <h3 className="mb-3 text-2xl font-black uppercase">No Classes Yet</h3>
-                <p className="mb-8 font-bold text-muted-foreground">Join your first class to get started</p>
-                <Button onClick={() => setIsJoinDialogOpen(true)} className="gap-2">
+              <div className="flex flex-col items-center justify-center py-20 border-4 border-dashed border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg">
+                <div className="h-24 w-24 border-4 border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 rotate-12 shadow-lg">
+                  <BookOpen className="h-12 w-12 text-white -rotate-12" />
+                </div>
+                <h3 className="mb-3 text-3xl font-black uppercase text-blue-700 dark:text-blue-400">No Classes Yet</h3>
+                <p className="mb-8 font-bold text-blue-600 dark:text-blue-500 text-lg">Join your first class to get started</p>
+                <Button 
+                  onClick={() => setIsJoinDialogOpen(true)} 
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-4 border-border font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
                   <Plus className="h-5 w-5" />
                   Join Class
                 </Button>

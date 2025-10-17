@@ -83,7 +83,7 @@ def get_my_classes():
                     if total_points > 0:
                         earned_points = sum(
                             tc.points for tc in problem.test_cases
-                            if any(r.status == 'Passed' and r.test_case_id == tc.id for r in submission.results)
+                            if any(r.status in ['Passed', 'Accepted'] and r.test_case_id == tc.id for r in submission.results)
                         )
                         score = round((earned_points / total_points * 100))
                         if score == 100:
