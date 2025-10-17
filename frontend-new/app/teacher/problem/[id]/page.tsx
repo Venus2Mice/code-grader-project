@@ -20,6 +20,9 @@ export default function TeacherProblemDetailPage() {
   const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'latest' | 'score' | 'name'>('latest')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -30,14 +33,44 @@ export default function TeacherProblemDetailPage() {
       setIsLoading(true)
       const [problemResponse, submissionsResponse] = await Promise.all([
         problemAPI.getById(Number(problemId)),
-        problemAPI.getSubmissions(Number(problemId))
+        // Fetch page 1 with pagination
+        problemAPI.getSubmissions(Number(problemId), 1, 20)
       ])
       setProblem(problemResponse.data)
-      setSubmissions(submissionsResponse.data)
+      
+      // Handle both formats: array or {data, pagination}
+      const submissionsData = Array.isArray(submissionsResponse.data)
+        ? submissionsResponse.data
+        : (submissionsResponse.data.data || [])
+      const pagesCount = submissionsResponse.data.pagination?.pages || 1
+      
+      setSubmissions(submissionsData)
+      setTotalPages(pagesCount)
     } catch (err) {
       console.error('Error fetching problem data:', err)
     } finally {
       setIsLoading(false)
+    }
+  }
+  
+  const loadMoreSubmissions = async () => {
+    if (page >= totalPages || isLoadingMore) return
+    try {
+      setIsLoadingMore(true)
+      const newPage = page + 1
+      const response = await problemAPI.getSubmissions(Number(problemId), newPage, 20)
+      
+      // Handle both formats
+      const newSubmissions = Array.isArray(response.data)
+        ? response.data
+        : (response.data.data || [])
+      
+      setSubmissions([...submissions, ...newSubmissions])
+      setPage(newPage)
+    } catch (err) {
+      console.error('Error loading more submissions:', err)
+    } finally {
+      setIsLoadingMore(false)
     }
   }
 
@@ -644,6 +677,19 @@ export default function TeacherProblemDetailPage() {
               {submissions.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No submissions yet</p>
+                </div>
+              )}
+              
+              {page < totalPages && (
+                <div className="mt-6 flex justify-center">
+                  <Button
+                    onClick={loadMoreSubmissions}
+                    disabled={isLoadingMore}
+                    variant="outline"
+                    className="font-bold uppercase"
+                  >
+                    {isLoadingMore ? 'Loading...' : `Load More (${page}/${totalPages})`}
+                  </Button>
                 </div>
               )}
             </Card>

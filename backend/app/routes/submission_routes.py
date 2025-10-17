@@ -113,9 +113,11 @@ def get_submission_result(submission_id):
 @jwt_required()
 @role_required('student')
 def get_my_submissions():
-    """Lấy submissions của student hiện tại, có thể filter theo problem_id."""
+    """Lấy submissions của student hiện tại với pagination, có thể filter theo problem_id."""
     student_id = get_jwt_identity()
     problem_id = request.args.get('problem_id', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)  # Default 20 per page
     
     # Chỉ lấy actual submissions, không lấy test runs
     query = Submission.query.filter_by(student_id=student_id, is_test=False)
@@ -123,10 +125,13 @@ def get_my_submissions():
     if problem_id:
         query = query.filter_by(problem_id=problem_id)
     
-    submissions = query.order_by(Submission.submitted_at.desc()).all()
+    # Pagination
+    paginated = query.order_by(Submission.submitted_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
     
     submissions_data = []
-    for submission in submissions:
+    for submission in paginated.items:
         # Calculate score
         total_points = sum(tc.points for tc in submission.problem.test_cases)
         earned_points = 0
@@ -151,11 +156,18 @@ def get_my_submissions():
             "passedTests": passed_tests,
             "totalTests": len(submission.problem.test_cases),
             "language": submission.language,
-            "code": submission.source_code,  # Include source code
             "submittedAt": submission.submitted_at.isoformat()
         })
     
-    return jsonify(submissions_data), 200
+    return jsonify({
+        "data": submissions_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": paginated.total,
+            "pages": paginated.pages
+        }
+    }), 200
 
 
 @submission_bp.route('/<int:submission_id>/code', methods=['GET'])

@@ -130,10 +130,16 @@ int main() {
       console.log('[REFRESH] Fetching submissions for problem:', problemId)
       const subsResponse = await submissionAPI.getMySubmissions(Number(problemId))
       console.log('[REFRESH] Submissions received:', subsResponse.data)
-      console.log('[REFRESH] Number of submissions:', subsResponse.data.length)
+      
+      // Handle both old format (array) and new format (object with data + pagination)
+      const submissionsArray = Array.isArray(subsResponse.data) 
+        ? subsResponse.data 
+        : (subsResponse.data.data || [])
+      
+      console.log('[REFRESH] Number of submissions:', submissionsArray.length)
       
       // Debug: log each submission
-      subsResponse.data.forEach((sub: any, index: number) => {
+      submissionsArray.forEach((sub: any, index: number) => {
         console.log(`[REFRESH] Submission ${index + 1}:`, {
           id: sub.id,
           status: sub.status,
@@ -145,7 +151,7 @@ int main() {
         })
       })
       
-      setSubmissions(subsResponse.data)
+      setSubmissions(submissionsArray)
     } catch (err) {
       console.error('Error fetching submissions:', err)
     }
@@ -172,107 +178,116 @@ int main() {
         isTest: true
       })
       
-      // Poll for results every 2 seconds
-      const pollInterval = setInterval(async () => {
-        try {
-          const resultResponse = await submissionAPI.getById(submissionId)
-          const submissionData = resultResponse.data
-          
-          // Check if grading is complete
-          if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
-            clearInterval(pollInterval)
-            setIsRunning(false)
+      // Poll with exponential backoff: 1s → 2s → 4s → 8s (max 8s)
+      let pollCount = 0
+      let pollInterval: NodeJS.Timeout | null = null
+      
+      const scheduleNextPoll = () => {
+        pollCount++
+        const backoffMs = Math.min(1000 * Math.pow(2, pollCount - 1), 8000) // 1s, 2s, 4s, 8s...
+        
+        pollInterval = setTimeout(async () => {
+          try {
+            const resultResponse = await submissionAPI.getById(submissionId)
+            const submissionData = resultResponse.data
             
-            console.log('[DEBUG] Submission completed:', submissionData)
-            console.log('[DEBUG] Status:', submissionData.status)
-            console.log('[DEBUG] Results:', submissionData.results)
-            
-            // Check for compile error and show modal
-            if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
-              const compileError = submissionData.results.find((r: any) => r.error_message)
-              console.log('[DEBUG] Compile error found:', compileError)
-              if (compileError && compileError.error_message) {
-                console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
-                setErrorModal({
-                  isOpen: true,
-                  title: "Compilation Error",
-                  message: compileError.error_message
-                })
+            // Check if grading is complete
+            if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
+              setIsRunning(false)
+              
+              console.log('[DEBUG] Submission completed:', submissionData)
+              console.log('[DEBUG] Status:', submissionData.status)
+              console.log('[DEBUG] Results:', submissionData.results)
+              
+              // Check for compile error and show modal
+              if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
+                const compileError = submissionData.results.find((r: any) => r.error_message)
+                console.log('[DEBUG] Compile error found:', compileError)
+                if (compileError && compileError.error_message) {
+                  console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
+                  setErrorModal({
+                    isOpen: true,
+                    title: "Compilation Error",
+                    message: compileError.error_message
+                  })
+                }
               }
-            }
-            
-            // Compute passed/total/score locally from results to avoid backend inconsistencies
-            const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
-            const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
-            const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
-              const s = String(r.status || '').toLowerCase()
-              if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
-              return acc
-            }, 0)
+              
+              // Compute passed/total/score locally from results to avoid backend inconsistencies
+              const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
+              const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
+              const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
+                const s = String(r.status || '').toLowerCase()
+                if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
+                return acc
+              }, 0)
 
-            // Compute score by points when problem test_cases available, otherwise by count
-            let scoreComputed = 0
-            try {
-              const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
-                ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
-                : 0
+              // Compute score by points when problem test_cases available, otherwise by count
+              let scoreComputed = 0
+              try {
+                const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
+                  ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
+                  : 0
 
-              if (totalPoints > 0) {
-                const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
-                  const s = String(r.status || '').toLowerCase()
-                  if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
-                    const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
-                    return sum + (tc ? (tc.points || 0) : 0)
-                  }
-                  return sum
-                }, 0)
-                scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
-              } else if (totalTestsComputed > 0) {
-                scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
-              } else {
+                if (totalPoints > 0) {
+                  const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
+                    const s = String(r.status || '').toLowerCase()
+                    if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
+                      const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
+                      return sum + (tc ? (tc.points || 0) : 0)
+                    }
+                    return sum
+                  }, 0)
+                  scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
+                } else if (totalTestsComputed > 0) {
+                  scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
+                } else {
+                  scoreComputed = submissionData.score || 0
+                }
+              } catch (e) {
                 scoreComputed = submissionData.score || 0
               }
-            } catch (e) {
-              scoreComputed = submissionData.score || 0
+
+              const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
+
+              // Display results with computed values
+              setTestResults({
+                status: finalStatus,
+                message: submissionData.status,
+                isTest: true,
+                score: scoreComputed,
+                passedTests: passedTestsComputed,
+                totalTests: totalTestsComputed,
+                results: resultsArr
+              })
+              return // Exit polling
             }
-
-            const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
-
-            // Display results with computed values
+            
+            // Still pending - schedule next poll
+            if (pollCount < 15) { // Max 15 polls = ~8 minutes with exponential backoff
+              scheduleNextPoll()
+            } else {
+              setIsRunning(false)
+              setTestResults({
+                status: "error",
+                message: "Test timeout - taking too long",
+                isTest: true
+              })
+            }
+          } catch (pollErr) {
+            console.error('Error polling results:', pollErr)
+            setIsRunning(false)
             setTestResults({
-              status: finalStatus,
-              message: submissionData.status,
-              isTest: true,
-              score: scoreComputed,
-              passedTests: passedTestsComputed,
-              totalTests: totalTestsComputed,
-              results: resultsArr
+              status: "error",
+              message: "Failed to get test results",
+              isTest: true
             })
           }
-        } catch (pollErr) {
-          console.error('Error polling results:', pollErr)
-          clearInterval(pollInterval)
-          setIsRunning(false)
-          setTestResults({
-            status: "error",
-            message: "Failed to get test results",
-            isTest: true
-          })
-        }
-      }, 2000) // Poll every 2 seconds
+        }, backoffMs)
+      }
       
-      // Stop polling after 30 seconds (timeout)
-      setTimeout(() => {
-        clearInterval(pollInterval)
-        if (isRunning) {
-          setIsRunning(false)
-          setTestResults({
-            status: "error",
-            message: "Test timeout - please try again",
-            isTest: true
-          })
-        }
-      }, 30000)
+      // Start polling
+      scheduleNextPoll()
       
     } catch (err: any) {
       console.error('Error running code:', err)
@@ -311,113 +326,122 @@ int main() {
         isTest: false
       })
       
-      // Poll for results every 2 seconds
-      const pollInterval = setInterval(async () => {
-        try {
-          const resultResponse = await submissionAPI.getById(submissionId)
-          const submissionData = resultResponse.data
-          
-          // Check if grading is complete
-          if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
-            clearInterval(pollInterval)
-            setIsSubmitting(false)
+      // Poll with exponential backoff: 1s → 2s → 4s → 8s
+      let pollCount = 0
+      let pollInterval: NodeJS.Timeout | null = null
+      
+      const scheduleSubmitPoll = () => {
+        pollCount++
+        const backoffMs = Math.min(1000 * Math.pow(2, pollCount - 1), 8000)
+        
+        pollInterval = setTimeout(async () => {
+          try {
+            const resultResponse = await submissionAPI.getById(submissionId)
+            const submissionData = resultResponse.data
             
-            console.log('[DEBUG] Submission completed:', submissionData)
-            console.log('[DEBUG] Status:', submissionData.status)
-            console.log('[DEBUG] Results:', submissionData.results)
-            
-            // Check for compile error and show modal
-            if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
-              const compileError = submissionData.results.find((r: any) => r.error_message)
-              console.log('[DEBUG] Compile error found:', compileError)
-              if (compileError && compileError.error_message) {
-                console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
-                setErrorModal({
-                  isOpen: true,
-                  title: "Compilation Error",
-                  message: compileError.error_message
-                })
+            // Check if grading is complete
+            if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
+              setIsSubmitting(false)
+              
+              console.log('[DEBUG] Submission completed:', submissionData)
+              console.log('[DEBUG] Status:', submissionData.status)
+              console.log('[DEBUG] Results:', submissionData.results)
+              
+              // Check for compile error and show modal
+              if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
+                const compileError = submissionData.results.find((r: any) => r.error_message)
+                console.log('[DEBUG] Compile error found:', compileError)
+                if (compileError && compileError.error_message) {
+                  console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
+                  setErrorModal({
+                    isOpen: true,
+                    title: "Compilation Error",
+                    message: compileError.error_message
+                  })
+                }
               }
-            }
 
-            // Compute results locally similar to run handler
-            const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
-            const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
-            const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
-              const s = String(r.status || '').toLowerCase()
-              if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
-              return acc
-            }, 0)
+              // Compute results locally similar to run handler
+              const resultsArr = submissionData.results && Array.isArray(submissionData.results) ? submissionData.results : []
+              const totalTestsComputed = resultsArr.filter((r: any) => r.test_case_id !== null && r.test_case_id !== undefined).length
+              const passedTestsComputed = resultsArr.reduce((acc: number, r: any) => {
+                const s = String(r.status || '').toLowerCase()
+                if (['passed', 'accepted', 'ok', 'success'].includes(s)) return acc + 1
+                return acc
+              }, 0)
 
-            let scoreComputed = 0
-            try {
-              const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
-                ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
-                : 0
+              let scoreComputed = 0
+              try {
+                const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
+                  ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
+                  : 0
 
-              if (totalPoints > 0) {
-                const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
-                  const s = String(r.status || '').toLowerCase()
-                  if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
-                    const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
-                    return sum + (tc ? (tc.points || 0) : 0)
-                  }
-                  return sum
-                }, 0)
-                scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
-              } else if (totalTestsComputed > 0) {
-                scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
-              } else {
+                if (totalPoints > 0) {
+                  const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
+                    const s = String(r.status || '').toLowerCase()
+                    if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
+                      const tc = problem.test_cases.find((t: any) => t.id === r.test_case_id)
+                      return sum + (tc ? (tc.points || 0) : 0)
+                    }
+                    return sum
+                  }, 0)
+                  scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
+                } else if (totalTestsComputed > 0) {
+                  scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
+                } else {
+                  scoreComputed = submissionData.score || 0
+                }
+              } catch (e) {
                 scoreComputed = submissionData.score || 0
               }
-            } catch (e) {
-              scoreComputed = submissionData.score || 0
+
+              const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
+
+              setTestResults({
+                status: finalStatus,
+                message: submissionData.status,
+                isTest: false,
+                score: scoreComputed,
+                passedTests: passedTestsComputed,
+                totalTests: totalTestsComputed,
+                results: resultsArr
+              })
+              
+              // Refresh submissions list immediately after completion
+              console.log('[SUBMIT] Submission completed. Refreshing submissions list...')
+              refreshSubmissions().then(() => {
+                console.log('[SUBMIT] Submissions refreshed successfully')
+              }).catch(err => {
+                console.error('[SUBMIT] Failed to refresh submissions:', err)
+              })
+              return // Exit polling
             }
-
-            const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) ? 'accepted' : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
-
-            setTestResults({
-              status: finalStatus,
-              message: submissionData.status,
-              isTest: false,
-              score: scoreComputed,
-              passedTests: passedTestsComputed,
-              totalTests: totalTestsComputed,
-              results: resultsArr
-            })
             
-            // Refresh submissions list immediately after completion
-            console.log('[SUBMIT] Submission completed. Refreshing submissions list...')
-            refreshSubmissions().then(() => {
-              console.log('[SUBMIT] Submissions refreshed successfully')
-            }).catch(err => {
-              console.error('[SUBMIT] Failed to refresh submissions:', err)
+            // Still pending - schedule next poll
+            if (pollCount < 15) {
+              scheduleSubmitPoll()
+            } else {
+              setIsSubmitting(false)
+              setTestResults({
+                status: "error",
+                message: "Grading timeout - please check submission history",
+                isTest: false
+              })
+            }
+          } catch (pollErr) {
+            console.error('Error polling submission results:', pollErr)
+            setIsSubmitting(false)
+            setTestResults({
+              status: "error",
+              message: "Failed to get submission results",
+              isTest: false
             })
           }
-        } catch (pollErr) {
-          console.error('Error polling submission results:', pollErr)
-          clearInterval(pollInterval)
-          setIsSubmitting(false)
-          setTestResults({
-            status: "error",
-            message: "Failed to get submission results",
-            isTest: false
-          })
-        }
-      }, 2000) // Poll every 2 seconds
+        }, backoffMs)
+      }
       
-      // Stop polling after 30 seconds (timeout)
-      setTimeout(() => {
-        clearInterval(pollInterval)
-        if (isSubmitting) {
-          setIsSubmitting(false)
-          setTestResults({
-            status: "error",
-            message: "Grading timeout - please check submission history",
-            isTest: false
-          })
-        }
-      }, 30000)
+      // Start polling
+      scheduleSubmitPoll()
       
     } catch (err: any) {
       console.error('Error submitting code:', err)

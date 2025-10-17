@@ -142,8 +142,10 @@ export const problemAPI = {
     return api.get(`/api/problems/${id}`)
   },
 
-  getSubmissions: async (id: number) => {
-    return api.get(`/api/problems/${id}/submissions`)
+  getSubmissions: async (id: number, page: number = 1, perPage: number = 20) => {
+    return api.get(`/api/problems/${id}/submissions`, {
+      params: { page, per_page: perPage }
+    })
   },
 }
 

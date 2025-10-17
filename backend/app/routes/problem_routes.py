@@ -158,7 +158,7 @@ def get_problem_details(problem_id):
 @problem_bp.route('/<int:problem_id>/submissions', methods=['GET'])
 @jwt_required()
 def get_problem_submissions(problem_id):
-    """Lấy tất cả submissions cho một problem (teacher view)."""
+    """Lấy submissions cho một problem với pagination (teacher view)."""
     problem = Problem.query.get_or_404(problem_id)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
@@ -168,11 +168,18 @@ def get_problem_submissions(problem_id):
         return jsonify({"msg": "Forbidden - Only teacher can view all submissions"}), 403
     
     from ..models import Submission
+    
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)  # Default 20 per page
+    
     # Only get actual submissions, not test runs
-    submissions = Submission.query.filter_by(problem_id=problem_id, is_test=False).order_by(Submission.submitted_at.desc()).all()
+    paginated = Submission.query.filter_by(problem_id=problem_id, is_test=False).order_by(
+        Submission.submitted_at.desc()
+    ).paginate(page=page, per_page=per_page, error_out=False)
     
     submissions_data = []
-    for submission in submissions:
+    for submission in paginated.items:
         # Calculate score
         total_points = sum(tc.points for tc in problem.test_cases)
         earned_points = 0
@@ -203,4 +210,12 @@ def get_problem_submissions(problem_id):
             "submittedAt": submission.submitted_at.isoformat()  # Changed to camelCase
         })
     
-    return jsonify(submissions_data), 200
+    return jsonify({
+        "data": submissions_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": paginated.total,
+            "pages": paginated.pages
+        }
+    }), 200
