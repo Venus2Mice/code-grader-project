@@ -3,6 +3,7 @@ bcrypt==5.0.0
 blinker==1.9.0
 click==8.3.0
 Flask==3.1.2
+flask-compress==1.14.0
 flask-cors==6.0.1
 Flask-JWT-Extended==4.7.1
 Flask-Migrate==4.1.0

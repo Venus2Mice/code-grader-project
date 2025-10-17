@@ -6,17 +6,22 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask_compress import Compress
 from flask import send_from_directory
 from .config import Config
 
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
+compress = Compress()
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Enable compression for faster response
+    compress.init_app(app)
+    
     # Khởi tạo các extension
     CORS(app)
     db.init_app(app)

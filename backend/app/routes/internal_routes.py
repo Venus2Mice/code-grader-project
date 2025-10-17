@@ -37,6 +37,7 @@ def update_submission_result(submission_id):
                 error_message=res_data.get('error_message', '')
             )
             db.session.add(new_result)
+        submission.cached_score = 0  # Cache score for compile error
         print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
     else:
         # Thêm kết quả chi tiết của từng test case
@@ -55,7 +56,22 @@ def update_submission_result(submission_id):
             )
             db.session.add(new_result)
         
+        # NEW: Calculate and cache score for performance
+        problem = submission.problem
+        total_points = sum(tc.points for tc in problem.test_cases)
+        
+        if total_points > 0:
+            earned_points = 0
+            for result in submission.results:
+                if result.status in ['Passed', 'Accepted']:
+                    test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
+                    if test_case:
+                        earned_points += test_case.points
+            
+            cached_score = round((earned_points / total_points * 100))
+            submission.cached_score = cached_score
+        
     db.session.commit()
     
-    print(f"Updated result for submission {submission_id}")
+    print(f"Updated result for submission {submission_id}, cached_score={submission.cached_score}")
     return jsonify({"msg": "Result updated successfully"}), 200

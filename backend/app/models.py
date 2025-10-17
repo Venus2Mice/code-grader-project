@@ -106,13 +106,14 @@ class TestCase(Base):
 class Submission(Base):
     __tablename__ = 'submissions'
     id = Column(Integer, primary_key=True)
-    problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False)
-    student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     source_code = Column(Text, nullable=False)
     language = Column(String(50), nullable=False, default='cpp')
     status = Column(String(50), default='Pending')
     is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
     submitted_at = Column(DateTime, default=datetime.utcnow)
+    cached_score = Column(Integer, nullable=True, default=0)  # NEW: Cache score to avoid recalculation
     
     problem = relationship('Problem', back_populates='submissions')
     student = relationship('User', back_populates='submissions')

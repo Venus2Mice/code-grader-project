@@ -41,14 +41,18 @@ def create_class():
 @class_bp.route('', methods=['GET'])
 @jwt_required()
 def get_my_classes():
-    """Lấy danh sách các lớp học mà user đang tham gia hoặc giảng dạy."""
+    """Lấy danh sách các lớp học mà user đang tham gia hoặc giảng dạy - OPTIMIZED with eager loading."""
     from ..models import Problem, Submission
+    from sqlalchemy.orm import joinedload
     
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
     if user.role.name == 'teacher':
-        classes = Class.query.filter_by(teacher_id=user_id).all()
+        # Use eager loading to avoid N+1 query
+        classes = Class.query.options(
+            joinedload(Class.problems).joinedload(Problem.submissions)
+        ).filter_by(teacher_id=user_id).all()
     else: # student
         classes = user.classes_joined
     
@@ -57,38 +61,28 @@ def get_my_classes():
         class_data = {
             "id": c.id, 
             "name": c.name, 
-            "code": c.course_code or c.invite_code,  # Use course_code or invite_code as display code
+            "code": c.course_code or c.invite_code,
             "course_code": c.course_code,
             "description": c.description,
             "teacher_name": c.teacher.full_name,
             "student_count": len(c.students)
         }
         
-        # For students, add problem statistics
+        # For students, add problem statistics (use cached_score to avoid recalculation)
         if user.role.name == 'student':
-            problems = Problem.query.filter_by(class_id=c.id).all()
+            problems = c.problems  # Already eager loaded
             total_problems = len(problems)
             completed_problems = 0
             
             for problem in problems:
                 # Check if student has any 100% submission for this problem (only actual submissions)
-                submissions = Submission.query.filter_by(
-                    problem_id=problem.id,
-                    student_id=user_id,
-                    is_test=False
-                ).all()
+                submissions = [s for s in problem.submissions if s.student_id == user_id and not s.is_test]
                 
-                for submission in submissions:
-                    total_points = sum(tc.points for tc in problem.test_cases)
-                    if total_points > 0:
-                        earned_points = sum(
-                            tc.points for tc in problem.test_cases
-                            if any(r.status in ['Passed', 'Accepted'] and r.test_case_id == tc.id for r in submission.results)
-                        )
-                        score = round((earned_points / total_points * 100))
-                        if score == 100:
-                            completed_problems += 1
-                            break  # Count each problem only once
+                if submissions:
+                    # Use cached_score if available, otherwise calculate
+                    best_score = max([s.cached_score or 0 for s in submissions])
+                    if best_score == 100:
+                        completed_problems += 1
             
             class_data["problems_done"] = completed_problems
             class_data["problems_todo"] = total_problems - completed_problems

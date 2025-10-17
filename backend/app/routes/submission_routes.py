@@ -72,17 +72,21 @@ def get_submission_result(submission_id):
     earned_points = 0
     passed_tests = 0
     total_tests = len(submission.problem.test_cases)
+    # Calculate score based on cached_score if available
+    if submission.cached_score is not None:
+        score = submission.cached_score
+    else:
+        total_points = sum(tc.points for tc in submission.problem.test_cases)
+        earned_points = 0
+        for result in submission.results:
+            if result.status in ['Passed', 'Accepted']:
+                test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
+                if test_case:
+                    earned_points += test_case.points
+        score = round((earned_points / total_points * 100)) if total_points > 0 else 0
     
-    for result in submission.results:
-        # Check for both 'Passed' and 'Accepted' status
-        if result.status in ['Passed', 'Accepted']:
-            passed_tests += 1
-            # Find the test case to get its points
-            test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
-            if test_case:
-                earned_points += test_case.points
-    
-    score = round((earned_points / total_points * 100)) if total_points > 0 else 0
+    passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
+    total_tests = len(submission.problem.test_cases)
     
     results = [{
         "test_case_id": res.test_case_id,
@@ -132,20 +136,20 @@ def get_my_submissions():
     
     submissions_data = []
     for submission in paginated.items:
-        # Calculate score
-        total_points = sum(tc.points for tc in submission.problem.test_cases)
-        earned_points = 0
-        passed_tests = 0
+        # Calculate score (use cached_score if available for performance)
+        if submission.cached_score is not None:
+            score = submission.cached_score
+        else:
+            total_points = sum(tc.points for tc in submission.problem.test_cases)
+            earned_points = 0
+            for result in submission.results:
+                if result.status in ['Passed', 'Accepted']:
+                    test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
+                    if test_case:
+                        earned_points += test_case.points
+            score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
-        for result in submission.results:
-            # Check for both 'Passed' and 'Accepted' status
-            if result.status in ['Passed', 'Accepted']:
-                passed_tests += 1
-                test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
-                if test_case:
-                    earned_points += test_case.points
-        
-        score = round((earned_points / total_points * 100)) if total_points > 0 else 0
+        passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
         
         submissions_data.append({
             "id": submission.id,
