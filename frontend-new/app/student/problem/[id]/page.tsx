@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Play, History, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react"
+import { ArrowLeft, Play, History, CheckCircle, XCircle, Clock, AlertCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -47,6 +47,8 @@ int main() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
   const [testResults, setTestResults] = useState<any>(null)
+  const [originalTemplate, setOriginalTemplate] = useState("")  // Store original template for reset
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false)  // Reset confirmation modal
 
   // Get classId from URL params or localStorage
   useEffect(() => {
@@ -84,6 +86,34 @@ int main() {
       if (problemData.class_id) {
         setClassId(String(problemData.class_id))
         localStorage.setItem(`problem_${problemId}_classId`, String(problemData.class_id))
+      }
+      
+      // Load function template if problem is in function mode
+      if (problemData.grading_mode === 'function' && problemData.function_signature) {
+        // Detect language from function signature
+        const signature = problemData.function_signature
+        let templateCode = ''
+        
+        if (signature.includes('def ') || signature.includes('->')) {
+          // Python function
+          setLanguage('python')
+          templateCode = `${signature}\n    # Write your solution here\n    pass\n`
+        } else if (signature.includes('function ') || signature.includes('=>')) {
+          // JavaScript function
+          setLanguage('javascript')
+          templateCode = `${signature} {\n    // Write your solution here\n}\n`
+        } else if (signature.includes('public ') && signature.includes('class ')) {
+          // Java function
+          setLanguage('java')
+          templateCode = `${signature}\n        // Write your solution here\n    }\n}\n`
+        } else {
+          // C++ or C function (default)
+          setLanguage('cpp')
+          templateCode = `${signature} {\n    // Write your solution here\n}\n`
+        }
+        
+        setCode(templateCode)
+        setOriginalTemplate(templateCode)  // Store template for reset
       }
       
       // Fetch user's submissions for this problem
@@ -454,6 +484,13 @@ int main() {
     setIsHistoryOpen(false)
   }
 
+  // Reset code to original template
+  const handleResetCode = () => {
+    setCode(originalTemplate)
+    setTestResults(null)
+    setIsResetModalOpen(false)
+  }
+
   // Format date to Vietnam timezone
   const formatVietnameseDate = (dateString: string) => {
     if (!dateString) return 'N/A'
@@ -532,8 +569,23 @@ int main() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="cpp">C++</SelectItem>
+                <SelectItem value="python">Python</SelectItem>
+                <SelectItem value="java">Java</SelectItem>
+                <SelectItem value="javascript">JavaScript</SelectItem>
               </SelectContent>
             </Select>
+            {problem.grading_mode === 'function' && originalTemplate && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm hover:bg-blue-100 hover:text-blue-700 hover:border-blue-700"
+                onClick={() => setIsResetModalOpen(true)}
+                title="Reset code to original template"
+              >
+                <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden sm:inline">RESET</span>
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -550,7 +602,7 @@ int main() {
               variant="outline"
               onClick={handleRun}
               disabled={isRunning || isSubmitting}
-              className="gap-2 font-black uppercase text-xs md:text-sm bg-brutal-yellow hover:bg-brutal-yellow/80"
+              className="gap-2 font-black uppercase text-xs md:text-sm bg-brutal-yellow hover:bg-amber-500 hover:text-black border-black"
             >
               <Play className="h-4 w-4 md:h-5 md:w-5" />
               {isRunning ? "RUNNING..." : "RUN"}
@@ -596,14 +648,23 @@ int main() {
                   <ul className="space-y-2 text-sm font-bold text-foreground">
                     <li>TIME LIMIT: {problem.time_limit}MS</li>
                     <li>MEMORY LIMIT: {Math.round(problem.memory_limit / 1024)}MB</li>
-                    <li>GRADING MODE: {problem.grading_mode}</li>
-                    {problem.function_signature && (
-                      <li className="font-mono text-xs border-4 border-black bg-brutal-accent p-2 text-black">
-                        {problem.function_signature}
-                      </li>
-                    )}
+                    <li>GRADING MODE: {problem.grading_mode?.toUpperCase() || 'STDIO'}</li>
                   </ul>
                 </div>
+
+                {problem.grading_mode === 'function' && problem.function_signature && (
+                  <div>
+                    <h3 className="mb-3 text-lg font-black uppercase text-foreground">FUNCTION SIGNATURE</h3>
+                    <div className="border-4 border-black bg-brutal-accent p-3">
+                      <pre className="font-mono text-sm text-black overflow-x-auto">
+                        <code>{problem.function_signature}</code>
+                      </pre>
+                    </div>
+                    <p className="mt-2 text-xs font-bold text-muted-foreground">
+                      💡 This function template has been loaded into your code editor
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="mb-3 text-lg font-black uppercase text-foreground">TEST CASES</h3>
@@ -886,6 +947,56 @@ int main() {
               )
             })}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Confirmation Modal */}
+      <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
+        <DialogContent className="max-w-md border-4 border-black">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-foreground">
+              <RotateCcw className="h-6 w-6 text-blue-600" />
+              RESET CODE?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-yellow-50 border-4 border-yellow-400 p-4">
+              <p className="text-sm font-bold text-yellow-900 mb-2">
+                ⚠️ Cảnh báo:
+              </p>
+              <p className="text-sm text-yellow-800">
+                Bạn có chắc chắn muốn reset code về template ban đầu?
+              </p>
+              <p className="text-sm text-yellow-800 font-bold mt-2">
+                Toàn bộ code hiện tại của bạn sẽ bị xóa!
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 border-4 border-blue-400 p-4">
+              <p className="text-sm font-bold text-blue-900 mb-2">💡 Lưu ý:</p>
+              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                <li>Code template sẽ được khôi phục với function signature ban đầu</li>
+                <li>Bạn có thể xem lại code cũ trong phần HISTORY</li>
+                <li>Hành động này không thể hoàn tác</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsResetModalOpen(false)}
+              className="font-black uppercase border-2 border-black"
+            >
+              HỦY BỎ
+            </Button>
+            <Button 
+              onClick={handleResetCode}
+              className="font-black uppercase bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              XÁC NHẬN RESET
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
