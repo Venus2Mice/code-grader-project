@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy.orm import joinedload
 from ..models import User, Class, Problem, Submission
 from ..decorators import role_required
 
@@ -24,7 +25,8 @@ def get_problems_status_in_class(class_id):
     
     for problem in problems:
         # Get student's submissions for this problem (only actual submissions, not test runs)
-        submissions = Submission.query.filter_by(
+        # Eager load results to avoid N+1 queries
+        submissions = Submission.query.options(joinedload(Submission.results)).filter_by(
             problem_id=problem.id,
             student_id=student_id,
             is_test=False
@@ -43,7 +45,8 @@ def get_problems_status_in_class(class_id):
                 passed_tests = 0
                 
                 for result in submission.results:
-                    if result.status == 'Passed':
+                    # Check for both 'Passed' and 'Accepted' status
+                    if result.status in ['Passed', 'Accepted']:
                         passed_tests += 1
                         test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
                         if test_case:
@@ -51,12 +54,12 @@ def get_problems_status_in_class(class_id):
                 
                 score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 best_score = max(best_score, score)
-                
-                # Update status based on best submission
-                if score == 100:
-                    status = "accepted"
-                elif score > 0:
-                    status = "failed"
+            
+            # Update status based on best score (after checking all submissions)
+            if best_score == 100:
+                status = "accepted"
+            else:
+                status = "try_again"
         
         # Return format matching frontend expectations
         problems_status.append({

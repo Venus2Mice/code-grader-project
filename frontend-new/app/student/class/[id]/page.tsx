@@ -163,22 +163,25 @@ export default function StudentClassPage() {
                     <div className="flex flex-col items-end gap-3">
                       {submission?.status === "accepted" ? (
                         <>
-                          <div className="flex items-center gap-2 border-4 border-green-600 bg-green-400 px-4 py-2 text-black">
+                          <div className="flex items-center gap-2 border-4 border-blue-600 bg-blue-400 px-4 py-2 text-white">
                             <CheckCircle className="h-5 w-5" />
-                            <span className="font-black uppercase">ACCEPTED</span>
+                            <span className="font-black uppercase">FINISHED</span>
                           </div>
                           <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
                         </>
                       ) : !submission ? (
-                        <div className="flex items-center gap-2 border-4 border-yellow-600 bg-yellow-400 px-4 py-2 text-black">
-                          <Clock className="h-5 w-5" />
-                          <span className="font-black uppercase">NOT STARTED</span>
+                        <div className="flex items-center gap-2 border-4 border-green-600 bg-green-400 px-4 py-2 text-black">
+                          <Code className="h-5 w-5" />
+                          <span className="font-black uppercase">START</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 border-4 border-red-600 bg-red-400 px-4 py-2 text-black">
-                          <XCircle className="h-5 w-5" />
-                          <span className="font-black uppercase">{submission.status?.toUpperCase() || 'PENDING'}</span>
-                        </div>
+                        <>
+                          <div className="flex items-center gap-2 border-4 border-orange-600 bg-orange-400 px-4 py-2 text-black">
+                            <XCircle className="h-5 w-5" />
+                            <span className="font-black uppercase">TRY AGAIN</span>
+                          </div>
+                          <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
+                        </>
                       )}
                       <Button variant="outline" size="sm" className="mt-2 gap-2 bg-transparent">
                         <Code className="h-4 w-4" />
