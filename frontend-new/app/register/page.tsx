@@ -116,22 +116,24 @@ export default function RegisterPage() {
               <div className="space-y-3">
                 <Label className="font-black uppercase text-sm">Account Type</Label>
                 <RadioGroup value={role} onValueChange={(value) => setRole(value as "student" | "teacher")}>
-                  <div className="flex items-center space-x-3 border-4 border-border p-4 bg-muted">
-                    <RadioGroupItem value="student" id="student" />
-                    <Label htmlFor="student" className="font-bold cursor-pointer uppercase">
-                      Student - Learn & Practice
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 border-4 border-border p-4 bg-muted">
-                    <RadioGroupItem value="teacher" id="teacher" />
-                    <Label htmlFor="teacher" className="font-bold cursor-pointer uppercase">
-                      Teacher - Create & Manage
-                    </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-3 border-4 border-border p-5 bg-card hover:bg-primary/5 transition-colors cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none data-[state=checked]:bg-primary/10 data-[state=checked]:border-primary">
+                      <RadioGroupItem value="student" id="student" />
+                      <Label htmlFor="student" className="font-bold cursor-pointer uppercase text-xs md:text-sm flex-1">
+                        Student - Learn & Practice
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3 border-4 border-border p-5 bg-card hover:bg-primary/5 transition-colors cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none data-[state=checked]:bg-primary/10 data-[state=checked]:border-primary">
+                      <RadioGroupItem value="teacher" id="teacher" />
+                      <Label htmlFor="teacher" className="font-bold cursor-pointer uppercase text-xs md:text-sm flex-1">
+                        Teacher - Create & Manage
+                      </Label>
+                    </div>
                   </div>
                 </RadioGroup>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter className="flex flex-col gap-4 mt-6">
               <Button type="submit" className="w-full gap-2" disabled={isLoading}>
                 {isLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
                 <ArrowRight className="h-5 w-5" />

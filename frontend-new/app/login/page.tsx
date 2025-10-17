@@ -135,7 +135,7 @@ export default function LoginPage() {
                 />
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter className="flex flex-col gap-4 mt-6">
               <Button type="submit" className="w-full gap-2 text-sm md:text-base" disabled={isLoading}>
                 {isLoading ? "SIGNING IN..." : "SIGN IN"}
                 <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
