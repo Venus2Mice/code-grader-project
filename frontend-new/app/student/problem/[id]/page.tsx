@@ -11,6 +11,7 @@ import { CodeEditor } from "@/components/code-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { problemAPI, submissionAPI } from "@/services/api"
+import { ImageToCodeUpload } from "@/components/image-to-code-upload"
 
 export default function ProblemSolvePage() {
   const params = useParams()
@@ -1475,90 +1476,113 @@ int main() {
 
       {/* Upload File Modal */}
       <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
-        <DialogContent className="max-w-xl border-4 border-black">
+        <DialogContent className="max-w-2xl border-4 border-black max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-black uppercase text-purple-600">
               <Upload className="h-6 w-6" />
-              Upload Code File
+              Upload Code
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            {/* Info Section */}
-            <div className="bg-blue-50 border-4 border-blue-600 p-4">
-              <p className="font-black uppercase text-blue-900 mb-2 text-sm">
-                📁 Accepted File Types:
-              </p>
-              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
-                <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.cpp</code> - C++ source files (for submission)</li>
-                <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.txt</code> - Text files (for editing only)</li>
-              </ul>
-            </div>
+          <Tabs defaultValue="file" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="file" className="font-black uppercase">
+                📁 File Upload
+              </TabsTrigger>
+              <TabsTrigger value="image" className="font-black uppercase">
+                📷 Image Upload
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Warning for submission */}
-            <div className="bg-yellow-50 border-4 border-yellow-400 p-3">
-              <p className="text-sm font-black text-yellow-900 uppercase">
-                ⚠️ Important:
-              </p>
-              <p className="text-sm text-yellow-800 mt-1">
-                Only <span className="font-bold">.cpp files</span> can be submitted for grading. 
-                .txt files are for viewing and editing purposes only.
-              </p>
-            </div>
+            {/* File Upload Tab */}
+            <TabsContent value="file" className="space-y-4 mt-4">
+              {/* Info Section */}
+              <div className="bg-blue-50 border-4 border-blue-600 p-4">
+                <p className="font-black uppercase text-blue-900 mb-2 text-sm">
+                  📁 Accepted File Types:
+                </p>
+                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                  <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.cpp</code> - C++ source files (for submission)</li>
+                  <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.txt</code> - Text files (for editing only)</li>
+                </ul>
+              </div>
 
-            {/* Drag and Drop Zone */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`border-4 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
-                isDragging
-                  ? 'border-purple-600 bg-purple-50'
-                  : 'border-gray-300 bg-gray-50 hover:border-purple-400 hover:bg-purple-50'
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".cpp,.txt"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              
-              <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-purple-600' : 'text-gray-400'}`} />
-              
-              <p className="font-black uppercase text-lg mb-2">
-                {isDragging ? 'Drop file here!' : 'Drag & Drop your file here'}
-              </p>
-              
-              <p className="text-sm text-muted-foreground mb-4">
-                or
-              </p>
-              
-              <Button
-                type="button"
-                variant="outline"
-                className="font-black uppercase border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  fileInputRef.current?.click()
-                }}
-              >
-                Browse Files
-              </Button>
-            </div>
-
-            {/* Show uploaded file name if any */}
-            {uploadedFileName && (
-              <div className="bg-green-50 border-4 border-green-600 p-3 flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <p className="text-sm font-bold text-green-900">
-                  Last uploaded: <code className="bg-green-200 px-2 py-0.5 rounded">{uploadedFileName}</code>
+              {/* Warning for submission */}
+              <div className="bg-yellow-50 border-4 border-yellow-400 p-3">
+                <p className="text-sm font-black text-yellow-900 uppercase">
+                  ⚠️ Important:
+                </p>
+                <p className="text-sm text-yellow-800 mt-1">
+                  Only <span className="font-bold">.cpp files</span> can be submitted for grading. 
+                  .txt files are for viewing and editing purposes only.
                 </p>
               </div>
-            )}
-          </div>
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-4 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
+                  isDragging
+                    ? 'border-purple-600 bg-purple-50'
+                    : 'border-gray-300 bg-gray-50 hover:border-purple-400 hover:bg-purple-50'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".cpp,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                
+                <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-purple-600' : 'text-gray-400'}`} />
+                
+                <p className="font-black uppercase text-lg mb-2">
+                  {isDragging ? 'Drop file here!' : 'Drag & Drop your file here'}
+                </p>
+                
+                <p className="text-sm text-muted-foreground mb-4">
+                  or
+                </p>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="font-black uppercase border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    fileInputRef.current?.click()
+                  }}
+                >
+                  Browse Files
+                </Button>
+              </div>
+
+              {/* Show uploaded file name if any */}
+              {uploadedFileName && (
+                <div className="bg-green-50 border-4 border-green-600 p-3 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <p className="text-sm font-bold text-green-900">
+                    Last uploaded: <code className="bg-green-200 px-2 py-0.5 rounded">{uploadedFileName}</code>
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Image Upload Tab */}
+            <TabsContent value="image" className="mt-4">
+              <ImageToCodeUpload
+                language={language}
+                onCodeExtracted={(extractedCode) => {
+                  setCode(extractedCode)
+                  setUploadedFileName('image-extracted-code')
+                }}
+              />
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button
