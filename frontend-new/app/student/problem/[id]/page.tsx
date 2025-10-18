@@ -50,6 +50,83 @@ int main() {
   const [originalTemplate, setOriginalTemplate] = useState("")  // Store original template for reset
   const [isResetModalOpen, setIsResetModalOpen] = useState(false)  // Reset confirmation modal
 
+  // Helper function to analyze runtime errors and provide suggestions
+  const analyzeRuntimeError = (errorMessage: string, exitCode?: string) => {
+    const error = errorMessage.toLowerCase()
+    const suggestions: string[] = []
+    let errorType = "Runtime Error"
+    
+    // Segmentation Fault / Memory Errors
+    if (error.includes('segmentation fault') || error.includes('sigsegv')) {
+      errorType = "Segmentation Fault (SIGSEGV)"
+      suggestions.push("🔍 Nguyên nhân phổ biến:")
+      suggestions.push("• Truy cập mảng ngoài phạm vi (array out of bounds)")
+      suggestions.push("• Sử dụng con trỏ NULL hoặc chưa khởi tạo")
+      suggestions.push("• Truy cập bộ nhớ đã được giải phóng (dangling pointer)")
+      suggestions.push("• Tràn stack (stack overflow) do đệ quy quá sâu")
+      suggestions.push("\n💡 Giải pháp:")
+      suggestions.push("• Kiểm tra chỉ số mảng: 0 ≤ i < size")
+      suggestions.push("• Khởi tạo con trỏ trước khi dùng")
+      suggestions.push("• Sử dụng vector thay vì mảng C thô")
+    }
+    // Floating Point Exception
+    else if (error.includes('floating point exception') || error.includes('sigfpe')) {
+      errorType = "Floating Point Exception (SIGFPE)"
+      suggestions.push("🔍 Nguyên nhân:")
+      suggestions.push("• Chia cho 0 (division by zero)")
+      suggestions.push("• Phép toán số học không hợp lệ")
+      suggestions.push("\n💡 Giải pháp:")
+      suggestions.push("• Kiểm tra mẫu số trước khi chia: if (b != 0)")
+      suggestions.push("• Xử lý trường hợp đặc biệt")
+    }
+    // Timeout
+    else if (error.includes('timeout') || error.includes('time limit')) {
+      errorType = "Time Limit Exceeded"
+      suggestions.push("🔍 Nguyên nhân:")
+      suggestions.push("• Thuật toán chạy quá chậm")
+      suggestions.push("• Vòng lặp vô hạn")
+      suggestions.push("• Độ phức tạp thuật toán quá cao")
+      suggestions.push("\n💡 Giải pháp:")
+      suggestions.push("• Tối ưu thuật toán: giảm độ phức tạp")
+      suggestions.push("• Kiểm tra điều kiện dừng vòng lặp")
+      suggestions.push("• Sử dụng cấu trúc dữ liệu hiệu quả hơn")
+    }
+    // Abort / SIGABRT
+    else if (error.includes('aborted') || error.includes('sigabrt')) {
+      errorType = "Program Aborted (SIGABRT)"
+      suggestions.push("🔍 Nguyên nhân:")
+      suggestions.push("• assert() thất bại")
+      suggestions.push("• Lỗi heap corruption")
+      suggestions.push("• Gọi abort() hoặc terminate()")
+      suggestions.push("\n💡 Giải pháp:")
+      suggestions.push("• Kiểm tra điều kiện assert()")
+      suggestions.push("• Tránh double-free memory")
+      suggestions.push("• Kiểm tra việc cấp phát động")
+    }
+    // Exit code errors
+    else if (exitCode && exitCode !== '0') {
+      errorType = `Program Exited with Code ${exitCode}`
+      suggestions.push("🔍 Chương trình kết thúc bất thường")
+      suggestions.push("• Kiểm tra logic điều kiện thoát")
+      suggestions.push("• Đảm bảo main() return 0 khi thành công")
+      suggestions.push("• Xem lỗi cụ thể trong output")
+    }
+    // General runtime errors
+    else {
+      suggestions.push("🔍 Các nguyên nhân có thể:")
+      suggestions.push("• Lỗi logic trong code")
+      suggestions.push("• Sử dụng biến chưa khởi tạo")
+      suggestions.push("• Lỗi truy cập bộ nhớ")
+      suggestions.push("• Exception không được xử lý")
+      suggestions.push("\n💡 Gợi ý debug:")
+      suggestions.push("• Thêm cout để debug từng bước")
+      suggestions.push("• Kiểm tra input đặc biệt (edge cases)")
+      suggestions.push("• Chạy với test case đơn giản trước")
+    }
+    
+    return { errorType, suggestions: suggestions.join('\n') }
+  }
+
   // Get classId from URL params or localStorage
   useEffect(() => {
     // Try to get from URL search params first
@@ -908,9 +985,28 @@ int main() {
                             {!isPassed && result.error_message && (
                               <div>
                                 <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
-                                <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                                   {result.error_message}
                                 </pre>
+                                {/* Add View Details button for runtime errors */}
+                                {statusNorm.includes('runtime') && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 gap-2 font-black uppercase text-xs"
+                                    onClick={() => {
+                                      const analysis = analyzeRuntimeError(result.error_message)
+                                      setErrorModal({
+                                        isOpen: true,
+                                        title: `${analysis.errorType} - Test Case #${result.test_case_id}`,
+                                        message: `${result.error_message}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+                                      })
+                                    }}
+                                  >
+                                    <AlertCircle className="h-4 w-4" />
+                                    VIEW DETAILS & SUGGESTIONS
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1053,44 +1149,69 @@ int main() {
         </DialogContent>
       </Dialog>
 
-      {/* Compile Error Modal */}
+      {/* Error Modal (Compile Error / Runtime Error) */}
       <Dialog open={errorModal.isOpen} onOpenChange={(open) => setErrorModal({ ...errorModal, isOpen: open })}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-4 border-black">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600 font-black uppercase">
               <AlertCircle className="h-6 w-6" />
               {errorModal.title}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-red-50 border-4 border-red-600 p-4 rounded">
-              <p className="text-sm font-bold text-red-900 mb-3">
-                Your code has compilation errors. Please fix them before submitting:
-              </p>
-              <pre className="bg-background border-2 border-red-400 p-4 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+            {errorModal.message.includes('='.repeat(50)) ? (
+              // Runtime Error with suggestions
+              <>
+                <div className="bg-red-50 border-4 border-red-600 p-4">
+                  <p className="text-sm font-black text-red-900 mb-2 uppercase">
+                    ❌ Chi tiết lỗi:
+                  </p>
+                  <pre className="bg-background border-2 border-red-400 p-3 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+{errorModal.message.split('='.repeat(50))[0].trim()}
+                  </pre>
+                </div>
+                
+                <div className="bg-blue-50 border-4 border-blue-600 p-4">
+                  <p className="text-sm font-black text-blue-900 mb-3 uppercase">
+                    💡 Hướng dẫn & Gợi ý:
+                  </p>
+                  <pre className="text-sm text-blue-800 whitespace-pre-wrap leading-relaxed">
+{errorModal.message.split('='.repeat(50))[1]?.trim() || ''}
+                  </pre>
+                </div>
+                
+                <div className="bg-yellow-50 border-4 border-yellow-400 p-4">
+                  <p className="text-sm font-black text-yellow-900 mb-2 uppercase">
+                    ⚡ Debug Tips:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
+                    <li>Chạy thử với test case đơn giản để xác định vấn đề</li>
+                    <li>Thêm <code className="bg-yellow-200 px-1 py-0.5 rounded">cout</code> để kiểm tra giá trị biến</li>
+                    <li>Kiểm tra các trường hợp biên (edge cases)</li>
+                    <li>Đảm bảo khởi tạo tất cả biến trước khi sử dụng</li>
+                  </ul>
+                </div>
+              </>
+            ) : (
+              // Compile Error (original format)
+              <div className="bg-red-50 border-4 border-red-600 p-4 rounded">
+                <p className="text-sm font-bold text-red-900 mb-3">
+                  Your code has compilation errors. Please fix them before submitting:
+                </p>
+                <pre className="bg-background border-2 border-red-400 p-4 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
 {errorModal.message}
-              </pre>
-            </div>
-            
-            <div className="bg-blue-50 border-4 border-blue-600 p-4 rounded">
-              <p className="text-sm font-bold text-blue-900 mb-2">💡 Common Issues:</p>
-              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
-                <li>Check for typos in variable or function names</li>
-                <li>Make sure all variables are declared before use</li>
-                <li>Verify that all statements end with semicolons</li>
-                <li>Check matching brackets and parentheses</li>
-                <li>Include necessary header files (#include)</li>
-              </ul>
-            </div>
+                </pre>
+              </div>
+            )}
           </div>
-          <div className="flex justify-end mt-4">
+          <DialogFooter className="mt-4">
             <Button 
               onClick={() => setErrorModal({ ...errorModal, isOpen: false })}
-              className="font-black uppercase"
+              className="font-black uppercase border-2 border-black"
             >
-              GOT IT
+              ✓ GOT IT
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
