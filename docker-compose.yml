@@ -6,15 +6,22 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend-new:/app  # Hot reload for development
-      - /app/node_modules   # Prevent node_modules from being overwritten
+      - /app/.next           # Exclude .next from volume mount (faster)
+      - /app/node_modules    # Prevent node_modules from being overwritten
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      # Performance env vars
+      - NODE_OPTIONS=--max_old_space_size=2048
     depends_on:
       - backend
     networks:
       - app-network
     restart: unless-stopped
+    # Performance optimization for Windows/Mac
+    platform: linux/amd64
 
   # Backend (Flask API)
   backend:
