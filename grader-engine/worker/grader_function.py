@@ -135,13 +135,14 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
                 exec_cmd = f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt'"
                 exec_result = container.exec_run(exec_cmd, workdir="/sandbox")
                 exit_code = exec_result.exit_code
-                output_str = exec_result.output.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
-                error_str = ""
+                output_bytes = exec_result.output
+                output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
+                error_output = output_str  # Combined output for error analysis
             except Exception as e:
                 print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
                 exit_code = 1
                 output_str = ""
-                error_str = str(e)
+                error_output = str(e)
             
             # So sánh output với expected output
             expected_output_str = (tc.expected_output or "").strip().replace('\r\n', '\n')
@@ -149,11 +150,25 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
             tc_status = "Accepted"
             error_message = None
             
+            # Analyze exit code and determine status
             if exit_code == 124:  # timeout exit code
                 tc_status = "Time Limit Exceeded"
+                error_message = f"Time limit exceeded ({time_limit_sec}s)\nExit code: {exit_code}"
+            elif exit_code == 137:  # SIGKILL - Usually memory limit exceeded
+                tc_status = "Memory Limit Exceeded"
+                error_message = f"Memory limit exceeded (256MB)\nExit code: {exit_code}\n{error_output}"
+            elif exit_code == 139:  # SIGSEGV - Segmentation fault
+                tc_status = "Runtime Error"
+                error_message = f"Segmentation fault (SIGSEGV)\nExit code: {exit_code}\n{error_output}"
+            elif exit_code == 136:  # SIGFPE - Floating point exception (division by zero)
+                tc_status = "Runtime Error"
+                error_message = f"Floating point exception (SIGFPE)\nExit code: {exit_code}\n{error_output}"
+            elif exit_code == 134:  # SIGABRT - Aborted
+                tc_status = "Runtime Error"
+                error_message = f"Program aborted (SIGABRT)\nExit code: {exit_code}\n{error_output}"
             elif exit_code != 0:
                 tc_status = "Runtime Error"
-                error_message = error_str if error_str else f"Exit code: {exit_code}"
+                error_message = f"Exit code: {exit_code}\n{error_output}"
             elif output_str != expected_output_str:
                 tc_status = "Wrong Answer"
                 # Không cần error message cho Wrong Answer
