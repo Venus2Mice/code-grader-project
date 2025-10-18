@@ -2,13 +2,14 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { ArrowLeft, CheckCircle2, XCircle, Clock, AlertCircle, Filter, Table as TableIcon, Users } from "lucide-react"
+import { ArrowLeft, CheckCircle2, XCircle, Clock, AlertCircle, Filter, Table as TableIcon, Users, Copy, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { problemAPI, submissionAPI } from "@/services/api"
 
 export default function TeacherProblemDetailPage() {
@@ -18,6 +19,10 @@ export default function TeacherProblemDetailPage() {
   const [submissions, setSubmissions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped')
+  const [selectedStudentForModal, setSelectedStudentForModal] = useState<any>(null)
+  const [codeModalOpen, setCodeModalOpen] = useState(false)
+  const [codeModalData, setCodeModalData] = useState<any>(null)
+  const [codeLoading, setCodeLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'latest' | 'score' | 'name'>('latest')
   const [page, setPage] = useState(1)
@@ -71,6 +76,45 @@ export default function TeacherProblemDetailPage() {
       console.error('Error loading more submissions:', err)
     } finally {
       setIsLoadingMore(false)
+    }
+  }
+
+  // Helper function to get file extension based on language
+  const getFileExtension = (language: string): string => {
+    const extensions: Record<string, string> = {
+      'cpp': 'cpp',
+      'c++': 'cpp',
+      'python': 'py',
+      'python3': 'py',
+      'java': 'java',
+      'javascript': 'js',
+      'nodejs': 'js',
+      'csharp': 'cs',
+      'go': 'go',
+      'rust': 'rs',
+      'ruby': 'rb',
+      'php': 'php'
+    }
+    return extensions[language?.toLowerCase() || ''] || 'txt'
+  }
+
+  // Handle View All submissions for a student
+  const handleViewAllSubmissions = (submission: any) => {
+    setSelectedStudentForModal(submission)
+  }
+
+  // Handle View Code - fetch code and open modal
+  const handleViewCode = async (submissionId: number) => {
+    try {
+      setCodeLoading(true)
+      const response = await submissionAPI.getCode(submissionId)
+      setCodeModalData(response.data)
+      setCodeModalOpen(true)
+    } catch (err) {
+      console.error('Error fetching code:', err)
+      alert('Failed to fetch code')
+    } finally {
+      setCodeLoading(false)
     }
   }
 
@@ -374,10 +418,7 @@ export default function TeacherProblemDetailPage() {
                               variant="outline" 
                               size="sm" 
                               className="font-bold uppercase"
-                              onClick={() => {
-                                // TODO: Show modal with all submissions for this student
-                                alert(`View all ${allSubmissionsCount} submissions for ${student?.full_name}`)
-                              }}
+                              onClick={() => handleViewAllSubmissions(submission)}
                             >
                               View All ({allSubmissionsCount})
                             </Button>
@@ -385,9 +426,10 @@ export default function TeacherProblemDetailPage() {
                               variant="default" 
                               size="sm"
                               className="font-bold uppercase"
-                              onClick={() => window.open(`/submissions/${submission.id}/code`, '_blank')}
+                              onClick={() => handleViewCode(submission.id)}
+                              disabled={codeLoading}
                             >
-                              View Best Code
+                              {codeLoading ? 'Loading...' : 'View Best Code'}
                             </Button>
                           </div>
                         </div>
@@ -465,9 +507,10 @@ export default function TeacherProblemDetailPage() {
                                 variant="outline"
                                 size="sm"
                                 className="font-bold uppercase"
-                                onClick={() => window.open(`/submissions/${submission.id}/code`, '_blank')}
+                                onClick={() => handleViewCode(submission.id)}
+                                disabled={codeLoading}
                               >
-                                View Code
+                                {codeLoading ? 'Loading...' : 'View Code'}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -726,6 +769,186 @@ export default function TeacherProblemDetailPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modal: View All Submissions for a Student */}
+        <Dialog open={!!selectedStudentForModal} onOpenChange={(open) => !open && setSelectedStudentForModal(null)}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="border-b border-border pb-4">
+              <DialogTitle className="text-2xl font-semibold text-foreground">
+                {selectedStudentForModal?.user?.full_name}
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {selectedStudentForModal?.allSubmissions?.length || 0} submission{selectedStudentForModal?.allSubmissions?.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {selectedStudentForModal?.allSubmissions && selectedStudentForModal.allSubmissions.length > 0 ? (
+                <div className="space-y-3 py-4">
+                  {selectedStudentForModal.allSubmissions.map((sub: any, idx: number) => (
+                    <div key={sub.id} className="border border-border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        {/* Left: Main info */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">
+                              #{idx + 1}
+                            </span>
+                            <Badge 
+                              variant="outline"
+                              className={`text-xs font-semibold ${
+                                sub.status?.toLowerCase() === 'accepted' 
+                                  ? 'bg-green-50 text-green-700 border-green-200' 
+                                  : sub.status?.toLowerCase() === 'compile error' 
+                                  ? 'bg-red-50 text-red-700 border-red-200' 
+                                  : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                              }`}
+                            >
+                              {sub.status}
+                            </Badge>
+                          </div>
+                          
+                          {/* Metrics row */}
+                          <div className="grid grid-cols-3 gap-6 mt-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide">Score</p>
+                              <p className={`text-2xl font-bold mt-1 ${
+                                sub.score >= 80 ? 'text-green-600' : 
+                                sub.score >= 50 ? 'text-yellow-600' : 
+                                'text-red-600'
+                              }`}>
+                                {sub.score}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide">Tests Passed</p>
+                              <p className="text-2xl font-bold mt-1 text-foreground">
+                                {sub.passedTests || sub.passed_tests || 0}/{sub.totalTests || sub.total_tests || 0}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide">Language</p>
+                              <p className="text-lg font-semibold mt-1 text-foreground uppercase">
+                                {sub.language || 'CPP'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Timestamp */}
+                          <p className="text-xs text-muted-foreground mt-3">
+                            {new Date(sub.submittedAt || sub.submitted_at).toLocaleString('vi-VN')}
+                          </p>
+                        </div>
+
+                        {/* Right: Action button */}
+                        <Button
+                          onClick={() => handleViewCode(sub.id)}
+                          disabled={codeLoading}
+                          className="font-semibold"
+                          size="sm"
+                        >
+                          View Code
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                  No submissions found
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-border pt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedStudentForModal(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal: View Code */}
+        <Dialog open={codeModalOpen} onOpenChange={setCodeModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="border-b border-border pb-4">
+              <DialogTitle className="text-xl font-semibold text-foreground">
+                Source Code
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {codeModalData?.language?.toUpperCase() || 'CODE'}
+              </p>
+            </div>
+
+            {/* Code Editor Area */}
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+              {codeLoading ? (
+                <div className="flex items-center justify-center flex-1">
+                  <div className="text-center space-y-2">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-muted border-t-primary mx-auto"></div>
+                    <p className="text-sm text-muted-foreground">Loading code...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-muted rounded-lg border border-border">
+                  <pre className="flex-1 overflow-auto p-4 text-sm font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                    <code>{codeModalData?.code || 'No code available'}</code>
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Actions */}
+            <div className="border-t border-border pt-4 flex gap-2">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(codeModalData?.code || '')
+                  alert('Code copied to clipboard!')
+                }}
+                disabled={codeLoading}
+                size="sm"
+                className="gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Copy
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const element = document.createElement('a')
+                  const fileName = `submission.${getFileExtension(codeModalData?.language)}`
+                  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(codeModalData?.code || ''))
+                  element.setAttribute('download', fileName)
+                  element.style.display = 'none'
+                  document.body.appendChild(element)
+                  element.click()
+                  document.body.removeChild(element)
+                }}
+                disabled={codeLoading}
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+              <div className="flex-1"></div>
+              <Button
+                variant="outline"
+                onClick={() => setCodeModalOpen(false)}
+                size="sm"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
