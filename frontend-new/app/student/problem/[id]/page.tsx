@@ -389,17 +389,39 @@ int main() {
               console.log('[DEBUG] Status:', submissionData.status)
               console.log('[DEBUG] Results:', submissionData.results)
               
-              // Check for compile error and show modal
-              if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
-                const compileError = submissionData.results.find((r: any) => r.error_message)
-                console.log('[DEBUG] Compile error found:', compileError)
-                if (compileError && compileError.error_message) {
-                  console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
-                  setErrorModal({
-                    isOpen: true,
-                    title: "Compilation Error",
-                    message: compileError.error_message
-                  })
+              // Auto-show modal for any error (Compile Error, Runtime Error, Time Limit, Memory Limit)
+              if (submissionData.results && submissionData.results.length > 0) {
+                // Find first error with error_message
+                const errorResult = submissionData.results.find((r: any) => r.error_message)
+                
+                if (errorResult && errorResult.error_message) {
+                  console.log('[DEBUG] Error found:', errorResult)
+                  const statusNorm = String(errorResult.status || submissionData.status || '').toLowerCase()
+                  
+                  // Determine error type and show appropriate modal
+                  if (statusNorm.includes('compile')) {
+                    // Compile Error
+                    setErrorModal({
+                      isOpen: true,
+                      title: "Compilation Error",
+                      message: errorResult.error_message
+                    })
+                  } else if (statusNorm.includes('runtime') || statusNorm.includes('time limit') || statusNorm.includes('memory limit')) {
+                    // Runtime Error, Time Limit, Memory Limit - with analysis
+                    const analysis = analyzeRuntimeError(errorResult.error_message)
+                    setErrorModal({
+                      isOpen: true,
+                      title: `${analysis.errorType} - Test Case #${errorResult.test_case_id || 'N/A'}`,
+                      message: `${errorResult.error_message}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+                    })
+                  } else {
+                    // Other errors
+                    setErrorModal({
+                      isOpen: true,
+                      title: `Error: ${errorResult.status || 'Unknown'}`,
+                      message: errorResult.error_message
+                    })
+                  }
                 }
               }
               
@@ -537,17 +559,39 @@ int main() {
               console.log('[DEBUG] Status:', submissionData.status)
               console.log('[DEBUG] Results:', submissionData.results)
               
-              // Check for compile error and show modal
-              if (submissionData.status === 'Compile Error' && submissionData.results && submissionData.results.length > 0) {
-                const compileError = submissionData.results.find((r: any) => r.error_message)
-                console.log('[DEBUG] Compile error found:', compileError)
-                if (compileError && compileError.error_message) {
-                  console.log('[DEBUG] Opening error modal with message:', compileError.error_message)
-                  setErrorModal({
-                    isOpen: true,
-                    title: "Compilation Error",
-                    message: compileError.error_message
-                  })
+              // Auto-show modal for any error (Compile Error, Runtime Error, Time Limit, Memory Limit)
+              if (submissionData.results && submissionData.results.length > 0) {
+                // Find first error with error_message
+                const errorResult = submissionData.results.find((r: any) => r.error_message)
+                
+                if (errorResult && errorResult.error_message) {
+                  console.log('[DEBUG] Error found:', errorResult)
+                  const statusNorm = String(errorResult.status || submissionData.status || '').toLowerCase()
+                  
+                  // Determine error type and show appropriate modal
+                  if (statusNorm.includes('compile')) {
+                    // Compile Error
+                    setErrorModal({
+                      isOpen: true,
+                      title: "Compilation Error",
+                      message: errorResult.error_message
+                    })
+                  } else if (statusNorm.includes('runtime') || statusNorm.includes('time limit') || statusNorm.includes('memory limit')) {
+                    // Runtime Error, Time Limit, Memory Limit - with analysis
+                    const analysis = analyzeRuntimeError(errorResult.error_message)
+                    setErrorModal({
+                      isOpen: true,
+                      title: `${analysis.errorType} - Test Case #${errorResult.test_case_id || 'N/A'}`,
+                      message: `${errorResult.error_message}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+                    })
+                  } else {
+                    // Other errors
+                    setErrorModal({
+                      isOpen: true,
+                      title: `Error: ${errorResult.status || 'Unknown'}`,
+                      message: errorResult.error_message
+                    })
+                  }
                 }
               }
 
