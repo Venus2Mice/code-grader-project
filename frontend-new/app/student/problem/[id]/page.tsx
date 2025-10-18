@@ -831,7 +831,15 @@ int main() {
 
               <div className="space-y-2">
                 {testResults.results && Array.isArray(testResults.results) && testResults.results.length > 0 ? (
-                  testResults.results.map((result: any, index: number) => {
+                  testResults.results
+                    // Filter: Only show visible test cases (not hidden) for students
+                    .filter((result: any) => {
+                      // Always show compile errors (no test_case_id)
+                      if (result.test_case_id === null || result.test_case_id === undefined) return true
+                      // Only show test cases that are not hidden
+                      return result.is_hidden === false
+                    })
+                    .map((result: any, index: number) => {
                     // Normalize status for robust checks
                     const rawStatus = String(result.status || '')
                     const statusNorm = rawStatus.toLowerCase()
@@ -876,39 +884,60 @@ int main() {
                           )}
                         </div>
 
-                        {!isPassed && (
+                        {/* Show output details for both passed and failed tests (not compile errors) */}
+                        {!isCompileError && (
                           <div className="mt-2 space-y-2 text-xs">
                             {result.output_received && result.output_received.trim() !== '' && (
                               <div>
                                 <div className="font-black uppercase mb-1 text-foreground">YOUR OUTPUT:</div>
-                                <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                <pre className={`bg-background border-2 p-2 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto ${
+                                  isPassed ? 'border-green-600 text-green-600' : 'border-red-600 text-red-600'
+                                }`}>
                                   {result.output_received}
                                 </pre>
                               </div>
                             )}
-                            {result.error_message && (
+                            {result.expected_output && (
+                              <div>
+                                <div className="font-black uppercase mb-1 text-foreground">EXPECTED OUTPUT:</div>
+                                <pre className="bg-background border-2 border-green-600 p-2 text-green-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                  {result.expected_output}
+                                </pre>
+                              </div>
+                            )}
+                            {!isPassed && result.error_message && (
                               <div>
                                 <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
                                 <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
                                   {result.error_message}
                                 </pre>
-                                {isCompileError && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2 gap-2 font-black uppercase text-xs"
-                                    onClick={() => setErrorModal({
-                                      isOpen: true,
-                                      title: "Compilation Error Details",
-                                      message: result.error_message
-                                    })}
-                                  >
-                                    <AlertCircle className="h-4 w-4" />
-                                    VIEW FULL ERROR
-                                  </Button>
-                                )}
                               </div>
                             )}
+                          </div>
+                        )}
+                        
+                        {/* Compile error section */}
+                        {isCompileError && result.error_message && (
+                          <div className="mt-2 space-y-2 text-xs">
+                            <div>
+                              <div className="font-black uppercase mb-1 text-foreground">ERROR:</div>
+                              <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                {result.error_message}
+                              </pre>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 gap-2 font-black uppercase text-xs"
+                                onClick={() => setErrorModal({
+                                  isOpen: true,
+                                  title: "Compilation Error Details",
+                                  message: result.error_message
+                                })}
+                              >
+                                <AlertCircle className="h-4 w-4" />
+                                VIEW FULL ERROR
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </Card>

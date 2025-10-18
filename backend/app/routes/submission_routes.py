@@ -88,14 +88,26 @@ def get_submission_result(submission_id):
     passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
     total_tests = len(submission.problem.test_cases)
     
-    results = [{
-        "test_case_id": res.test_case_id,
-        "status": res.status,
-        "execution_time_ms": res.execution_time_ms,
-        "memory_used_kb": res.memory_used_kb,
-        "output_received": res.output_received,
-        "error_message": res.error_message
-    } for res in submission.results]
+    # Build results with test case info
+    results = []
+    for res in submission.results:
+        result_data = {
+            "test_case_id": res.test_case_id,
+            "status": res.status,
+            "execution_time_ms": res.execution_time_ms,
+            "memory_used_kb": res.memory_used_kb,
+            "output_received": res.output_received,
+            "error_message": res.error_message,
+            "expected_output": None,
+            "is_hidden": None
+        }
+        
+        # Add test case info if available (not for compile errors)
+        if res.test_case_id and res.test_case:
+            result_data["expected_output"] = res.test_case.expected_output
+            result_data["is_hidden"] = res.test_case.is_hidden
+        
+        results.append(result_data)
     
     return jsonify({
         "id": submission.id,
