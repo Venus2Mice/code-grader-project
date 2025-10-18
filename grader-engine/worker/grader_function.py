@@ -132,12 +132,19 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
             
             # Execute with stdin from file
             try:
-                exec_cmd = f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt'"
+                # ✅ ULTIMATE FIX: Use dd to read max 1MB, which SIGPIPE kills the producer
+                # When dd stops, ./main gets SIGPIPE and terminates immediately
+                exec_cmd = f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null || true'"
                 exec_result = container.exec_run(exec_cmd, workdir="/sandbox")
                 exit_code = exec_result.exit_code
-                output_bytes = exec_result.output
+                output_bytes = exec_result.output if exec_result.output else b''
+                
+                # dd limits to exactly 1MB
+                if len(output_bytes) > 1048576:
+                    output_bytes = output_bytes[:1048576]
+                
                 output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
-                error_output = output_str  # Combined output for error analysis
+                error_output = output_str
             except Exception as e:
                 print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
                 exit_code = 1

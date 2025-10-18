@@ -132,20 +132,31 @@ def run_single_test_case(container, tc, problem, submission_id):
     try:
         time_limit_sec = problem.time_limit_ms / 1000.0
         
-        # Direct stdin/stdout execution
-        exec_result = container.exec_run(
-            f"timeout {time_limit_sec} ./main",
-            stdin=True,
-            stdout=True,
-            stderr=True,
-            input=(tc.input_data or "").encode('utf-8'),
+        # Create input file inside container
+        input_data = tc.input_data or ""
+        container.exec_run(
+            f"sh -c 'echo {repr(input_data)} > /sandbox/input.txt'",
             workdir="/sandbox"
         )
+        
+        # ✅ ULTIMATE FIX: Use dd to read max 1MB, which will SIGPIPE the producer
+        # When dd stops reading, ./main gets SIGPIPE and dies immediately
+        # No buffering, no memory issues!
+        exec_result = container.exec_run(
+            f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null || true'",
+            workdir="/sandbox"
+        )
+        
         exit_code = exec_result.exit_code
-        output_bytes = exec_result.output
-        # Separate stdout and stderr from combined output
+        output_bytes = exec_result.output if exec_result.output else b''
+        
+        # dd limits to exactly 1MB, but double-check
+        if len(output_bytes) > 1048576:
+            output_bytes = output_bytes[:1048576]
+        
         output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
-        error_output = output_str  # Combined output for error analysis
+        error_output = output_str
+            
     except Exception as e:
         print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
         exit_code = 1

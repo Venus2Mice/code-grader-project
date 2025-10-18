@@ -170,9 +170,9 @@ export default function StudentClassPage() {
                           <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
                         </>
                       ) : !submission ? (
-                        <div className="flex items-center gap-2 border-4 border-green-600 bg-green-400 px-4 py-2 text-black">
+                        <div className="flex items-center gap-2 border-4 border-cyan-600 bg-cyan-400 px-4 py-2 text-black">
                           <Code className="h-5 w-5" />
-                          <span className="font-black uppercase">START</span>
+                          <span className="font-black uppercase">TO DO</span>
                         </div>
                       ) : (
                         <>
