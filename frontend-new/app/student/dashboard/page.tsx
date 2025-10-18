@@ -59,8 +59,12 @@ export default function StudentDashboard() {
 
   const handleLogout = () => {
     // Clear localStorage
-    localStorage.removeItem('token')
+    localStorage.removeItem('access_token')
     localStorage.removeItem('user')
+    
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('logout'))
+    
     // Redirect to login page
     router.push('/login')
   }
