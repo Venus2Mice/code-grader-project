@@ -15,7 +15,7 @@ def wait_for_postgres(max_retries=60):
     
     # Get credentials from environment or use defaults
     pg_user = os.getenv("POSTGRES_USER", "user")
-    pg_password = os.getenv("POSTGRES_PASSWORD", "password123")
+    pg_password = os.getenv("POSTGRES_PASSWORD", "password")
     pg_db = os.getenv("POSTGRES_DB", "code_grader_db")
     
     for attempt in range(max_retries):
@@ -109,8 +109,8 @@ def seed_database():
     
     if result1.returncode == 0 and result2.returncode == 0:
         print("✅ Database seeded successfully!")
-        print("   Teacher: teacher.test@example.com / password123")
-        print("   Student: student.test@example.com / password123")
+        print("   Teacher: teacher.test@example.com / password")
+        print("   Student: student.test@example.com / password")
         return True
     else:
         print("⚠️  Seeding completed with some warnings")

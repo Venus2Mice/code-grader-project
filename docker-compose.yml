@@ -12,8 +12,8 @@ services:
       - /app/.next
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
+      - NEXT_PUBLIC_API_URL=https://5000-firebase-grader-engine-1758519301368.cluster-bqwaigqtxbeautecnatk4o6ynk.cloudworkstations.dev
+      - NEXT_PUBLIC_API_BASE_URL=https://5000-firebase-grader-engine-1758519301368.cluster-bqwaigqtxbeautecnatk4o6ynk.cloudworkstations.dev/api
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_OPTIONS=--max_old_space_size=2048
@@ -91,7 +91,6 @@ services:
     networks:
       - app-network
     restart: unless-stopped
-    privileged: true  # Required for Docker-in-Docker
 
 networks:
   app-network:
