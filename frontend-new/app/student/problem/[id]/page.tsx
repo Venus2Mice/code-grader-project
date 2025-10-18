@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Play, History, CheckCircle, XCircle, Clock, AlertCircle, RotateCcw } from "lucide-react"
+import { ArrowLeft, Play, History, CheckCircle, XCircle, Clock, AlertCircle, RotateCcw, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -49,6 +49,155 @@ int main() {
   const [testResults, setTestResults] = useState<any>(null)
   const [originalTemplate, setOriginalTemplate] = useState("")  // Store original template for reset
   const [isResetModalOpen, setIsResetModalOpen] = useState(false)  // Reset confirmation modal
+  const fileInputRef = useRef<HTMLInputElement>(null)  // Reference for file input
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)  // Upload modal state
+  const [isDragging, setIsDragging] = useState(false)  // Drag and drop state
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)  // Track uploaded file name
+
+  // Analyze C++ code to detect if it has main() function
+  const analyzeCppCode = (code: string): { hasMain: boolean; hasFunctions: boolean; analysis: string } => {
+    // Remove comments to avoid false positives
+    let cleanCode = code
+      // Remove single-line comments
+      .replace(/\/\/.*$/gm, '')
+      // Remove multi-line comments
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+    
+    // Check for main function
+    // Pattern: int main() or int main(int argc, char* argv[]) etc.
+    const mainPattern = /\b(int|void)\s+main\s*\([^)]*\)\s*\{/g
+    const hasMain = mainPattern.test(cleanCode)
+    
+    // Check for other function definitions (not just declarations)
+    // Pattern: return_type function_name(...) { ... }
+    const functionPattern = /\b(int|void|bool|double|float|long|short|char|string|vector|auto)\s+\w+\s*\([^)]*\)\s*\{/g
+    const functionMatches = cleanCode.match(functionPattern) || []
+    
+    // Filter out main function from the count
+    const nonMainFunctions = functionMatches.filter(match => !match.includes('main'))
+    const hasFunctions = nonMainFunctions.length > 0
+    
+    // Generate analysis message
+    let analysis = ""
+    if (hasMain && hasFunctions) {
+      analysis = `✅ Complete program detected:\n• Has main() function\n• Has ${nonMainFunctions.length} other function(s)\n• Ready for STDIO grading mode`
+    } else if (hasMain && !hasFunctions) {
+      analysis = `✅ Complete program detected:\n• Has main() function\n• No other functions\n• Ready for STDIO grading mode`
+    } else if (!hasMain && hasFunctions) {
+      analysis = `⚠️ Function-only code detected:\n• No main() function\n• Has ${nonMainFunctions.length} function(s)\n• Suitable for FUNCTION grading mode only\n\n⚠️ Note: If problem uses STDIO mode, this will fail!`
+    } else {
+      analysis = `❌ No valid code structure detected:\n• No main() function\n• No function definitions\n• Please check your code`
+    }
+    
+    return { hasMain, hasFunctions, analysis }
+  }
+
+  // Process file (used by both file input and drag-drop)
+  const processFile = (file: File) => {
+    const fileName = file.name.toLowerCase()
+    const fileExtension = fileName.split('.').pop()
+
+    // Only allow .cpp and .txt files
+    if (fileExtension !== 'cpp' && fileExtension !== 'txt') {
+      setErrorModal({
+        isOpen: true,
+        title: "Invalid File Type",
+        message: "Only .cpp and .txt files are allowed for upload."
+      })
+      return
+    }
+
+    // Read file content
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      
+      // Analyze C++ code structure if it's a .cpp file
+      if (fileExtension === 'cpp') {
+        const analysis = analyzeCppCode(content)
+        
+        // Show analysis result in a modal
+        setErrorModal({
+          isOpen: true,
+          title: "📊 Code Analysis Result",
+          message: `File: ${file.name}\n\n${analysis.analysis}\n\n` +
+                   `${problem?.grading_mode === 'function' 
+                     ? '📌 Current problem uses FUNCTION grading mode\n' +
+                       (analysis.hasMain 
+                         ? '⚠️ Your code has main() - it may not work correctly!' 
+                         : '✅ Your code structure matches the grading mode')
+                     : '📌 Current problem uses STDIO grading mode\n' +
+                       (analysis.hasMain 
+                         ? '✅ Your code has main() - good to go!' 
+                         : '⚠️ Your code lacks main() - it will fail!')
+                   }\n\nCode loaded into editor. You can review and edit before submitting.`
+        })
+      }
+      
+      setCode(content)
+      setUploadedFileName(file.name)
+      setIsUploadModalOpen(false)
+      
+      // Show success message
+      console.log(`File ${file.name} loaded successfully`)
+    }
+    reader.onerror = () => {
+      setErrorModal({
+        isOpen: true,
+        title: "File Read Error",
+        message: "Failed to read the file. Please try again."
+      })
+    }
+    reader.readAsText(file)
+
+    // Reset file input for next upload
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // Handle file upload from input
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    processFile(file)
+  }
+
+  // Handle drag and drop events
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      processFile(file)
+    }
+  }
+
+  // Validate file extension before submit
+  const validateFileForSubmit = (): boolean => {
+    // Check if code appears to be from a .cpp file based on content
+    // We can't track original file extension after loading, so we validate based on language setting
+    if (language !== 'cpp') {
+      setErrorModal({
+        isOpen: true,
+        title: "Invalid Submission",
+        message: "Only C++ (.cpp) files can be submitted. Please select C++ as the language."
+      })
+      return false
+    }
+    return true
+  }
 
   // Helper function to analyze runtime errors and provide suggestions
   const analyzeRuntimeError = (errorMessage: string, exitCode?: string) => {
@@ -513,6 +662,11 @@ int main() {
   }
 
   const handleSubmit = async () => {
+    // Validate that only .cpp files can be submitted
+    if (!validateFileForSubmit()) {
+      return
+    }
+
     setIsSubmitting(true)
     setTestResults(null)
     try {
@@ -844,6 +998,19 @@ int main() {
                 <span className="hidden sm:inline">RESET</span>
               </Button>
             )}
+
+            {/* File Upload Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm hover:bg-purple-100 hover:text-purple-700 hover:border-purple-700"
+              onClick={() => setIsUploadModalOpen(true)}
+              disabled={isRunning || isSubmitting}
+              title="Upload .cpp or .txt file"
+            >
+              <Upload className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">UPLOAD</span>
+            </Button>
 
             <Button
               variant="outline"
@@ -1306,17 +1473,177 @@ int main() {
         </DialogContent>
       </Dialog>
 
-      {/* Error Modal (Compile Error / Runtime Error) */}
+      {/* Upload File Modal */}
+      <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+        <DialogContent className="max-w-xl border-4 border-black">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-black uppercase text-purple-600">
+              <Upload className="h-6 w-6" />
+              Upload Code File
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Info Section */}
+            <div className="bg-blue-50 border-4 border-blue-600 p-4">
+              <p className="font-black uppercase text-blue-900 mb-2 text-sm">
+                📁 Accepted File Types:
+              </p>
+              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.cpp</code> - C++ source files (for submission)</li>
+                <li><code className="bg-blue-200 px-2 py-0.5 rounded font-bold">.txt</code> - Text files (for editing only)</li>
+              </ul>
+            </div>
+
+            {/* Warning for submission */}
+            <div className="bg-yellow-50 border-4 border-yellow-400 p-3">
+              <p className="text-sm font-black text-yellow-900 uppercase">
+                ⚠️ Important:
+              </p>
+              <p className="text-sm text-yellow-800 mt-1">
+                Only <span className="font-bold">.cpp files</span> can be submitted for grading. 
+                .txt files are for viewing and editing purposes only.
+              </p>
+            </div>
+
+            {/* Drag and Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-4 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
+                isDragging
+                  ? 'border-purple-600 bg-purple-50'
+                  : 'border-gray-300 bg-gray-50 hover:border-purple-400 hover:bg-purple-50'
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".cpp,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              
+              <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-purple-600' : 'text-gray-400'}`} />
+              
+              <p className="font-black uppercase text-lg mb-2">
+                {isDragging ? 'Drop file here!' : 'Drag & Drop your file here'}
+              </p>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                or
+              </p>
+              
+              <Button
+                type="button"
+                variant="outline"
+                className="font-black uppercase border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fileInputRef.current?.click()
+                }}
+              >
+                Browse Files
+              </Button>
+            </div>
+
+            {/* Show uploaded file name if any */}
+            {uploadedFileName && (
+              <div className="bg-green-50 border-4 border-green-600 p-3 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <p className="text-sm font-bold text-green-900">
+                  Last uploaded: <code className="bg-green-200 px-2 py-0.5 rounded">{uploadedFileName}</code>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUploadModalOpen(false)}
+              className="font-black uppercase border-2 border-black"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal (Compile Error / Runtime Error / Code Analysis) */}
       <Dialog open={errorModal.isOpen} onOpenChange={(open) => setErrorModal({ ...errorModal, isOpen: open })}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-4 border-black">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600 font-black uppercase">
-              <AlertCircle className="h-6 w-6" />
+            <DialogTitle className={`flex items-center gap-2 font-black uppercase ${
+              errorModal.title.includes('Analysis') ? 'text-blue-600' : 'text-red-600'
+            }`}>
+              {errorModal.title.includes('Analysis') ? (
+                <CheckCircle className="h-6 w-6" />
+              ) : (
+                <AlertCircle className="h-6 w-6" />
+              )}
               {errorModal.title}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {errorModal.message.includes('='.repeat(50)) ? (
+            {errorModal.title.includes('Analysis') ? (
+              // Code Analysis Result
+              <div className="space-y-4">
+                {errorModal.message.split('\n\n').map((section, idx) => {
+                  if (section.includes('File:')) {
+                    return (
+                      <div key={idx} className="bg-purple-50 border-4 border-purple-600 p-4">
+                        <p className="text-sm font-black text-purple-900">
+                          {section}
+                        </p>
+                      </div>
+                    )
+                  } else if (section.includes('✅ Complete program') || section.includes('✅ Your code')) {
+                    return (
+                      <div key={idx} className="bg-green-50 border-4 border-green-600 p-4">
+                        <pre className="text-sm font-bold text-green-900 whitespace-pre-wrap">
+                          {section}
+                        </pre>
+                      </div>
+                    )
+                  } else if (section.includes('⚠️')) {
+                    return (
+                      <div key={idx} className="bg-yellow-50 border-4 border-yellow-400 p-4">
+                        <pre className="text-sm font-bold text-yellow-900 whitespace-pre-wrap">
+                          {section}
+                        </pre>
+                      </div>
+                    )
+                  } else if (section.includes('❌')) {
+                    return (
+                      <div key={idx} className="bg-red-50 border-4 border-red-600 p-4">
+                        <pre className="text-sm font-bold text-red-900 whitespace-pre-wrap">
+                          {section}
+                        </pre>
+                      </div>
+                    )
+                  } else if (section.includes('📌 Current problem')) {
+                    return (
+                      <div key={idx} className="bg-blue-50 border-4 border-blue-600 p-4">
+                        <pre className="text-sm font-bold text-blue-900 whitespace-pre-wrap">
+                          {section}
+                        </pre>
+                      </div>
+                    )
+                  } else {
+                    return (
+                      <div key={idx} className="bg-gray-50 border-2 border-gray-300 p-3">
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                          {section}
+                        </p>
+                      </div>
+                    )
+                  }
+                })}
+              </div>
+            ) : errorModal.message.includes('='.repeat(50)) ? (
               // Runtime Error with suggestions
               <>
                 <div className="bg-red-50 border-4 border-red-600 p-4">
