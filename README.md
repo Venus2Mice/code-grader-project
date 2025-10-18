@@ -62,26 +62,43 @@ code-grader-project/
 - RabbitMQ: http://localhost:15672
 
 **Tài khoản test:**
-- Teacher: `teacher.dev@example.com` / `password`
-- Student: `student.dev@example.com` / `password`
+- Teacher: `teacher.test@example.com` / `password123`
+- Student: `student.test@example.com` / `password123`
 
 ---
 
 ### 🔄 Chạy Lại (Khi đã setup)
 
 ```bash
-# Start services
+# Start services + tự động init database nếu cần
 docker-compose up -d
 
 # Chạy worker (terminal riêng)
 ./run_worker.sh
 ```
 
+✨ **New:** Database migrations và seed data **chạy tự động** khi container backend khởi động lần đầu - không cần chạy flask commands thủ công!
+
+---
+
+### 📋 Chuyển đổi Môi trường (Local/Docker/Codespaces)
+
+```bash
+# Cấu hình cho local development
+./setup-env.sh local
+
+# Cấu hình cho Docker (tất cả chạy trong container)
+./setup-env.sh docker
+
+# Cấu hình cho GitHub Codespaces
+./setup-env.sh codespaces
+```
+
 ---
 
 ## 📚 TÀI LIỆU HOÀN CHỈNH
 
-**→ XEM TẤT CẢ HƯỚNG DẪN CHI TIẾT TẠI: [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md)**
+**→ XEM TẤT CẢ HƯỚNG DẪN CHI TIẾT TẠI: [`docs/BACKEND_DOCUMENTATION.md`](docs/BACKEND_DOCUMENTATION.md)**
 
 Tài liệu bao gồm:
 - ✅ Giới thiệu chi tiết
@@ -212,14 +229,46 @@ docker build -t cpp-grader-env ./grader-engine
 
 ## 📚 TÀI LIỆU CHI TIẾT
 
-Xem hướng dẫn đầy đủ tại: **[COMPLETE_GUIDE.md](./COMPLETE_GUIDE.md)**
+Xem hướng dẫn đầy đủ tại: **[`docs/BACKEND_DOCUMENTATION.md`](./docs/BACKEND_DOCUMENTATION.md)**
 
 Tài liệu bao gồm:
-- ✅ Giải thích vấn đề đã fix (Docker-in-Docker mount path)
+- ✅ Giải thích vấn đề đã fix
 - ✅ Hướng dẫn setup chi tiết
 - ✅ Cách test và kiểm tra
 - ✅ Troubleshooting đầy đủ
 - ✅ Giải thích kỹ thuật
+
+---
+
+## 🔧 Cấu trúc Tự động Database Initialization
+
+Từ phiên bản này, database migrations và seeding **chạy tự động** khi container backend khởi động:
+
+**📖 Chi tiết đầy đủ:** [`DATABASE_INIT.md`](./DATABASE_INIT.md)
+
+### Nhanh gọn:
+```
+docker compose up -d
+    ↓
+✅ PostgreSQL sẵn sàng
+    ↓
+✅ Migrations chạy
+    ↓
+✅ Seed dữ liệu
+    ↓
+✅ Flask server khởi động
+```
+
+### Kết quả tự động:
+- ✅ **Roles**: Teacher, Student
+- ✅ **Users**: teacher.dev@example.com, student.dev@example.com
+- ✅ **Classes**: 1 class mẫu
+- ✅ **Problems**: 1 problem mẫu
+
+### Lợi ích:
+✨ Chỉ cần 1 lệnh - không cần flask commands thủ công!  
+✨ Mới clone project cũng chạy được ngay!  
+✨ Lý tưởng cho Codespaces, CI/CD pipelines
 
 ---
 
@@ -286,33 +335,33 @@ Dự án được thiết kế để có thể cài đặt và chạy chỉ bằ
 
 1.  **Clone Repository:**
     ```bash
-    git clone <https://github.com/Venus2Mice/code-grader-project.git>
-    cd <ten_thu_muc_project>
+    git clone https://github.com/Venus2Mice/code-grader-project.git
+    cd code-grader-project
     ```
 
 2.  **Cấu hình Môi trường:**
-    Tạo một file `.env` ở thư mục gốc bằng cách copy từ file mẫu:
     ```bash
     cp .env.example .env
     ```
-    Bạn có thể tùy chỉnh các giá trị trong file `.env` (ví dụ: `POSTGRES_PASSWORD`), nhưng các giá trị mặc định đã được thiết lập để hoạt động ngay.
+    File `.env` đã có giá trị mặc định hoạt động ngay.
 
-3.  **Chạy Script Cài đặt:**
-    Script này sẽ tự động dọn dẹp, build, khởi động các service, cài đặt CSDL và cuối cùng là chạy worker.
-
+3.  **Chạy Script Cài đặt (Khuyên dùng):**
     ```bash
-    # Cấp quyền thực thi cho script (chỉ cần làm một lần)
     chmod +x setup.sh
-
-    # Chạy script!
     ./setup.sh
     ```
+    
+    Hoặc **chạy thủ công từng bước:**
+    ```bash
+    # Khởi động services
+    docker compose up --build -d
+    
+    # Chạy worker (terminal riêng)
+    cd grader-engine
+    python worker/main.py
+    ```
 
-    Sau khi script chạy xong, toàn bộ hệ thống đã sẵn sàng!
-    -   **API Backend** có thể truy cập tại: `http://localhost:5000`
-    -   **Tài liệu API (Swagger UI)**: `http://localhost:5000/api/docs`
-    -   **RabbitMQ Management**: `http://localhost:15672` (user: `guest`, pass: `guest`)
-    -   Terminal hiện tại của bạn sẽ hiển thị log của **Worker**.
+✨ **Điểm khác biệt:** Database **tự động** được khởi tạo khi backend container khởi động!
 
 ### 🧪 Tài khoản Test
 Script cài đặt đã tạo sẵn các tài khoản để bạn có thể thử nghiệm ngay:
@@ -324,11 +373,16 @@ Script cài đặt đã tạo sẵn các tài khoản để bạn có thể th�
 Nếu bạn muốn chạy từng thành phần một cách độc lập để gỡ lỗi.
 
 ### 1. Chạy các Service Nền tảng (Postgres, RabbitMQ, Backend)
-Lệnh này sẽ khởi động mọi thứ trừ worker, và bạn có thể chạy worker thủ công.
 ```bash
 docker compose up --build
 ```
-Sau đó, bạn có thể thực hiện các lệnh `flask db...` bằng `docker compose exec backend <lenh>`. hoặc `docker exec -it container-id bash`
+
+Backend sẽ **tự động**:
+- ✅ Chạy migrations
+- ✅ Seed database
+- ✅ Khởi động Flask server
+
+Không cần chạy lệnh flask bằng tay!
 
 ### 2. Chạy Worker Thủ công
 Đây là cách tốt nhất để debug cho worker.
@@ -346,13 +400,13 @@ python run_worker.py
 ### 3. Chạy Frontend (Khi đã có)
 ```bash
 # Di chuyển đến thư mục frontend
-cd frontend
+cd frontend-new
 
 # Cài đặt các thư viện
-npm install
+pnpm install
 
 # Khởi động server development
-npm start
+pnpm dev
 ```
 
 ## 🛑 Dừng Hệ thống

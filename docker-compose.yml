@@ -1,6 +1,7 @@
 services:
-  # Frontend (Next.js) - DEV MODE
-  frontend-dev:
+  # Frontend (Next.js) - DEVELOPMENT MODE
+  # Sử dụng Dockerfile.dev cho hot reload và dev features
+  frontend:
     build:
       context: ./frontend-new
       dockerfile: Dockerfile.dev
@@ -22,28 +23,6 @@ services:
       - app-network
     restart: unless-stopped
     platform: linux/amd64
-    profiles:
-      - dev
-
-  # Frontend (Next.js) - PRODUCTION MODE
-  frontend:
-    build:
-      context: ./frontend-new
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
-      - NODE_ENV=production
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    restart: unless-stopped
-    platform: linux/amd64
-    profiles:
-      - prod
 
   # Backend (Flask API)
   backend:
