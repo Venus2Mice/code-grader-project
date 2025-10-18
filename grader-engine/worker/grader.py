@@ -139,23 +139,38 @@ def run_single_test_case(container, tc, problem, submission_id):
             workdir="/sandbox"
         )
         
-        # ✅ ULTIMATE FIX: Use dd to read max 1MB, which will SIGPIPE the producer
-        # When dd stops reading, ./main gets SIGPIPE and dies immediately
-        # No buffering, no memory issues!
+        # ✅ CRITICAL FIX: Capture real exit code and detect runtime errors
+        # Run program and save exit code to file, limit output with dd
+        # Separate stdout and stderr to detect errors properly
         exec_result = container.exec_run(
-            f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null || true'",
+            f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null; echo ${{PIPESTATUS[0]}} > /sandbox/exitcode.txt'",
             workdir="/sandbox"
         )
         
-        exit_code = exec_result.exit_code
+        # Read the actual exit code from the program (not from dd or shell)
+        try:
+            exitcode_result = container.exec_run("cat /sandbox/exitcode.txt 2>/dev/null || echo 0", workdir="/sandbox")
+            exit_code = int(exitcode_result.output.decode('utf-8', errors='ignore').strip())
+        except:
+            exit_code = exec_result.exit_code
+        
         output_bytes = exec_result.output if exec_result.output else b''
         
         # dd limits to exactly 1MB, but double-check
-        if len(output_bytes) > 1048576:
-            output_bytes = output_bytes[:1048576]
+        MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB
+        if len(output_bytes) > MAX_OUTPUT_SIZE:
+            output_bytes = output_bytes[:MAX_OUTPUT_SIZE]
         
         output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
         error_output = output_str
+        
+        # Additional error detection from output text (for cases where exit code is lost)
+        if 'floating point exception' in output_str.lower() or 'sigfpe' in output_str.lower():
+            exit_code = 136  # Force SIGFPE exit code
+        elif 'segmentation fault' in output_str.lower() or 'sigsegv' in output_str.lower():
+            exit_code = 139  # Force SIGSEGV exit code
+        elif 'killed' in output_str.lower() or 'sigkill' in output_str.lower():
+            exit_code = 137  # Force SIGKILL exit code
             
     except Exception as e:
         print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
@@ -168,25 +183,35 @@ def run_single_test_case(container, tc, problem, submission_id):
     tc_status = "Accepted"
     error_message = None
     
+    # Check if output was truncated (means program produced > 1MB output)
+    output_truncated = len(output_bytes) >= (1024 * 1024)
+    
     # Analyze exit code and determine status
     if exit_code == 124:  # timeout exit code
         tc_status = "Time Limit Exceeded"
-        error_message = f"Time limit exceeded ({time_limit_sec}s)\nExit code: {exit_code}"
+        error_message = f"⏱️ Time Limit Exceeded\n\nYour program took longer than {time_limit_sec}s to execute.\n\nPossible causes:\n• Infinite loop (e.g., while(true))\n• Too slow algorithm (check time complexity)\n• Excessive I/O operations\n\nExit code: {exit_code}"
+    elif exit_code == 141:  # SIGPIPE - Output limit exceeded (killed by dd)
+        tc_status = "Output Limit Exceeded"
+        error_message = f"📊 Output Limit Exceeded\n\nYour program produced more than 1MB of output.\n\nThis is usually caused by:\n• Infinite printing loop (e.g., while(1) cout << ...)\n• Printing in wrong format (check output requirements)\n• Uncontrolled recursive printing\n\n⚠️ Maximum output size: 1MB\nExit code: {exit_code} (SIGPIPE)"
+    elif output_truncated and exit_code == 0:
+        # Program finished but output was > 1MB
+        tc_status = "Output Limit Exceeded"
+        error_message = f"📊 Output Limit Exceeded\n\nYour program produced more than 1MB of output.\nOutput has been truncated to first 1MB.\n\nPlease check:\n• Are you printing too much data?\n• Is your output format correct?\n• Remove debug print statements\n\n⚠️ Maximum output size: 1MB"
     elif exit_code == 137:  # SIGKILL - Usually memory limit exceeded
         tc_status = "Memory Limit Exceeded"
-        error_message = f"Memory limit exceeded (256MB)\nExit code: {exit_code}\n{error_output}"
+        error_message = f"💾 Memory Limit Exceeded\n\nYour program used more than 256MB of memory.\n\nPossible causes:\n• Large arrays/vectors allocation\n• Memory leak (not freeing memory)\n• Too much recursion (stack overflow)\n• Creating too many objects\n\n⚠️ Memory limit: 256MB\nExit code: {exit_code} (SIGKILL)\n\n{error_output if error_output else ''}"
     elif exit_code == 139:  # SIGSEGV - Segmentation fault
         tc_status = "Runtime Error"
-        error_message = f"Segmentation fault (SIGSEGV)\nExit code: {exit_code}\n{error_output}"
+        error_message = f"❌ Segmentation Fault (SIGSEGV)\n\nYour program tried to access invalid memory.\n\nCommon causes:\n• Array index out of bounds\n• Dereferencing null/invalid pointer\n• Stack overflow (too deep recursion)\n• Writing to read-only memory\n\nExit code: {exit_code}\n\n{error_output if error_output else ''}"
     elif exit_code == 136:  # SIGFPE - Floating point exception (division by zero)
         tc_status = "Runtime Error"
-        error_message = f"Floating point exception (SIGFPE)\nExit code: {exit_code}\n{error_output}"
+        error_message = f"❌ Floating Point Exception (SIGFPE)\n\nMathematical error in your program.\n\nCommon causes:\n• Division by zero\n• Invalid modulo operation (n % 0)\n• Integer overflow in division\n\nExit code: {exit_code}\n\n{error_output if error_output else ''}"
     elif exit_code == 134:  # SIGABRT - Aborted
         tc_status = "Runtime Error"
-        error_message = f"Program aborted (SIGABRT)\nExit code: {exit_code}\n{error_output}"
+        error_message = f"❌ Program Aborted (SIGABRT)\n\nYour program was aborted.\n\nCommon causes:\n• Failed assertion (assert() failed)\n• Double free or corruption\n• std::abort() was called\n• Fatal error in C++ standard library\n\nExit code: {exit_code}\n\n{error_output if error_output else ''}"
     elif exit_code != 0:
         tc_status = "Runtime Error"
-        error_message = f"Exit code: {exit_code}\n{error_output}"
+        error_message = f"❌ Runtime Error\n\nYour program terminated with an error.\n\nExit code: {exit_code}\n\n{error_output if error_output else ''}"
     elif output_str != expected_output_str:
         tc_status = "Wrong Answer"
     

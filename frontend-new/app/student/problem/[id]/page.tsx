@@ -296,6 +296,28 @@ int main() {
         suggestions.push("  O(n log n): sort() - nhanh hơn")
         suggestions.push("  O(n): 1 vòng for - nhanh nhất!")
       }
+      // Exit code 141 = 128 + 13 (SIGPIPE - Output Limit Exceeded)
+      else if (codeNum === 141 || error.includes('sigpipe') || error.includes('output limit')) {
+        errorType = "Output Limit Exceeded (Exit Code 141)"
+        suggestions.push("🔍 Nguyên nhân:")
+        suggestions.push("• Chương trình in ra quá nhiều dữ liệu (>1MB)")
+        suggestions.push("• Vòng lặp vô hạn với cout: while(1) cout << ...")
+        suggestions.push("• In output sai định dạng (quá nhiều dòng/ký tự)")
+        suggestions.push("• Không đọc đúng input nên in sai output")
+        suggestions.push("• Quên xóa các câu lệnh debug cout")
+        suggestions.push("\n💡 Giải pháp:")
+        suggestions.push("• Kiểm tra vòng lặp cout có điều kiện dừng")
+        suggestions.push("• Đọc kỹ yêu cầu output format")
+        suggestions.push("• Xóa tất cả cout debug không cần thiết")
+        suggestions.push("• Kiểm tra điều kiện in output")
+        suggestions.push("• Chỉ in output theo đúng yêu cầu đề bài")
+        suggestions.push("\n⚠️ Giới hạn hệ thống:")
+        suggestions.push("  Maximum output size: 1MB")
+        suggestions.push("  Program bị kill ngay khi vượt giới hạn!")
+        suggestions.push("\n📝 Ví dụ lỗi thường gặp:")
+        suggestions.push("  while(1) cout << \"hi\";  // ❌ LỖI! In vô hạn")
+        suggestions.push("  for(int i=0; i<n; i++) cout << i;  // ✅ ĐÚNG!")
+      }
       // Other exit codes
       else if (codeNum > 128) {
         const signal = codeNum - 128
@@ -1289,7 +1311,13 @@ int main() {
                         {/* Show output details for both passed and failed tests (not compile errors) */}
                         {!isCompileError && (
                           <div className="mt-2 space-y-2 text-xs">
-                            {result.output_received && result.output_received.trim() !== '' && (
+                            {/* Hide output for serious errors (Runtime, Time Limit, Memory Limit, Output Limit) */}
+                            {!statusNorm.includes('runtime') && 
+                             !statusNorm.includes('time limit') && 
+                             !statusNorm.includes('memory limit') && 
+                             !statusNorm.includes('output limit') && 
+                             result.output_received && 
+                             result.output_received.trim() !== '' && (
                               <div>
                                 <div className="font-black uppercase mb-1 text-foreground">YOUR OUTPUT:</div>
                                 <pre className={`bg-background border-2 p-2 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto ${
@@ -1299,7 +1327,12 @@ int main() {
                                 </pre>
                               </div>
                             )}
-                            {result.expected_output && (
+                            {/* Only show expected output for Wrong Answer (not for serious errors) */}
+                            {!statusNorm.includes('runtime') && 
+                             !statusNorm.includes('time limit') && 
+                             !statusNorm.includes('memory limit') && 
+                             !statusNorm.includes('output limit') && 
+                             result.expected_output && (
                               <div>
                                 <div className="font-black uppercase mb-1 text-foreground">EXPECTED OUTPUT:</div>
                                 <pre className="bg-background border-2 border-green-600 p-2 text-green-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
@@ -1313,8 +1346,11 @@ int main() {
                                 <pre className="bg-background border-2 border-red-600 p-2 text-red-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                                   {result.error_message}
                                 </pre>
-                                {/* Add View Details button for runtime errors */}
-                                {statusNorm.includes('runtime') && (
+                                {/* Add View Details button for serious errors */}
+                                {(statusNorm.includes('runtime') || 
+                                  statusNorm.includes('time limit') || 
+                                  statusNorm.includes('memory limit') || 
+                                  statusNorm.includes('output limit')) && (
                                   <Button
                                     variant="outline"
                                     size="sm"
