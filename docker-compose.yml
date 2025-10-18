@@ -1,27 +1,49 @@
 services:
-  # Frontend (Next.js)
-  frontend:
-    build: ./frontend-new
+  # Frontend (Next.js) - DEV MODE
+  frontend-dev:
+    build:
+      context: ./frontend-new
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend-new:/app  # Hot reload for development
-      - /app/.next           # Exclude .next from volume mount (faster)
-      - /app/node_modules    # Prevent node_modules from being overwritten
+      - ./frontend-new:/app
+      - /app/.next
+      - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
-      # Performance env vars
       - NODE_OPTIONS=--max_old_space_size=2048
     depends_on:
       - backend
     networks:
       - app-network
     restart: unless-stopped
-    # Performance optimization for Windows/Mac
     platform: linux/amd64
+    profiles:
+      - dev
+
+  # Frontend (Next.js) - PRODUCTION MODE
+  frontend:
+    build:
+      context: ./frontend-new
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+    platform: linux/amd64
+    profiles:
+      - prod
 
   # Backend (Flask API)
   backend:
