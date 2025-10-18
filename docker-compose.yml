@@ -1,4 +1,21 @@
 services:
+  # Frontend (Next.js)
+  frontend:
+    build: ./frontend-new
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-new:/app  # Hot reload for development
+      - /app/node_modules   # Prevent node_modules from being overwritten
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
   # Backend (Flask API)
   backend:
     build: ./backend

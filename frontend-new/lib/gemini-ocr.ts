@@ -84,6 +84,50 @@ function detectWarnings(code: string, language: string): string[] {
 }
 
 /**
+ * Check if extracted text contains actual code
+ */
+function containsCode(text: string): boolean {
+  if (!text || text.trim().length < 5) return false;
+  
+  // Common code indicators
+  const codeIndicators = [
+    /def\s+\w+\s*\(/,           // Python function
+    /class\s+\w+/,              // Class definition
+    /function\s+\w+\s*\(/,      // JavaScript function
+    /for\s*\(/,                 // For loop
+    /while\s*\(/,               // While loop
+    /if\s*\(/,                  // If statement
+    /import\s+/,                // Import statement
+    /from\s+\w+\s+import/,      // Python import
+    /include\s*[<"]/,           // C/C++ include
+    /console\.log/,             // JavaScript console
+    /print\s*\(/,               // Print statement
+    /return\s+/,                // Return statement
+    /\w+\s*=\s*\w+/,            // Variable assignment
+    /\w+\s*:\s*\w+/,            // Type annotation or dict
+    /[{}\[\];]/,                // Code punctuation
+    /\/\/|\/\*|\#/,             // Comments
+  ];
+  
+  // Check if text matches any code pattern
+  const hasCodePattern = codeIndicators.some(pattern => pattern.test(text));
+  
+  // Check for non-code indicators (common text in non-code images)
+  const nonCodePhrases = [
+    /no code found/i,
+    /cannot find code/i,
+    /image does not contain code/i,
+    /not a code image/i,
+    /this is not code/i,
+    /unable to extract code/i,
+  ];
+  
+  const hasNonCodePhrase = nonCodePhrases.some(pattern => pattern.test(text));
+  
+  return hasCodePattern && !hasNonCodePhrase;
+}
+
+/**
  * Assess confidence level of extraction
  */
 function assessConfidence(code: string, warnings: string[]): 'high' | 'medium' | 'low' | 'none' {
@@ -170,12 +214,14 @@ Response format:
 - If code has ERRORS: return the code with inline comments marking errors like:
   • Python: # ERROR: missing colon here
   • C/C++/Java: // ERROR: missing semicolon here
+- If NO CODE found in image: return exactly "NO CODE FOUND"
 
 CRITICAL RULES:
 - NO markdown code blocks (no \`\`\`)
 - NO explanations before or after the code
 - NO "Here is the extracted code:" type messages
 - ONLY return the actual code content
+- If image contains text but NO programming code, return "NO CODE FOUND"
 - Preserve ALL original code logic and structure`;
 
     // Call Gemini API
@@ -233,6 +279,29 @@ CRITICAL RULES:
     
     // Clean and process
     const cleanedCode = cleanMarkdown(extractedText);
+    
+    // Check if Gemini explicitly said no code found
+    if (cleanedCode.trim().toUpperCase().includes('NO CODE FOUND')) {
+      return {
+        success: false,
+        code: null,
+        error: 'Không tìm thấy code trong ảnh. Vui lòng upload ảnh chứa code.',
+        warnings: ['Ảnh này không chứa code lập trình'],
+        confidence: 'none',
+      };
+    }
+    
+    // Check if extracted text contains actual code
+    if (!containsCode(cleanedCode)) {
+      return {
+        success: false,
+        code: null,
+        error: 'Không tìm thấy code trong ảnh. Vui lòng upload ảnh chứa code.',
+        warnings: ['Ảnh này có thể không chứa code hoặc code không rõ ràng'],
+        confidence: 'none',
+      };
+    }
+    
     const warnings = detectWarnings(cleanedCode, language);
     const confidence = assessConfidence(cleanedCode, warnings);
     
