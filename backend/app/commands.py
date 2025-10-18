@@ -110,7 +110,18 @@ def seed_test_data_command():
     print("-------------------")
 
 
+@click.command(name='cleanup_test_submissions')
+@with_appcontext
+def cleanup_test_submissions_command():
+    """Xóa các test submissions cũ (is_test=True)."""
+    from .cleanup_service import cleanup_old_test_submissions
+    
+    count = cleanup_old_test_submissions(hours=1)
+    print(f"✅ Cleaned up {count} old test submissions")
+
+
 def init_app(app):
     """Đăng ký các lệnh CLI với ứng dụng Flask."""
     app.cli.add_command(seed_db_command)
-    app.cli.add_command(seed_test_data_command) # Thêm dòng này để đăng ký lệnh mới
+    app.cli.add_command(seed_test_data_command)
+    app.cli.add_command(cleanup_test_submissions_command)

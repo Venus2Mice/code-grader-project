@@ -1,0 +1,69 @@
+frontend-new/
+├── components.json
+├── Dockerfile
+├── next-env.d.ts
+├── next.config.mjs
+├── package.json
+├── package-lock.json
+├── pnpm-lock.yaml
+├── postcss.config.mjs
+├── tsconfig.json
+├── app/
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── login/
+│   │   └── page.tsx
+│   ├── register/
+│   │   └── page.tsx
+│   ├── student/
+│   │   ├── class/
+│   │   ├── dashboard/
+│   │   └── problem/
+│   └── teacher/
+│       ├── class/
+│       ├── dashboard/
+│       └── problem/
+├── components/
+│   ├── code-editor.tsx
+│   ├── create-class-dialog.tsx
+│   ├── join-class-dialog.tsx
+│   ├── navbar.tsx
+│   ├── theme-provider.tsx
+│   └── ui/
+│       ├── accordion.tsx
+│       ├── alert-dialog.tsx
+│       ├── alert.tsx
+│       ├── avatar.tsx
+│       ├── badge.tsx
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── checkbox.tsx
+│       ├── dialog.tsx
+│       ├── dropdown-menu.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── select.tsx
+│       ├── separator.tsx
+│       ├── table.tsx
+│       ├── tabs.tsx
+│       ├── textarea.tsx
+│       ├── toast.tsx
+│       └── ...
+├── hooks/
+│   ├── use-mobile.ts
+│   └── use-toast.ts
+├── lib/
+│   ├── mock-data.ts
+│   └── utils.ts
+├── public/
+│   ├── placeholder-logo.png
+│   ├── placeholder-logo.svg
+│   ├── placeholder-user.jpg
+│   └── placeholder.svg
+├── services/
+│   └── api.ts
+├── styles/
+│   └── globals.css
+└── types/
+    └── index.ts

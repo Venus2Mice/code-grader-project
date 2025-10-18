@@ -64,6 +64,7 @@ class Class(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     course_code = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)  # NEW: Class description
     invite_code = Column(String(8), unique=True, nullable=False, default=lambda: str(uuid.uuid4())[:8])
     teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -78,6 +79,9 @@ class Problem(Base):
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    difficulty = Column(String(20), default='medium')  # NEW: 'easy', 'medium', 'hard'
+    grading_mode = Column(String(20), default='stdio')  # NEW: 'stdio', 'function'
+    function_signature = Column(Text, nullable=True)  # NEW: For function grading mode
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     due_date = Column(DateTime, nullable=True)
@@ -94,6 +98,7 @@ class TestCase(Base):
     input_data = Column(Text)
     expected_output = Column(Text)
     is_hidden = Column(Boolean, default=False)
+    points = Column(Integer, default=10)  # NEW: Points for this test case
     
     problem = relationship('Problem', back_populates='test_cases')
     results = relationship('SubmissionResult', back_populates='test_case')
@@ -101,12 +106,14 @@ class TestCase(Base):
 class Submission(Base):
     __tablename__ = 'submissions'
     id = Column(Integer, primary_key=True)
-    problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False)
-    student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     source_code = Column(Text, nullable=False)
     language = Column(String(50), nullable=False, default='cpp')
     status = Column(String(50), default='Pending')
+    is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
     submitted_at = Column(DateTime, default=datetime.utcnow)
+    cached_score = Column(Integer, nullable=True, default=0)  # NEW: Cache score to avoid recalculation
     
     problem = relationship('Problem', back_populates='submissions')
     student = relationship('User', back_populates='submissions')
@@ -116,7 +123,7 @@ class SubmissionResult(Base):
     __tablename__ = 'submission_results'
     id = Column(Integer, primary_key=True)
     submission_id = Column(Integer, ForeignKey('submissions.id'), nullable=False)
-    test_case_id = Column(Integer, ForeignKey('test_cases.id'), nullable=False)
+    test_case_id = Column(Integer, ForeignKey('test_cases.id'), nullable=True)  # Allow NULL for compile errors
     status = Column(String(50), nullable=False)
     execution_time_ms = Column(Integer) # Đã sửa typo
     memory_used_kb = Column(Integer)    # Đã sửa tên

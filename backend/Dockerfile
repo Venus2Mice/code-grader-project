@@ -15,7 +15,5 @@ COPY . .
 # Expose cổng 5000 để bên ngoài có thể truy cập
 EXPOSE 5000
 
-# Lệnh để chạy ứng dụng khi container khởi động
-# Sử dụng gunicorn cho production, nhưng flask run vẫn ổn cho dev
-# --host=0.0.0.0 để có thể truy cập từ bên ngoài container
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+# Startup script - tự động chạy migrations và seed dữ liệu
+CMD ["python", "startup.py"]

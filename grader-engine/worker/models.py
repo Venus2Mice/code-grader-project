@@ -78,6 +78,9 @@ class Problem(Base):
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
+    grading_mode = Column(String(20), default='stdio')  # 'stdio', 'function'
+    function_signature = Column(Text, nullable=True)  # For function grading mode
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     due_date = Column(DateTime, nullable=True)
@@ -94,6 +97,7 @@ class TestCase(Base):
     input_data = Column(Text)
     expected_output = Column(Text)
     is_hidden = Column(Boolean, default=False)
+    points = Column(Integer, default=10)  # Points for this test case
     
     problem = relationship('Problem', back_populates='test_cases')
     results = relationship('SubmissionResult', back_populates='test_case')
@@ -106,6 +110,7 @@ class Submission(Base):
     source_code = Column(Text, nullable=False)
     language = Column(String(50), nullable=False, default='cpp')
     status = Column(String(50), default='Pending')
+    is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
     submitted_at = Column(DateTime, default=datetime.utcnow)
     
     problem = relationship('Problem', back_populates='submissions')
