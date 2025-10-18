@@ -65,9 +65,27 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
         
         print(f"[{submission_id}] Test harness saved to {main_cpp_path}")
         
-        # 4. Compile code
+        # 3.5 Copy test harness to container
+        print(f"[{submission_id}] Copying test harness to container...")
+        import tarfile
+        import io
+        tar_data = io.BytesIO()
+        with tarfile.open(fileobj=tar_data, mode='w') as tar:
+            tarinfo = tarfile.TarInfo(name="main.cpp")
+            tarinfo.size = len(test_harness_code.encode('utf-8'))
+            tar.addfile(tarinfo, io.BytesIO(test_harness_code.encode('utf-8')))
+        tar_data.seek(0)
+        
+        try:
+            container.put_archive("/sandbox", tar_data)
+            print(f"[{submission_id}] Copied test harness to container")
+        except Exception as e:
+            print(f"[{submission_id}] Error copying test harness to container: {e}")
+            raise
+        
+        # 4. Compile code (now with test harness)
         print(f"[{submission_id}] Compiling code...")
-        compile_cmd = "g++ -std=c++17 -O2 -static main.cpp -o main"
+        compile_cmd = "g++ -std=c++17 -O1 main.cpp -o main"  # ✅ Also optimized to -O1
         compile_result = container.exec_run(compile_cmd, workdir="/sandbox")
         
         if compile_result.exit_code != 0:
@@ -95,45 +113,35 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
             # Format: line 1 = size (nếu vector), lines tiếp = elements
             input_data = tc.input_data or ""
             
-            # Ghi input vào file
-            input_file_path = os.path.join(temp_dir_path, "input.txt")
-            with open(input_file_path, "w", encoding='utf-8') as f:
-                f.write(input_data)
-            
-            # Thực thi với timeout
+            # 🔧 FIX: Copy input to container, then execute
+            # Docker exec_run doesn't support stdin in older versions
             time_limit_sec = problem.time_limit_ms / 1000.0
-            exec_cmd = f"sh -c 'cat /sandbox/input.txt | timeout {time_limit_sec} ./main > /sandbox/output.txt 2>/sandbox/error.txt'"
-            exit_code, _ = container.exec_run(exec_cmd, workdir="/sandbox")
             
-            # Đọc output
-            output_str = ""
-            error_str = ""
-            
-            try:
-                # Đọc stdout
-                bits, stat = container.get_archive('/sandbox/output.txt')
-                with tarfile.open(fileobj=io.BytesIO(b"".join(bits))) as tar:
-                    member = tar.getmember('output.txt')
-                    f = tar.extractfile(member)
-                    if f:
-                        output_str = f.read().decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
-            except docker.errors.NotFound:
-                print(f"[{submission_id}] output.txt not found")
-                output_str = ""
-            except (tarfile.TarError, KeyError) as e:
-                print(f"[{submission_id}] Failed to extract output.txt: {e}")
-                output_str = ""
+            # Create input file in container via put_archive
+            tar_data = io.BytesIO()
+            with tarfile.open(fileobj=tar_data, mode='w') as tar:
+                tarinfo = tarfile.TarInfo(name="input.txt")
+                tarinfo.size = len(input_data.encode('utf-8'))
+                tar.addfile(tarinfo, io.BytesIO(input_data.encode('utf-8')))
+            tar_data.seek(0)
             
             try:
-                # Đọc stderr nếu có lỗi
-                bits, stat = container.get_archive('/sandbox/error.txt')
-                with tarfile.open(fileobj=io.BytesIO(b"".join(bits))) as tar:
-                    member = tar.getmember('error.txt')
-                    f = tar.extractfile(member)
-                    if f:
-                        error_str = f.read().decode('utf-8', errors='ignore').strip()
-            except:
+                container.put_archive("/sandbox", tar_data)
+            except Exception as e:
+                print(f"[{submission_id}] Error copying input to container: {e}")
+            
+            # Execute with stdin from file
+            try:
+                exec_cmd = f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt'"
+                exec_result = container.exec_run(exec_cmd, workdir="/sandbox")
+                exit_code = exec_result.exit_code
+                output_str = exec_result.output.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
                 error_str = ""
+            except Exception as e:
+                print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
+                exit_code = 1
+                output_str = ""
+                error_str = str(e)
             
             # So sánh output với expected output
             expected_output_str = (tc.expected_output or "").strip().replace('\r\n', '\n')
