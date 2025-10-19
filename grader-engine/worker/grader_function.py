@@ -134,7 +134,8 @@ def grade_function_based(submission, problem, test_cases, container, temp_dir_pa
             try:
                 # ✅ CRITICAL FIX: Capture real exit code and detect runtime errors
                 # Run program and save exit code to file, limit output with dd
-                exec_cmd = f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null; echo ${{PIPESTATUS[0]}} > /sandbox/exitcode.txt'"
+                # Use bash instead of sh for PIPESTATUS support
+                exec_cmd = f"bash -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null; echo ${{PIPESTATUS[0]}} > /sandbox/exitcode.txt'"
                 exec_result = container.exec_run(exec_cmd, workdir="/sandbox")
                 
                 # Read the actual exit code from the program
