@@ -182,8 +182,9 @@ def run_single_test_case(container, tc, problem, submission_id):
         # ✅ FIX #3: Read program output from file (limited to 1MB)
         MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB
         try:
+            # Use shell to handle redirection and pipes correctly
             output_result = container.exec_run(
-                f"head -c {MAX_OUTPUT_SIZE} /sandbox/output.txt 2>/dev/null || echo ''",
+                ['/bin/bash', '-c', f"head -c {MAX_OUTPUT_SIZE} /sandbox/output.txt 2>/dev/null || echo ''"],
                 workdir="/sandbox"
             )
             output_bytes = output_result.output if output_result.output else b''
