@@ -19,6 +19,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Setup logging first (before any other operations)
+    from .logging_config import setup_logging
+    setup_logging(app)
+
     # Enable compression for faster response
     compress.init_app(app)
     
@@ -27,6 +31,10 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
+    # Register error handlers
+    from .error_handlers import register_error_handlers
+    register_error_handlers(app)
 
     # Bắt đầu phần sửa lỗi
     with app.app_context():

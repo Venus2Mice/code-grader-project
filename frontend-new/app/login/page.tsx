@@ -27,22 +27,29 @@ export default function LoginPage() {
       // Call real API
       const response = await authAPI.login({ email, password })
       
-      // Get user profile to determine role
-      const profileResponse = await authAPI.getProfile()
-      const user = profileResponse.data
+      // ✅ Backend trả về user info luôn trong login response
+      const userData = response.data.data?.user || response.data.user
       
-      console.log('User profile:', user) // Debug log
+      console.log('✅ Login successful! User:', userData)
       
       // Redirect based on role
-      // Backend returns role as a string, not an object
-      if (user.role === 'teacher') {
+      if (userData && userData.role === 'teacher') {
+        console.log('→ Redirecting to teacher dashboard...')
         router.push("/teacher/dashboard")
       } else {
+        console.log('→ Redirecting to student dashboard...')
         router.push("/student/dashboard")
       }
     } catch (err: any) {
-      console.error('Login error:', err)
-      setError(err.response?.data?.message || err.response?.data?.msg || 'Invalid credentials')
+      console.error('❌ Login error:', err)
+      
+      // ✅ Parse error message từ backend mới
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.msg 
+        || err.message 
+        || 'Invalid credentials'
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
