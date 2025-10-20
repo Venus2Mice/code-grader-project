@@ -1094,8 +1094,8 @@ int main() {
                 <div>
                   <h3 className="mb-3 text-lg font-black uppercase text-foreground">CONSTRAINTS</h3>
                   <ul className="space-y-2 text-sm font-bold text-foreground">
-                    <li>TIME LIMIT: {problem.time_limit}MS</li>
-                    <li>MEMORY LIMIT: {Math.round(problem.memory_limit / 1024)}MB</li>
+                    <li>TIME LIMIT: {problem.time_limit || 1000}MS</li>
+                    <li>MEMORY LIMIT: {problem.memory_limit ? Math.round(problem.memory_limit / 1024) : 256}MB</li>
                     <li>GRADING MODE: {problem.grading_mode?.toUpperCase() || 'STDIO'}</li>
                   </ul>
                 </div>
