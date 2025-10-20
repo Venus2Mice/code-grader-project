@@ -6,6 +6,7 @@ import shutil
 import time
 import tarfile
 import io
+import re
 import logging
 from sqlalchemy.orm import joinedload
 from .database import get_db_session
@@ -16,6 +17,22 @@ from .container_pool import get_global_container_pool
 
 logger = logging.getLogger(__name__)
 DOCKER_IMAGE_NAME = "cpp-grader-env"
+
+def cleanup_container_sandbox(container, submission_id):
+    """
+    ✅ FIX: Clean up container state after each test to prevent contamination
+    
+    Args:
+        container: Docker container to clean
+        submission_id: ID for logging
+    """
+    try:
+        # Remove all files in /sandbox except the compiled binary
+        cleanup_cmd = "cd /sandbox && rm -f input.txt output.txt exitcode.txt time_output.txt 2>/dev/null || true"
+        container.exec_run(cleanup_cmd, workdir="/sandbox")
+        logger.debug(f"[{submission_id}] Cleaned up sandbox files")
+    except Exception as e:
+        logger.warning(f"[{submission_id}] Failed to cleanup sandbox: {e}")
 
 def grade_stdio(submission, problem, test_cases, container, temp_dir_path, submission_id):
     """
@@ -118,7 +135,7 @@ def grade_stdio(submission, problem, test_cases, container, temp_dir_path, submi
 
 def run_single_test_case(container, tc, problem, submission_id):
     """
-    ✅ OPTIMIZED: Run a single test case (for parallel execution)
+    ✅ FIXED: Run a single test case with proper security and resource tracking
     
     Args:
         container: Docker container
@@ -132,49 +149,102 @@ def run_single_test_case(container, tc, problem, submission_id):
     try:
         time_limit_sec = problem.time_limit_ms / 1000.0
         
-        # Create input file inside container
+        # ✅ FIX #1: Create input file safely using put_archive (prevents shell injection)
         input_data = tc.input_data or ""
-        container.exec_run(
-            f"sh -c 'echo {repr(input_data)} > /sandbox/input.txt'",
-            workdir="/sandbox"
-        )
+        input_bytes = input_data.encode('utf-8')
         
-        # ✅ CRITICAL FIX: Capture real exit code and detect runtime errors
-        # Run program and save exit code to file, limit output with dd
-        # Separate stdout and stderr to detect errors properly
+        # Create tar archive with input.txt
+        tar_stream = io.BytesIO()
+        with tarfile.open(fileobj=tar_stream, mode='w') as tar:
+            tarinfo = tarfile.TarInfo(name='input.txt')
+            tarinfo.size = len(input_bytes)
+            tar.addfile(tarinfo, io.BytesIO(input_bytes))
+        tar_stream.seek(0)
+        
+        # Put input file into container
+        container.put_archive('/sandbox', tar_stream)
+        
+        # ✅ FIX #2: Use /usr/bin/time to get accurate resource metrics
+        # Run with proper exit code capture (use double quotes for variable expansion)
         exec_result = container.exec_run(
-            f"sh -c 'timeout {time_limit_sec} ./main < /sandbox/input.txt 2>&1 | dd bs=1024 count=1024 iflag=fullblock 2>/dev/null; echo ${{PIPESTATUS[0]}} > /sandbox/exitcode.txt'",
+            ['/bin/bash', '-c', 
+             f'/usr/bin/time -v timeout {time_limit_sec} ./main < /sandbox/input.txt > /sandbox/output.txt 2> /sandbox/time_output.txt; echo $? > /sandbox/exitcode.txt'],
             workdir="/sandbox"
         )
         
-        # Read the actual exit code from the program (not from dd or shell)
+        # Read the actual exit code from the program
         try:
-            exitcode_result = container.exec_run("cat /sandbox/exitcode.txt 2>/dev/null || echo 0", workdir="/sandbox")
+            exitcode_result = container.exec_run("cat /sandbox/exitcode.txt 2>/dev/null || echo 1", workdir="/sandbox")
             exit_code = int(exitcode_result.output.decode('utf-8', errors='ignore').strip())
         except:
             exit_code = exec_result.exit_code
         
-        output_bytes = exec_result.output if exec_result.output else b''
-        
-        # dd limits to exactly 1MB, but double-check
+        # ✅ FIX #3: Read program output from file (limited to 1MB)
         MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB
-        if len(output_bytes) > MAX_OUTPUT_SIZE:
-            output_bytes = output_bytes[:MAX_OUTPUT_SIZE]
+        try:
+            output_result = container.exec_run(
+                f"head -c {MAX_OUTPUT_SIZE} /sandbox/output.txt 2>/dev/null || echo ''",
+                workdir="/sandbox"
+            )
+            output_bytes = output_result.output if output_result.output else b''
+        except:
+            output_bytes = b''
         
         output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
-        error_output = output_str
         
-        # Additional error detection from output text (for cases where exit code is lost)
-        if 'floating point exception' in output_str.lower() or 'sigfpe' in output_str.lower():
-            exit_code = 136  # Force SIGFPE exit code
-        elif 'segmentation fault' in output_str.lower() or 'sigsegv' in output_str.lower():
-            exit_code = 139  # Force SIGSEGV exit code
-        elif 'killed' in output_str.lower() or 'sigkill' in output_str.lower():
-            exit_code = 137  # Force SIGKILL exit code
+        # ✅ FIX #4: Parse /usr/bin/time output for real metrics
+        execution_time_ms = 0
+        memory_used_kb = 0
+        error_output = ""
+        
+        try:
+            time_result = container.exec_run("cat /sandbox/time_output.txt 2>/dev/null", workdir="/sandbox")
+            time_output = time_result.output.decode('utf-8', errors='ignore')
+            error_output = time_output
+            
+            # Parse /usr/bin/time -v output
+            # Example: "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.05"
+            # Example: "Maximum resident set size (kbytes): 2048"
+            for line in time_output.split('\n'):
+                if 'Elapsed (wall clock) time' in line:
+                    # Extract time in format "0:00.05" or "0.05"
+                    import re
+                    time_match = re.search(r'(\d+:)?(\d+):(\d+\.\d+)', line)
+                    if time_match:
+                        hours = int(time_match.group(1)[:-1]) if time_match.group(1) else 0
+                        minutes = int(time_match.group(2))
+                        seconds = float(time_match.group(3))
+                        execution_time_ms = int((hours * 3600 + minutes * 60 + seconds) * 1000)
+                    else:
+                        # Try simple format "m:ss.ms"
+                        time_match = re.search(r'(\d+):(\d+\.\d+)', line)
+                        if time_match:
+                            minutes = int(time_match.group(1))
+                            seconds = float(time_match.group(2))
+                            execution_time_ms = int((minutes * 60 + seconds) * 1000)
+                
+                elif 'Maximum resident set size' in line:
+                    # Extract memory in kbytes
+                    mem_match = re.search(r'(\d+)', line)
+                    if mem_match:
+                        memory_used_kb = int(mem_match.group(1))
+            
+            # Additional error detection from stderr
+            if 'floating point exception' in time_output.lower() or 'sigfpe' in time_output.lower():
+                exit_code = 136
+            elif 'segmentation fault' in time_output.lower() or 'sigsegv' in time_output.lower():
+                exit_code = 139
+            elif 'killed' in time_output.lower() or 'sigkill' in time_output.lower():
+                exit_code = 137
+        except Exception as e:
+            logger.warning(f"[{submission_id}] Failed to parse time metrics: {e}")
             
     except Exception as e:
         print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
+        logger.error(f"[{submission_id}] Test case execution error: {e}", exc_info=True)
         exit_code = 1
+        execution_time_ms = 0
+        memory_used_kb = 0
         output_str = ""
         error_output = str(e)
     
@@ -215,16 +285,20 @@ def run_single_test_case(container, tc, problem, submission_id):
     elif output_str != expected_output_str:
         tc_status = "Wrong Answer"
     
+    # ✅ FIX #5: Return real metrics instead of hardcoded 0
     result = {
         "test_case_id": tc.id,
         "status": tc_status,
-        "execution_time_ms": 0,
-        "memory_used_kb": 0,
+        "execution_time_ms": execution_time_ms,  # Real time from /usr/bin/time
+        "memory_used_kb": memory_used_kb,        # Real memory from /usr/bin/time
         "output_received": output_str,
         "error_message": error_message
     }
     
-    print(f"[{submission_id}] Test Case #{tc.id}: Status='{tc_status}'")
+    # ✅ FIX #6: Cleanup sandbox after each test case
+    cleanup_container_sandbox(container, submission_id)
+    
+    print(f"[{submission_id}] Test Case #{tc.id}: Status='{tc_status}', Time={execution_time_ms}ms, Memory={memory_used_kb}KB")
     return result
 
 def grade_submission(submission_id):

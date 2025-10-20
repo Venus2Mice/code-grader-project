@@ -4,8 +4,9 @@ FROM ubuntu:20.04
 #Cài đặt các công cụ cần thiết (trình biên dịch C++)
 #-y : tự động đồng ý
 #apt-get clean && rm -rf /var/lib/apt/lists/*: dọn dẹp image để gọn nhẹ hơn
+# ✅ ADDED: time package for accurate resource measurement
 RUN apt-get update && \
-    apt-get install -y build-essential && \
+    apt-get install -y build-essential time && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
