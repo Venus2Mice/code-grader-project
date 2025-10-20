@@ -60,7 +60,7 @@ def grade_stdio(submission, problem, test_cases, container, temp_dir_path, submi
         # Compile code
         print(f"[{submission_id}] Compiling source code...")
         # ✅ OPTIMIZED: Changed from -O2 -static to -O1 (2x faster compilation)
-        compile_cmd = "g++ -std=c++17 -O1 main.cpp -o main"
+        compile_cmd = "g++ -std=c++17 -O1 -Wall -Wextra -pedantic -Werror main.cpp -o main"
         compile_result = container.exec_run(compile_cmd, workdir="/sandbox")
         
         if compile_result.exit_code != 0:
