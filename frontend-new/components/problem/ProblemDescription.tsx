@@ -53,8 +53,8 @@ export function ProblemDescription({
           {problem.grading_mode === 'function' && problem.function_signature && (
             <div>
               <h3 className="mb-3 text-lg font-black uppercase text-foreground">FUNCTION SIGNATURE</h3>
-              <div className="border-4 border-black bg-brutal-accent p-3">
-                <pre className="font-mono text-sm text-black overflow-x-auto">
+              <div className="border-4 border-border bg-accent p-3">
+                <pre className="font-mono text-sm text-accent-foreground overflow-x-auto">
                   <code>{problem.function_signature}</code>
                 </pre>
               </div>
@@ -73,16 +73,16 @@ export function ProblemDescription({
                   .map((testCase: any, index: number) => (
                     <Card 
                       key={testCase.id} 
-                      className={`border-4 border-black p-4 ${
-                        index % 3 === 0 ? "bg-brutal-yellow/30" : 
-                        index % 3 === 1 ? "bg-brutal-pink/30" : 
-                        "bg-brutal-blue/30"
+                      className={`border-4 border-border p-4 ${
+                        index % 3 === 0 ? "bg-yellow-100 dark:bg-yellow-950/20" : 
+                        index % 3 === 1 ? "bg-pink-100 dark:bg-pink-950/20" : 
+                        "bg-blue-100 dark:bg-blue-950/20"
                       }`}
                     >
                       <div className="mb-2 text-sm font-black uppercase text-foreground">
                         TEST CASE {index + 1}
                         {testCase.points > 0 && (
-                          <span className="ml-2 text-xs bg-black text-white px-2 py-1 rounded">
+                          <span className="ml-2 text-xs bg-foreground text-background px-2 py-1 rounded">
                             {testCase.points} PTS
                           </span>
                         )}
@@ -90,13 +90,13 @@ export function ProblemDescription({
                       <div className="space-y-2">
                         <div>
                           <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
+                          <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
                             <code>{testCase.input || "(empty)"}</code>
                           </pre>
                         </div>
                         <div>
                           <div className="mb-1 text-xs font-black uppercase text-foreground">EXPECTED OUTPUT:</div>
-                          <pre className="border-4 border-black bg-background p-2 text-xs font-mono text-foreground">
+                          <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
                             <code>{testCase.expected_output || "(empty)"}</code>
                           </pre>
                         </div>
@@ -104,8 +104,8 @@ export function ProblemDescription({
                     </Card>
                   ))
               ) : (
-                <div className="text-center py-8 border-4 border-dashed border-black bg-background">
-                  <AlertCircle className="mx-auto mb-3 h-16 w-16 text-foreground" />
+                <div className="text-center py-8 border-4 border-dashed border-border bg-muted">
+                  <AlertCircle className="mx-auto mb-3 h-16 w-16 text-muted-foreground" />
                   <p className="font-black uppercase text-foreground">NO TEST CASES AVAILABLE</p>
                 </div>
               )}
@@ -140,7 +140,7 @@ export function ProblemDescription({
                       </div>
                     </div>
                     <button
-                      className="inline-flex items-center gap-2 border-4 border-border bg-background px-3 py-2 text-sm font-black uppercase text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                      className="inline-flex items-center gap-2 border-4 border-border bg-background px-3 py-2 text-sm font-black uppercase text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]"
                       onClick={() => onViewSubmission(submission)}
                     >
                       VIEW
@@ -150,7 +150,7 @@ export function ProblemDescription({
               )
             })
           ) : (
-            <div className="text-center py-8 border-4 border-dashed border-black bg-background">
+            <div className="text-center py-8 border-4 border-dashed border-border bg-muted">
               <p className="font-black uppercase text-foreground">NO SUBMISSIONS</p>
             </div>
           )}

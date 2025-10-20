@@ -152,18 +152,25 @@ export default function ProblemSolvePage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-brutal-bg">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
       </div>
     )
   }
 
   if (!problem) {
-    return <div>Problem not found</div>
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-black uppercase text-foreground mb-4">Problem not found</h2>
+          <p className="text-muted-foreground font-bold">The requested problem does not exist</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex h-screen flex-col bg-brutal-bg">
+    <div className="flex h-screen flex-col bg-background">
       <ProblemHeader
         problem={problem}
         classId={classId}
@@ -181,7 +188,7 @@ export default function ProblemSolvePage() {
       />
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        <div className="lg:w-1/2 overflow-y-auto border-b-4 lg:border-b-0 lg:border-r-4 border-black bg-background max-h-[40vh] lg:max-h-none">
+        <div className="lg:w-1/2 overflow-y-auto border-b-4 lg:border-b-0 lg:border-r-4 border-border bg-card max-h-[40vh] lg:max-h-none">
           <ProblemDescription
             problem={problem}
             submissions={submissions}
@@ -192,7 +199,7 @@ export default function ProblemSolvePage() {
         </div>
 
         <div className="flex lg:w-1/2 flex-col bg-background flex-1">
-          <div className="flex-1 overflow-hidden border-4 border-black m-2 md:m-4">
+          <div className="flex-1 overflow-hidden border-4 border-border m-2 md:m-4">
             <CodeEditor value={code} onChange={setCode} language={language} />
           </div>
 

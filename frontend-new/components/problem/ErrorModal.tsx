@@ -63,24 +63,24 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
                   )
                 } else if (section.includes('❌')) {
                   return (
-                    <div key={idx} className="bg-red-50 border-4 border-red-600 p-4">
-                      <pre className="text-sm font-bold text-red-900 whitespace-pre-wrap">
+                    <div key={idx} className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4">
+                      <pre className="text-sm font-bold text-red-900 dark:text-red-300 whitespace-pre-wrap">
                         {section}
                       </pre>
                     </div>
                   )
                 } else if (section.includes('📌 Current problem')) {
                   return (
-                    <div key={idx} className="bg-blue-50 border-4 border-blue-600 p-4">
-                      <pre className="text-sm font-bold text-blue-900 whitespace-pre-wrap">
+                    <div key={idx} className="bg-blue-50 dark:bg-blue-950/30 border-4 border-blue-600 dark:border-blue-500 p-4">
+                      <pre className="text-sm font-bold text-blue-900 dark:text-blue-300 whitespace-pre-wrap">
                         {section}
                       </pre>
                     </div>
                   )
                 } else {
                   return (
-                    <div key={idx} className="bg-gray-50 border-2 border-gray-300 p-3">
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                    <div key={idx} className="bg-muted border-2 border-border p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap">
                         {section}
                       </p>
                     </div>
@@ -90,42 +90,42 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
             </div>
           ) : hasRuntimeError ? (
             <>
-              <div className="bg-red-50 border-4 border-red-600 p-4">
-                <p className="text-sm font-black text-red-900 mb-2 uppercase">
+              <div className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4">
+                <p className="text-sm font-black text-red-900 dark:text-red-300 mb-2 uppercase">
                   ❌ Chi tiết lỗi:
                 </p>
-                <pre className="bg-background border-2 border-red-400 p-3 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+                <pre className="bg-card border-2 border-red-400 dark:border-red-600 p-3 rounded text-sm font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap overflow-x-auto">
 {message.split('='.repeat(50))[0].trim()}
                 </pre>
               </div>
               
-              <div className="bg-blue-50 border-4 border-blue-600 p-4">
-                <p className="text-sm font-black text-blue-900 mb-3 uppercase">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border-4 border-blue-600 dark:border-blue-500 p-4">
+                <p className="text-sm font-black text-blue-900 dark:text-blue-300 mb-3 uppercase">
                   💡 Hướng dẫn & Gợi ý:
                 </p>
-                <pre className="text-sm text-blue-800 whitespace-pre-wrap leading-relaxed">
+                <pre className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap leading-relaxed">
 {message.split('='.repeat(50))[1]?.trim() || ''}
                 </pre>
               </div>
               
-              <div className="bg-yellow-50 border-4 border-yellow-400 p-4">
-                <p className="text-sm font-black text-yellow-900 mb-2 uppercase">
+              <div className="bg-yellow-50 dark:bg-yellow-950/30 border-4 border-yellow-400 dark:border-yellow-500 p-4">
+                <p className="text-sm font-black text-yellow-900 dark:text-yellow-300 mb-2 uppercase">
                   ⚡ Debug Tips:
                 </p>
-                <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
+                <ul className="list-disc list-inside text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
                   <li>Chạy thử với test case đơn giản để xác định vấn đề</li>
-                  <li>Thêm <code className="bg-yellow-200 px-1 py-0.5 rounded">cout</code> để kiểm tra giá trị biến</li>
+                  <li>Thêm <code className="bg-yellow-200 dark:bg-yellow-900 px-1 py-0.5 rounded">cout</code> để kiểm tra giá trị biến</li>
                   <li>Kiểm tra các trường hợp biên (edge cases)</li>
                   <li>Đảm bảo khởi tạo tất cả biến trước khi sử dụng</li>
                 </ul>
               </div>
             </>
           ) : (
-            <div className="bg-red-50 border-4 border-red-600 p-4 rounded">
-              <p className="text-sm font-bold text-red-900 mb-3">
+            <div className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4 rounded">
+              <p className="text-sm font-bold text-red-900 dark:text-red-300 mb-3">
                 Your code has compilation errors. Please fix them before submitting:
               </p>
-              <pre className="bg-background border-2 border-red-400 p-4 rounded text-sm font-mono text-red-700 whitespace-pre-wrap overflow-x-auto">
+              <pre className="bg-card border-2 border-red-400 dark:border-red-600 p-4 rounded text-sm font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap overflow-x-auto">
 {message}
               </pre>
             </div>
@@ -134,7 +134,7 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
         <DialogFooter className="mt-4">
           <Button 
             onClick={onClose}
-            className="font-black uppercase border-2 border-black"
+            className="font-black uppercase border-2 border-border"
           >
             ✓ GOT IT
           </Button>
