@@ -272,34 +272,6 @@ export function ImageToCodeUpload({
                   </Alert>
                 )}
 
-                {/* Warnings */}
-                {result.warnings && result.warnings.length > 0 && (
-                  <Alert className="border-[4px] border-black bg-yellow-300 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-black text-white border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
-                        <AlertTriangle className="h-6 w-6" />
-                      </div>
-                      <div className="flex-1">
-                        <AlertDescription>
-                          <div className="text-black space-y-3">
-                            <p className="font-black text-lg uppercase">⚠️ Warnings Detected:</p>
-                            <div className="space-y-2">
-                              {result.warnings.map((warning, idx) => (
-                                <div key={idx} className="bg-white border-[3px] border-black p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                  <p className="font-bold text-sm">• {warning}</p>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="bg-black text-white p-3 border-[3px] border-black font-bold text-sm uppercase">
-                              ⚠ Please review code before submitting
-                            </div>
-                          </div>
-                        </AlertDescription>
-                      </div>
-                    </div>
-                  </Alert>
-                )}
-
                 {/* Error */}
                 {!result.success && result.error && (
                   <Alert className="border-[4px] border-black bg-red-300 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-5">
