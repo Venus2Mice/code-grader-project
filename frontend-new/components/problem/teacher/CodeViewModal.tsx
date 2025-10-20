@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Copy, Download } from "lucide-react"
 
@@ -61,14 +61,14 @@ export function CodeViewModal({ isOpen, onClose, codeData, isLoading }: CodeView
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="border-b border-border pb-4">
+        <DialogHeader className="border-b border-border pb-4">
           <DialogTitle className="text-xl font-semibold text-foreground">
             Source Code
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
             {language?.toUpperCase() || 'CODE'}
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {isLoading ? (

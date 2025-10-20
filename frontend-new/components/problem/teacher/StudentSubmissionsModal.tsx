@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { StudentSubmission } from "@/types/submission"
@@ -26,14 +26,14 @@ export function StudentSubmissionsModal({
   return (
     <Dialog open={!!student} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="border-b border-border pb-4">
+        <DialogHeader className="border-b border-border pb-4">
           <DialogTitle className="text-2xl font-semibold text-foreground">
             {studentName}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
             {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           {submissions.length > 0 ? (

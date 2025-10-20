@@ -1,7 +1,7 @@
 "use client"
 
 import { RotateCcw } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
 interface ResetConfirmModalProps {
@@ -19,6 +19,9 @@ export function ResetConfirmModal({ isOpen, onClose, onConfirm }: ResetConfirmMo
             <RotateCcw className="h-6 w-6 text-blue-600" />
             RESET CODE?
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Confirm to reset your code to the initial template
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="bg-yellow-50 border-4 border-yellow-400 p-4">

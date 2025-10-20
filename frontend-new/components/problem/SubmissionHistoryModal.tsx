@@ -1,7 +1,7 @@
 "use client"
 
 import { History } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Submission } from "@/types/submission"
@@ -28,6 +28,9 @@ export function SubmissionHistoryModal({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Submission History</DialogTitle>
+          <DialogDescription>
+            View your previous submissions and their results
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {submissions.map((submission) => {
