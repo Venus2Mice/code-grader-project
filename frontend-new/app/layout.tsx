@@ -10,7 +10,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CodeGrader - Automated Programming Assignment Grader",
   description: "Efficient code grading platform for teachers and students",
-  generator: "v0.app",
 }
 
 export default function RootLayout({

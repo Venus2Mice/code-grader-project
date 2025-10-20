@@ -363,7 +363,13 @@ def grade_submission(submission_id):
             raise RuntimeError("Failed to get container from pool")
         
         print(f"[{submission_id}] Got container {container.short_id} from pool")
-        
+        # Ensure sandbox directory exists in container
+        try:
+            container.exec_run("mkdir -p /sandbox", workdir="/")
+            logger.debug(f"[{submission_id}] Ensured /sandbox directory exists in container")
+        except Exception as e:
+            logger.warning(f"[{submission_id}] Failed to ensure /sandbox directory: {e}")
+
         # Copy main.cpp to container's /sandbox
         # For stdio: copy student code directly
         # For function: copy will happen in grade_function_based()
