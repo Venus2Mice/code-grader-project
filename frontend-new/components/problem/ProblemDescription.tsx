@@ -53,8 +53,8 @@ export function ProblemDescription({
           {problem.grading_mode === 'function' && problem.function_signature && (
             <div>
               <h3 className="mb-3 text-lg font-black uppercase text-foreground">FUNCTION SIGNATURE</h3>
-              <div className="border-4 border-border bg-accent p-3">
-                <pre className="font-mono text-sm text-accent-foreground overflow-x-auto">
+              <div className="border-4 border-border bg-slate-800 dark:bg-accent p-3">
+                <pre className="font-mono text-sm text-slate-100 dark:text-accent-foreground overflow-x-auto">
                   <code>{problem.function_signature}</code>
                 </pre>
               </div>
@@ -74,9 +74,9 @@ export function ProblemDescription({
                     <Card 
                       key={testCase.id} 
                       className={`border-4 border-border p-4 ${
-                        index % 3 === 0 ? "bg-yellow-100 dark:bg-yellow-950/20" : 
-                        index % 3 === 1 ? "bg-pink-100 dark:bg-pink-950/20" : 
-                        "bg-blue-100 dark:bg-blue-950/20"
+                        index % 3 === 0 ? "bg-white dark:bg-yellow-950/20" : 
+                        index % 3 === 1 ? "bg-white dark:bg-pink-950/20" : 
+                        "bg-white dark:bg-blue-950/20"
                       }`}
                     >
                       <div className="mb-2 text-sm font-black uppercase text-foreground">

@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Play, History, CheckCircle, RotateCcw, Upload } from "lucide-react"
+import { ArrowLeft, Play, History, CheckCircle, RotateCcw, Upload, Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useTheme } from "@/components/theme-provider"
 import type { Problem } from "@/types/problem"
 
 interface ProblemHeaderProps {
@@ -39,6 +40,7 @@ export function ProblemHeader({
   hasResetTemplate
 }: ProblemHeaderProps) {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <div className="border-b-4 border-border bg-card">
@@ -78,6 +80,17 @@ export function ProblemHeader({
         </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleTheme}
+            className="gap-2 font-black uppercase text-xs md:text-sm bg-transparent hover:bg-muted"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
+            <span className="hidden sm:inline">{theme === "dark" ? "LIGHT" : "DARK"}</span>
+          </Button>
+
           <Select value={language} onValueChange={onLanguageChange} disabled>
             <SelectTrigger className="w-24 md:w-32 font-black uppercase text-xs md:text-sm">
               <SelectValue />
@@ -130,7 +143,7 @@ export function ProblemHeader({
             variant="outline"
             onClick={onRun}
             disabled={isRunning || isSubmitting}
-            className="gap-2 font-black uppercase text-xs md:text-sm bg-yellow-400 dark:bg-yellow-600 hover:bg-amber-500 dark:hover:bg-yellow-700 text-black dark:text-white border-border"
+            className="gap-2 font-black uppercase text-xs md:text-sm bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 dark:from-green-500 dark:to-emerald-600 dark:hover:from-green-600 dark:hover:to-emerald-700 text-white border-border"
           >
             <Play className="h-4 w-4 md:h-5 md:w-5" />
             {isRunning ? "RUNNING..." : "RUN"}
