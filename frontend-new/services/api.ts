@@ -1,11 +1,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
+import { logger } from '@/lib/logger'
 
 // Base API URL - sẽ lấy từ env variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
-// Debug log
-console.log('🔗 API Base URL:', API_BASE_URL)
-console.log('🔑 ENV Value:', process.env.NEXT_PUBLIC_API_URL)
+// Debug log - chỉ trong development
+logger.info('API initialized', {
+  baseURL: API_BASE_URL,
+  hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
+})
 
 // Create axios instance with default config
 const api: AxiosInstance = axios.create({
@@ -41,7 +44,7 @@ api.interceptors.response.use(
       
       if (!isAuthPage) {
         // Token expired or invalid - redirect to login (only for protected pages)
-        console.warn('🔐 Token expired or invalid. Redirecting to login...')
+        logger.warn('Token expired or invalid, redirecting to login')
         localStorage.removeItem('access_token')
         localStorage.removeItem('user')
         
@@ -52,10 +55,8 @@ api.interceptors.response.use(
         }
       } else {
         // ✅ Nếu đang ở auth page, log error chi tiết nhưng KHÔNG redirect
-        console.error('❌ Authentication failed:', {
+        logger.error('Authentication failed', error, {
           status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
           url: error.config?.url,
           method: error.config?.method
         })
@@ -64,10 +65,9 @@ api.interceptors.response.use(
     
     // Log other errors for debugging
     if (error.response?.status && error.response.status !== 401) {
-      console.error(`🔴 API Error [${error.response.status}]:`, {
+      logger.error(`API Error [${error.response.status}]`, error, {
         url: error.config?.url,
         method: error.config?.method,
-        data: error.response?.data
       })
     }
     
@@ -96,12 +96,12 @@ export const authAPI = {
     
     if (token) {
       localStorage.setItem('access_token', token)
-      console.log('✅ Token saved:', token.substring(0, 20) + '...')
+      logger.debug('Token saved successfully')
     }
     
     if (user) {
       localStorage.setItem('user', JSON.stringify(user))
-      console.log('✅ User saved:', user.email, '- Role:', user.role)
+      logger.info('User logged in', { email: user.email, role: user.role })
     }
     
     return response
@@ -115,7 +115,7 @@ export const authAPI = {
     
     if (userData) {
       localStorage.setItem('user', JSON.stringify(userData))
-      console.log('✅ Profile loaded:', userData.email)
+      logger.debug('Profile loaded', { email: userData.email })
     }
     
     return response

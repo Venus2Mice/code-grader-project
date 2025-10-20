@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { submissionAPI } from "@/services/api"
 import type { SubmissionResult, TestResult, Problem } from "@/types/problem"
+import { logger } from "@/lib/logger"
 
 interface UseSubmissionProps {
   problemId: number
@@ -122,7 +123,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
           })
         }
       } catch (pollErr) {
-        console.error('Error polling results:', pollErr)
+        logger.error('Error polling results', pollErr)
         isTest ? setIsRunning(false) : setIsSubmitting(false)
         setTestResults({
           status: "error",
@@ -144,7 +145,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     setTestResults(null)
     
     try {
-      console.log('[RUN] Testing code - this will NOT be saved to history')
+      logger.debug('Testing code (not saved to history)', { problemId, language })
       const response = await submissionAPI.runCode({
         problem_id: problemId,
         source_code: code,
@@ -152,7 +153,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       })
       
       const submissionId = response.data.submission_id
-      console.log('[RUN] Test submission ID:', submissionId)
+      logger.debug('Test submission created', { submissionId })
       
       setTestResults({
         status: "running",
@@ -162,7 +163,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       
       await pollSubmission(submissionId, true, onError)
     } catch (err: any) {
-      console.error('Error running code:', err)
+      logger.error('Error running code', err)
       setTestResults({
         status: "error",
         message: err.response?.data?.msg || 'Failed to run code',
@@ -181,7 +182,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     setTestResults(null)
     
     try {
-      console.log('[SUBMIT] Submitting code - this WILL be saved to history')
+      logger.info('Submitting code for grading', { problemId, language })
       const response = await submissionAPI.create({
         problem_id: problemId,
         source_code: code,
@@ -189,7 +190,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       })
       
       const submissionId = response.data.submission_id || response.data.id
-      console.log('[SUBMIT] Submission created with ID:', submissionId)
+      logger.info('Submission created', { submissionId })
       
       setTestResults({
         status: "pending",
@@ -204,7 +205,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       
       await pollSubmission(submissionId, false, onError)
     } catch (err: any) {
-      console.error('Error submitting code:', err)
+      logger.error('Error submitting code', err)
       setTestResults({
         status: "error",
         message: err.response?.data?.msg || 'Failed to submit code',

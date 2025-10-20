@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { problemAPI } from "@/services/api"
 import type { Problem } from "@/types/problem"
+import { logger } from "@/lib/logger"
 
 export function useProblemData(problemId: number) {
   const [problem, setProblem] = useState<Problem | null>(null)
@@ -40,7 +41,7 @@ export function useProblemData(problemId: number) {
           localStorage.setItem(`problem_${problemId}_classId`, String(problemData.class_id))
         }
       } catch (err) {
-        console.error('Error fetching problem:', err)
+        logger.error('Error fetching problem', err, { problemId })
       } finally {
         setIsLoading(false)
       }

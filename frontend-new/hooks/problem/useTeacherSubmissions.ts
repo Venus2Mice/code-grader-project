@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { problemAPI } from "@/services/api"
 import type { Submission } from "@/types/submission"
+import { logger } from "@/lib/logger"
 
 export function useTeacherSubmissions(problemId: number) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -24,7 +25,7 @@ export function useTeacherSubmissions(problemId: number) {
       setSubmissions(submissionsData)
       setTotalPages(pagesCount)
     } catch (err) {
-      console.error('Error fetching submissions:', err)
+      logger.error('Error fetching submissions', err, { problemId })
     } finally {
       setIsLoading(false)
     }
@@ -33,9 +34,10 @@ export function useTeacherSubmissions(problemId: number) {
   const loadMoreSubmissions = async () => {
     if (page >= totalPages || isLoadingMore) return
     
+    const newPage = page + 1
+    
     try {
       setIsLoadingMore(true)
-      const newPage = page + 1
       const response = await problemAPI.getSubmissions(problemId, newPage, 20)
       
       const newSubmissions = Array.isArray(response.data)
@@ -45,7 +47,7 @@ export function useTeacherSubmissions(problemId: number) {
       setSubmissions([...submissions, ...newSubmissions])
       setPage(newPage)
     } catch (err) {
-      console.error('Error loading more submissions:', err)
+      logger.error('Error loading more submissions', err, { problemId, page: newPage })
     } finally {
       setIsLoadingMore(false)
     }

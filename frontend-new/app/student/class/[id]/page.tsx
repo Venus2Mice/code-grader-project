@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { studentAPI, classAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function StudentClassPage() {
   const params = useParams()
@@ -32,7 +33,7 @@ export default function StudentClassPage() {
       setClassData(classResponse.data)
       setProblems(problemsResponse.data)
     } catch (err: any) {
-      console.error('Error fetching class data:', err)
+      logger.error('Error fetching class data', err, { classId })
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -123,7 +124,7 @@ export default function StudentClassPage() {
 
             // Safe guard: Skip if problem data is missing
             if (!problem || !problem.id) {
-              console.error('Invalid problem data at index:', index, problemData)
+              logger.warn('Invalid problem data', { index, problemData })
               return null
             }
 

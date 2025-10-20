@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { submissionAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 interface CodeData {
   code: string
@@ -20,7 +21,7 @@ export function useCodeViewer() {
       setCodeModalData(response.data)
       setCodeModalOpen(true)
     } catch (err) {
-      console.error('Error fetching code:', err)
+      logger.error('Error fetching code', err, { submissionId })
       alert('Failed to fetch code')
     } finally {
       setCodeLoading(false)

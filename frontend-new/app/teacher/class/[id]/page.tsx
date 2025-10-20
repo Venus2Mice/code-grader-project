@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -39,7 +40,7 @@ export default function ClassDetailPage() {
       // Problems are nested in class data
       setProblems(classResponse.data.problems || [])
     } catch (err: any) {
-      console.error('Error fetching class data:', err)
+      logger.error('Error fetching class data', err, { classId })
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -52,7 +53,7 @@ export default function ClassDetailPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      logger.error('Failed to copy invite code', err)
       alert('Failed to copy invite code')
     }
   }

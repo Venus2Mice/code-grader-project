@@ -23,6 +23,7 @@ import {
   useProblemData
 } from "@/hooks/problem"
 import { getStatusDisplay, formatVietnameseDate } from "@/lib/problemUtils"
+import { logger } from "@/lib/logger"
 
 export default function ProblemSolvePage() {
   const params = useParams()
@@ -128,7 +129,7 @@ export default function ProblemSolvePage() {
       setLanguage(codeResponse.data.language || submission.language || 'cpp')
       setIsHistoryOpen(false)
     } catch (err) {
-      console.error('Error fetching submission code:', err)
+      logger.error('Error fetching submission code', err, { submissionId: submission.id })
     }
   }
 

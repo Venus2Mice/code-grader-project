@@ -10,6 +10,7 @@ import { Code2, ArrowRight, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -30,18 +31,16 @@ export default function LoginPage() {
       // ✅ Backend trả về user info luôn trong login response
       const userData = response.data.data?.user || response.data.user
       
-      console.log('✅ Login successful! User:', userData)
+      logger.info('Login successful', { email: userData?.email, role: userData?.role })
       
       // Redirect based on role
       if (userData && userData.role === 'teacher') {
-        console.log('→ Redirecting to teacher dashboard...')
         router.push("/teacher/dashboard")
       } else {
-        console.log('→ Redirecting to student dashboard...')
         router.push("/student/dashboard")
       }
     } catch (err: any) {
-      console.error('❌ Login error:', err)
+      logger.error('Login error', err)
       
       // ✅ Parse error message từ backend mới
       const errorMessage = err.response?.data?.message 
