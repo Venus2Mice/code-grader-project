@@ -17,10 +17,10 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-4 border-black">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto border-4 border-border bg-card">
         <DialogHeader>
           <DialogTitle className={`flex items-center gap-2 font-black uppercase ${
-            isAnalysis ? 'text-blue-600' : 'text-red-600'
+            isAnalysis ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
           }`}>
             {isAnalysis ? (
               <CheckCircle className="h-6 w-6" />
@@ -39,24 +39,24 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
               {message.split('\n\n').map((section, idx) => {
                 if (section.includes('File:')) {
                   return (
-                    <div key={idx} className="bg-purple-50 border-4 border-purple-600 p-4">
-                      <p className="text-sm font-black text-purple-900">
+                    <div key={idx} className="bg-purple-50 dark:bg-purple-950/30 border-4 border-purple-600 dark:border-purple-500 p-4">
+                      <p className="text-sm font-black text-purple-900 dark:text-purple-300">
                         {section}
                       </p>
                     </div>
                   )
                 } else if (section.includes('✅ Complete program') || section.includes('✅ Your code')) {
                   return (
-                    <div key={idx} className="bg-green-50 border-4 border-green-600 p-4">
-                      <pre className="text-sm font-bold text-green-900 whitespace-pre-wrap">
+                    <div key={idx} className="bg-green-50 dark:bg-green-950/30 border-4 border-green-600 dark:border-green-500 p-4">
+                      <pre className="text-sm font-bold text-green-900 dark:text-green-300 whitespace-pre-wrap">
                         {section}
                       </pre>
                     </div>
                   )
                 } else if (section.includes('⚠️')) {
                   return (
-                    <div key={idx} className="bg-yellow-50 border-4 border-yellow-400 p-4">
-                      <pre className="text-sm font-bold text-yellow-900 whitespace-pre-wrap">
+                    <div key={idx} className="bg-yellow-50 dark:bg-yellow-950/30 border-4 border-yellow-400 dark:border-yellow-500 p-4">
+                      <pre className="text-sm font-bold text-yellow-900 dark:text-yellow-300 whitespace-pre-wrap">
                         {section}
                       </pre>
                     </div>

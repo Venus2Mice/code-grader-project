@@ -119,16 +119,16 @@ export function ImageToCodeUpload({
 
   const getConfidenceBadge = (confidence: string) => {
     const colors = {
-      high: 'bg-green-400 text-black border-black',
-      medium: 'bg-yellow-400 text-black border-black',
-      low: 'bg-red-400 text-black border-black',
-      none: 'bg-gray-300 text-black border-black'
+      high: 'bg-green-400 dark:bg-green-600 text-black dark:text-white border-border',
+      medium: 'bg-yellow-400 dark:bg-yellow-600 text-black dark:text-white border-border',
+      low: 'bg-red-400 dark:bg-red-600 text-black dark:text-white border-border',
+      none: 'bg-gray-300 dark:bg-gray-700 text-black dark:text-white border-border'
     }
 
     return (
       <Badge 
         variant="outline" 
-        className={`${colors[confidence as keyof typeof colors]} font-black border-[3px] uppercase text-xs px-3 py-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]`}
+        className={`${colors[confidence as keyof typeof colors]} font-black border-[3px] uppercase text-xs px-3 py-1`}
       >
         {confidence} CONFIDENCE
       </Badge>
@@ -136,19 +136,19 @@ export function ImageToCodeUpload({
   }
 
   return (
-    <Card className={`${className} overflow-visible border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`}>
-      <CardHeader className="bg-blue-400 border-b-[4px] border-black">
-        <CardTitle className="flex items-center gap-3 text-2xl">
-          <div className="p-3 bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+    <Card className={`${className} overflow-visible border-[4px] border-border bg-card`}>
+      <CardHeader className="bg-primary border-b-[4px] border-border">
+        <CardTitle className="flex items-center gap-3 text-2xl text-primary-foreground">
+          <div className="p-3 bg-card text-foreground border-[3px] border-border">
             <ImageIcon className="h-6 w-6" />
           </div>
           <span className="font-black uppercase">Upload Image to Extract Code</span>
         </CardTitle>
-        <CardDescription className="text-base font-bold text-black mt-2">
+        <CardDescription className="text-base font-bold text-primary-foreground/90 mt-2">
           Upload a screenshot or photo of code. AI will extract and format it for you.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 p-6 bg-white"
+      <CardContent className="space-y-5 p-6 bg-card"
       >
         {/* File Input */}
         <input
@@ -167,32 +167,32 @@ export function ImageToCodeUpload({
             onDrop={handleDrop}
             onClick={handleButtonClick}
             className={`
-              relative border-[4px] border-black p-12 
+              relative border-[4px] border-border p-12 
               cursor-pointer transition-all
               ${isDragging 
-                ? 'bg-yellow-300 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]' 
-                : 'bg-purple-200 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
+                ? 'bg-accent shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.5)] translate-x-[2px] translate-y-[2px]' 
+                : 'bg-muted shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[3px] hover:translate-y-[3px]'
               }
             `}
           >
             <div className="flex flex-col items-center justify-center gap-5 text-center">
               <div className={`
-                p-5 border-[4px] border-black
-                ${isDragging ? 'bg-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]' : 'bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}
+                p-5 border-[4px] border-border
+                ${isDragging ? 'bg-primary' : 'bg-card'}
               `}>
-                <Upload className={`h-10 w-10 ${isDragging ? 'text-white' : 'text-black'}`} />
+                <Upload className={`h-10 w-10 ${isDragging ? 'text-primary-foreground' : 'text-foreground'}`} />
               </div>
               
               <div className="space-y-2">
-                <p className="text-xl font-black text-black uppercase">
+                <p className="text-xl font-black text-foreground uppercase">
                   {isDragging ? 'Drop It Here!' : 'Drag & Drop Image Here'}
                 </p>
-                <p className="text-base font-bold text-black">
+                <p className="text-base font-bold text-muted-foreground">
                   or click to browse
                 </p>
               </div>
 
-              <div className="bg-black text-white px-4 py-2 border-[3px] border-black font-bold text-sm uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-primary text-primary-foreground px-4 py-2 border-[3px] border-border font-bold text-sm uppercase">
                 ✨ AI-Powered Extraction
               </div>
             </div>

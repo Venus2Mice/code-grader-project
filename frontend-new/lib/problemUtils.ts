@@ -5,25 +5,65 @@ export const getStatusDisplay = (status: string | undefined) => {
   
   switch (normalizedStatus) {
     case "accepted":
-      return { icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", label: "Accepted" }
+      return { 
+        icon: CheckCircle, 
+        color: "text-green-600 dark:text-green-400", 
+        bg: "bg-green-100 dark:bg-green-950/30", 
+        label: "Accepted" 
+      }
     case "wrong_answer":
     case "wrong answer":
-      return { icon: XCircle, color: "text-red-600", bg: "bg-red-100", label: "Wrong Answer" }
+      return { 
+        icon: XCircle, 
+        color: "text-red-600 dark:text-red-400", 
+        bg: "bg-red-100 dark:bg-red-950/30", 
+        label: "Wrong Answer" 
+      }
     case "compile_error":
     case "compile error":
-      return { icon: AlertCircle, color: "text-orange-500", bg: "bg-orange-500/10", label: "Compile Error" }
+      return { 
+        icon: AlertCircle, 
+        color: "text-orange-500 dark:text-orange-400", 
+        bg: "bg-orange-500/10 dark:bg-orange-950/30", 
+        label: "Compile Error" 
+      }
     case "time_limit":
     case "time limit exceeded":
-      return { icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10", label: "Time Limit" }
+      return { 
+        icon: Clock, 
+        color: "text-yellow-500 dark:text-yellow-400", 
+        bg: "bg-yellow-500/10 dark:bg-yellow-950/30", 
+        label: "Time Limit" 
+      }
     case "runtime_error":
     case "runtime error":
-      return { icon: XCircle, color: "text-red-500", bg: "bg-red-100", label: "Runtime Error" }
+      return { 
+        icon: XCircle, 
+        color: "text-red-500 dark:text-red-400", 
+        bg: "bg-red-100 dark:bg-red-950/30", 
+        label: "Runtime Error" 
+      }
     case "pending":
-      return { icon: Clock, color: "text-blue-600", bg: "bg-blue-100", label: "Pending" }
+      return { 
+        icon: Clock, 
+        color: "text-blue-600 dark:text-blue-400", 
+        bg: "bg-blue-100 dark:bg-blue-950/30", 
+        label: "Pending" 
+      }
     case "running":
-      return { icon: Clock, color: "text-blue-600", bg: "bg-blue-100", label: "Running" }
+      return { 
+        icon: Clock, 
+        color: "text-blue-600 dark:text-blue-400", 
+        bg: "bg-blue-100 dark:bg-blue-950/30", 
+        label: "Running" 
+      }
     default:
-      return { icon: Clock, color: "text-muted-foreground", bg: "bg-muted", label: status || "Pending" }
+      return { 
+        icon: Clock, 
+        color: "text-muted-foreground", 
+        bg: "bg-muted", 
+        label: status || "Pending" 
+      }
   }
 }
 

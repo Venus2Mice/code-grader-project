@@ -14,20 +14,20 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
   if (!testResults) return null
 
   return (
-    <div className="border-t-4 border-black bg-background p-2 md:p-4 max-h-48 md:max-h-64 overflow-y-auto">
+    <div className="border-t-4 border-border bg-card p-2 md:p-4 max-h-48 md:max-h-64 overflow-y-auto">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-black uppercase text-foreground">
           {testResults.isTest ? "TEST RESULTS" : "SUBMISSION RESULTS"}
         </h3>
         <div
-          className={`flex items-center gap-2 font-black uppercase text-foreground ${
+          className={`flex items-center gap-2 font-black uppercase ${
             testResults.status === "accepted" 
-              ? "text-green-600" 
+              ? "text-green-600 dark:text-green-400" 
               : testResults.status === "running" || testResults.status === "pending"
-                ? "text-blue-600"
+                ? "text-blue-600 dark:text-blue-400"
                 : testResults.status === "info"
-                  ? "text-yellow-600"
-                  : "text-red-600"
+                  ? "text-yellow-600 dark:text-yellow-400"
+                  : "text-red-600 dark:text-red-400"
           }`}
         >
           {testResults.status === "accepted" ? (
@@ -62,12 +62,14 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
               const isCompileError = statusNorm.includes('compile') || result.test_case_id === null || result.test_case_id === undefined
 
               const cardClass = isPassed
-                ? 'border-green-600 bg-green-100'
+                ? 'border-green-600 dark:border-green-500 bg-green-100 dark:bg-green-950/30'
                 : isCompileError
-                  ? 'border-orange-600 bg-orange-100'
-                  : 'border-red-600 bg-red-100'
+                  ? 'border-orange-600 dark:border-orange-500 bg-orange-100 dark:bg-orange-950/30'
+                  : 'border-red-600 dark:border-red-500 bg-red-100 dark:bg-red-950/30'
 
-              const labelClass = isPassed ? 'text-green-600' : (isCompileError ? 'text-orange-600' : 'text-red-600')
+              const labelClass = isPassed 
+                ? 'text-green-600 dark:text-green-400' 
+                : (isCompileError ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400')
 
               return (
                 <Card
