@@ -70,27 +70,28 @@ services:
     restart: unless-stopped
 
   # Grader Worker
-  worker:
-    build:
-      context: ./grader-engine
-      dockerfile: Dockerfile.worker
-    volumes:
-      - ./grader-engine:/app
-      - ./grader-temp:/grader-temp
-      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for running containers
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - RABBITMQ_HOST=rabbitmq
-      - BACKEND_API_URL=http://backend:5000
-      - GRADER_TEMP_DIR=/grader-temp
-      - HOST_GRADER_TEMP_DIR=${PWD}/grader-temp
-    depends_on:
-      - postgres
-      - rabbitmq
-      - backend
-    networks:
-      - app-network
-    restart: unless-stopped
+  # worker:
+  #   build:
+  #     context: ./grader-engine
+  #     dockerfile: Dockerfile.worker
+  #   volumes:
+  #     - ./grader-engine:/app
+  #     - ./grader-temp:/grader-temp
+  #     - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for running containers
+  #   environment:
+  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     - RABBITMQ_HOST=rabbitmq
+  #     - BACKEND_API_URL=http://backend:5000
+  #     - GRADER_TEMP_DIR=/grader-temp
+  #     - HOST_GRADER_TEMP_DIR=${PWD}/grader-temp
+  #   depends_on:
+  #     - postgres
+  #     - rabbitmq
+  #     - backend
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   privileged: true
 
 networks:
   app-network:
