@@ -1,11 +1,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
+import { logger } from '@/lib/logger'
 
 // Base API URL - sẽ lấy từ env variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
-// Debug log
-console.log('🔗 API Base URL:', API_BASE_URL)
-console.log('🔑 ENV Value:', process.env.NEXT_PUBLIC_API_URL)
+// Debug log - chỉ trong development
+logger.info('API initialized', {
+  baseURL: API_BASE_URL,
+  hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
+})
 
 // Create axios instance with default config
 const api: AxiosInstance = axios.create({
@@ -35,11 +38,39 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - redirect to login
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+      // ✅ FIX: Không redirect khi đang ở auth pages để giữ console logs
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+      const isAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath === '/'
+      
+      if (!isAuthPage) {
+        // Token expired or invalid - redirect to login (only for protected pages)
+        logger.warn('Token expired or invalid, redirecting to login')
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('user')
+        
+        // Dispatch event để các component khác biết
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('logout'))
+          window.location.href = '/login'
+        }
+      } else {
+        // ✅ Nếu đang ở auth page, log error chi tiết nhưng KHÔNG redirect
+        logger.error('Authentication failed', error, {
+          status: error.response?.status,
+          url: error.config?.url,
+          method: error.config?.method
+        })
+      }
     }
+    
+    // Log other errors for debugging
+    if (error.response?.status && error.response.status !== 401) {
+      logger.error(`API Error [${error.response.status}]`, error, {
+        url: error.config?.url,
+        method: error.config?.method,
+      })
+    }
+    
     return Promise.reject(error)
   }
 )
@@ -58,17 +89,35 @@ export const authAPI = {
 
   login: async (data: { email: string; password: string }) => {
     const response = await api.post('/api/auth/login', data)
-    if (response.data.access_token) {
-      localStorage.setItem('access_token', response.data.access_token)
+    
+    // ✅ Backend trả về: { status: 'success', data: { access_token, user } }
+    const token = response.data.data?.access_token || response.data.access_token
+    const user = response.data.data?.user || response.data.user
+    
+    if (token) {
+      localStorage.setItem('access_token', token)
+      logger.debug('Token saved successfully')
     }
+    
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user))
+      logger.info('User logged in', { email: user.email, role: user.role })
+    }
+    
     return response
   },
 
   getProfile: async () => {
     const response = await api.get('/api/auth/profile')
-    if (response.data) {
-      localStorage.setItem('user', JSON.stringify(response.data))
+    
+    // ✅ Backend trả về: { status: 'success', data: { id, full_name, email, role } }
+    const userData = response.data.data || response.data
+    
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData))
+      logger.debug('Profile loaded', { email: userData.email })
     }
+    
     return response
   },
 

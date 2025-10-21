@@ -11,6 +11,7 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -37,7 +38,9 @@ export default function RegisterPage() {
       
       // After successful registration, login automatically
       await authAPI.login({ email, password })
-      const profileResponse = await authAPI.getProfile()
+      await authAPI.getProfile()
+      
+      logger.info('Registration successful', { email, role })
       
       // Redirect based on role
       if (role === "teacher") {
@@ -46,7 +49,7 @@ export default function RegisterPage() {
         router.push("/student/dashboard")
       }
     } catch (err: any) {
-      console.error('Registration error:', err)
+      logger.error('Registration error', err)
       setError(err.response?.data?.message || err.response?.data?.msg || 'Registration failed')
     } finally {
       setIsLoading(false)

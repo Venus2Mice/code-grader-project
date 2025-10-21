@@ -3,6 +3,8 @@
  * Frontend-only implementation (no backend required)
  */
 
+import { logger } from './logger';
+
 export interface OCRResult {
   success: boolean;
   code: string | null;
@@ -314,7 +316,7 @@ CRITICAL RULES:
     };
     
   } catch (error) {
-    console.error('Gemini OCR error:', error);
+    logger.error('Gemini OCR error', error);
     return {
       success: false,
       code: null,

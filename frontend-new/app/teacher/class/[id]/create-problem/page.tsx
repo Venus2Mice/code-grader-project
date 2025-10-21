@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 interface TestCase {
   id: string
@@ -62,7 +63,7 @@ export default function CreateProblemPage() {
       const response = await classAPI.getById(Number(classId))
       setClassData(response.data)
     } catch (err) {
-      console.error('Error fetching class:', err)
+      logger.error('Error fetching class', err, { classId })
     } finally {
       setIsLoading(false)
     }
@@ -180,7 +181,7 @@ export default function CreateProblemPage() {
       await problemAPI.create(Number(classId), problemData)
       router.push(`/teacher/class/${classId}`)
     } catch (err: any) {
-      console.error('Error creating problem:', err)
+      logger.error('Error creating problem', err, { classId })
       alert(err.response?.data?.msg || 'Failed to create problem')
     }
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, Suspense, lazy } from "react"
+import { useRef } from "react"
 import dynamic from "next/dynamic"
 import type { OnMount } from "@monaco-editor/react"
 
@@ -19,8 +19,8 @@ const Editor = dynamic(() => import("@monaco-editor/react").then(mod => ({ defau
 // Loading skeleton
 function EditorSkeleton() {
   return (
-    <div className="w-full h-full bg-slate-900 animate-pulse flex items-center justify-center">
-      <p className="text-slate-400">Loading editor...</p>
+    <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+      <p className="text-muted-foreground">Loading editor...</p>
     </div>
   )
 }
@@ -31,20 +31,8 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
 
-    // Configure Monaco theme
-    monaco.editor.defineTheme("codegrader-dark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": "#0a0a0a",
-        "editor.foreground": "#e5e5e5",
-        "editorLineNumber.foreground": "#525252",
-        "editorLineNumber.activeForeground": "#a855f7",
-      },
-    })
-
-    monaco.editor.setTheme("codegrader-dark")
+    // Always use vs-dark theme regardless of light/dark mode
+    monaco.editor.setTheme("vs-dark")
   }
 
   return (
@@ -63,6 +51,12 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
         tabSize: 4,
         wordWrap: "on",
         padding: { top: 16, bottom: 16 },
+        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+        fontLigatures: true,
+        cursorBlinking: "smooth",
+        cursorSmoothCaretAnimation: "on",
+        smoothScrolling: true,
+        renderLineHighlight: "all",
       }}
     />
   )

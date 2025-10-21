@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { CreateClassDialog } from "@/components/create-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function TeacherDashboard() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function TeacherDashboard() {
         const userData = JSON.parse(user)
         setUserName(userData.username || userData.email || 'Teacher')
       } catch (e) {
-        console.error('Error parsing user data:', e)
+        logger.error('Error parsing user data', e)
       }
     }
     fetchClasses()
@@ -38,7 +39,7 @@ export default function TeacherDashboard() {
       const response = await classAPI.getAll()
       setClasses(response.data)
     } catch (err: any) {
-      console.error('Error fetching classes:', err)
+      logger.error('Error fetching classes', err)
       setError('Failed to load classes')
     } finally {
       setIsLoading(false)
@@ -55,7 +56,7 @@ export default function TeacherDashboard() {
       // Refresh classes list
       await fetchClasses()
     } catch (err: any) {
-      console.error('Error creating class:', err)
+      logger.error('Error creating class', err)
       alert(err.response?.data?.msg || 'Failed to create class')
     }
   }

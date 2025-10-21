@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { JoinClassDialog } from "@/components/join-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -27,7 +28,7 @@ export default function StudentDashboard() {
         const userData = JSON.parse(user)
         setUserName(userData.username || userData.email || 'Student')
       } catch (e) {
-        console.error('Error parsing user data:', e)
+        logger.error('Error parsing user data', e)
       }
     }
     fetchClasses()
@@ -39,7 +40,7 @@ export default function StudentDashboard() {
       const response = await classAPI.getAll()
       setEnrolledClasses(response.data)
     } catch (err: any) {
-      console.error('Error fetching classes:', err)
+      logger.error('Error fetching classes', err)
       setError('Failed to load classes')
     } finally {
       setIsLoading(false)
@@ -52,7 +53,7 @@ export default function StudentDashboard() {
       // Refresh classes list after joining
       await fetchClasses()
     } catch (err: any) {
-      console.error('Error joining class:', err)
+      logger.error('Error joining class', err, { classCode })
       alert(err.response?.data?.msg || 'Failed to join class')
     }
   }

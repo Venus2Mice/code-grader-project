@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import "@/lib/disable-console" // Disable console in production
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -10,7 +11,9 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CodeGrader - Automated Programming Assignment Grader",
   description: "Efficient code grading platform for teachers and students",
-  generator: "v0.app",
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
