@@ -15,6 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 interface TestCase {
   id: string
@@ -62,7 +66,11 @@ export default function CreateProblemPage() {
       const response = await classAPI.getById(Number(classId))
       setClassData(response.data)
     } catch (err) {
+<<<<<<< HEAD
       console.error('Error fetching class:', err)
+=======
+      logger.error('Error fetching class', err, { classId })
+>>>>>>> git-codespace
     } finally {
       setIsLoading(false)
     }
@@ -180,7 +188,11 @@ export default function CreateProblemPage() {
       await problemAPI.create(Number(classId), problemData)
       router.push(`/teacher/class/${classId}`)
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error creating problem:', err)
+=======
+      logger.error('Error creating problem', err, { classId })
+>>>>>>> git-codespace
       alert(err.response?.data?.msg || 'Failed to create problem')
     }
   }

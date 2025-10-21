@@ -3,6 +3,11 @@
  * Frontend-only implementation (no backend required)
  */
 
+<<<<<<< HEAD
+=======
+import { logger } from './logger';
+
+>>>>>>> git-codespace
 export interface OCRResult {
   success: boolean;
   code: string | null;
@@ -314,7 +319,11 @@ CRITICAL RULES:
     };
     
   } catch (error) {
+<<<<<<< HEAD
     console.error('Gemini OCR error:', error);
+=======
+    logger.error('Gemini OCR error', error);
+>>>>>>> git-codespace
     return {
       success: false,
       code: null,

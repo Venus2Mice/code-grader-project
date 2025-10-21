@@ -11,6 +11,10 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -37,7 +41,13 @@ export default function RegisterPage() {
       
       // After successful registration, login automatically
       await authAPI.login({ email, password })
+<<<<<<< HEAD
       const profileResponse = await authAPI.getProfile()
+=======
+      await authAPI.getProfile()
+      
+      logger.info('Registration successful', { email, role })
+>>>>>>> git-codespace
       
       // Redirect based on role
       if (role === "teacher") {
@@ -46,7 +56,11 @@ export default function RegisterPage() {
         router.push("/student/dashboard")
       }
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Registration error:', err)
+=======
+      logger.error('Registration error', err)
+>>>>>>> git-codespace
       setError(err.response?.data?.message || err.response?.data?.msg || 'Registration failed')
     } finally {
       setIsLoading(false)

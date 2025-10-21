@@ -29,7 +29,11 @@ ENV PYTHONUNBUFFERED=1
 
 # Set the command to run when the container starts
 <<<<<<< HEAD
+<<<<<<< HEAD
 CMD ["python", "-m", "run.py"]
+=======
+CMD ["python", "-u", "run.py"]
+>>>>>>> git-codespace
 =======
 CMD ["python", "-u", "run.py"]
 >>>>>>> git-codespace

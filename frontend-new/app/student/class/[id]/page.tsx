@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { studentAPI, classAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function StudentClassPage() {
   const params = useParams()
@@ -32,7 +36,11 @@ export default function StudentClassPage() {
       setClassData(classResponse.data)
       setProblems(problemsResponse.data)
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error fetching class data:', err)
+=======
+      logger.error('Error fetching class data', err, { classId })
+>>>>>>> git-codespace
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -113,7 +121,12 @@ export default function StudentClassPage() {
               memory_limit: problemData.memory_limit || 256
             }
             
+<<<<<<< HEAD
             const submission = problemData.submission || (problemData.status !== 'not_started' ? {
+=======
+            // Only create submission object if there's actual submission data
+            const submission = problemData.submission || (problemData.status && problemData.status !== 'not_started' && problemData.best_score !== undefined ? {
+>>>>>>> git-codespace
               status: problemData.status,
               score: problemData.best_score || 0
             } : null)
@@ -122,7 +135,11 @@ export default function StudentClassPage() {
 
             // Safe guard: Skip if problem data is missing
             if (!problem || !problem.id) {
+<<<<<<< HEAD
               console.error('Invalid problem data at index:', index, problemData)
+=======
+              logger.warn('Invalid problem data', { index, problemData })
+>>>>>>> git-codespace
               return null
             }
 
@@ -163,13 +180,18 @@ export default function StudentClassPage() {
                     <div className="flex flex-col items-end gap-3">
                       {submission?.status === "accepted" ? (
                         <>
+<<<<<<< HEAD
                           <div className="flex items-center gap-2 border-4 border-blue-600 bg-blue-400 px-4 py-2 text-white">
+=======
+                          <div className="flex items-center gap-2 border-4 border-green-600 bg-green-400 px-4 py-2 text-white">
+>>>>>>> git-codespace
                             <CheckCircle className="h-5 w-5" />
                             <span className="font-black uppercase">FINISHED</span>
                           </div>
                           <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
                         </>
                       ) : !submission ? (
+<<<<<<< HEAD
                         <div className="flex items-center gap-2 border-4 border-cyan-600 bg-cyan-400 px-4 py-2 text-black">
                           <Code className="h-5 w-5" />
                           <span className="font-black uppercase">TO DO</span>
@@ -177,6 +199,15 @@ export default function StudentClassPage() {
                       ) : (
                         <>
                           <div className="flex items-center gap-2 border-4 border-orange-600 bg-orange-400 px-4 py-2 text-black">
+=======
+                        <div className="flex items-center gap-2 border-4 border-cyan-600 bg-cyan-400 px-4 py-2 text-white">
+                          <Code className="h-5 w-5" />
+                          <span className="font-black uppercase">LET'S SOLVE</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 border-4 border-orange-600 bg-orange-400 px-4 py-2 text-white">
+>>>>>>> git-codespace
                             <XCircle className="h-5 w-5" />
                             <span className="font-black uppercase">TRY AGAIN</span>
                           </div>
@@ -185,7 +216,11 @@ export default function StudentClassPage() {
                       )}
                       <Button variant="outline" size="sm" className="mt-2 gap-2 bg-transparent">
                         <Code className="h-4 w-4" />
+<<<<<<< HEAD
                         SOLVE
+=======
+                        {!submission ? 'SOLVE' : submission?.status === "accepted" ? 'REVIEW' : 'RETRY'}
+>>>>>>> git-codespace
                       </Button>
                     </div>
                   </div>

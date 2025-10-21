@@ -9,6 +9,10 @@ import { Card } from "@/components/ui/card"
 import { JoinClassDialog } from "@/components/join-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -27,7 +31,11 @@ export default function StudentDashboard() {
         const userData = JSON.parse(user)
         setUserName(userData.username || userData.email || 'Student')
       } catch (e) {
+<<<<<<< HEAD
         console.error('Error parsing user data:', e)
+=======
+        logger.error('Error parsing user data', e)
+>>>>>>> git-codespace
       }
     }
     fetchClasses()
@@ -39,7 +47,11 @@ export default function StudentDashboard() {
       const response = await classAPI.getAll()
       setEnrolledClasses(response.data)
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error fetching classes:', err)
+=======
+      logger.error('Error fetching classes', err)
+>>>>>>> git-codespace
       setError('Failed to load classes')
     } finally {
       setIsLoading(false)
@@ -52,7 +64,11 @@ export default function StudentDashboard() {
       // Refresh classes list after joining
       await fetchClasses()
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error joining class:', err)
+=======
+      logger.error('Error joining class', err, { classCode })
+>>>>>>> git-codespace
       alert(err.response?.data?.msg || 'Failed to join class')
     }
   }

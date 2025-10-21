@@ -1,6 +1,10 @@
 "use client"
 
+<<<<<<< HEAD
 import { useRef, Suspense, lazy } from "react"
+=======
+import { useRef } from "react"
+>>>>>>> git-codespace
 import dynamic from "next/dynamic"
 import type { OnMount } from "@monaco-editor/react"
 
@@ -19,8 +23,13 @@ const Editor = dynamic(() => import("@monaco-editor/react").then(mod => ({ defau
 // Loading skeleton
 function EditorSkeleton() {
   return (
+<<<<<<< HEAD
     <div className="w-full h-full bg-slate-900 animate-pulse flex items-center justify-center">
       <p className="text-slate-400">Loading editor...</p>
+=======
+    <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+      <p className="text-muted-foreground">Loading editor...</p>
+>>>>>>> git-codespace
     </div>
   )
 }
@@ -31,6 +40,7 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
 
+<<<<<<< HEAD
     // Configure Monaco theme
     monaco.editor.defineTheme("codegrader-dark", {
       base: "vs-dark",
@@ -45,6 +55,10 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
     })
 
     monaco.editor.setTheme("codegrader-dark")
+=======
+    // Always use vs-dark theme regardless of light/dark mode
+    monaco.editor.setTheme("vs-dark")
+>>>>>>> git-codespace
   }
 
   return (
@@ -63,6 +77,15 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
         tabSize: 4,
         wordWrap: "on",
         padding: { top: 16, bottom: 16 },
+<<<<<<< HEAD
+=======
+        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+        fontLigatures: true,
+        cursorBlinking: "smooth",
+        cursorSmoothCaretAnimation: "on",
+        smoothScrolling: true,
+        renderLineHighlight: "all",
+>>>>>>> git-codespace
       }}
     />
   )

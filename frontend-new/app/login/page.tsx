@@ -10,6 +10,10 @@ import { Code2, ArrowRight, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function LoginPage() {
   const router = useRouter()
@@ -27,6 +31,7 @@ export default function LoginPage() {
       // Call real API
       const response = await authAPI.login({ email, password })
       
+<<<<<<< HEAD
       // Get user profile to determine role
       const profileResponse = await authAPI.getProfile()
       const user = profileResponse.data
@@ -36,13 +41,34 @@ export default function LoginPage() {
       // Redirect based on role
       // Backend returns role as a string, not an object
       if (user.role === 'teacher') {
+=======
+      // ✅ Backend trả về user info luôn trong login response
+      const userData = response.data.data?.user || response.data.user
+      
+      logger.info('Login successful', { email: userData?.email, role: userData?.role })
+      
+      // Redirect based on role
+      if (userData && userData.role === 'teacher') {
+>>>>>>> git-codespace
         router.push("/teacher/dashboard")
       } else {
         router.push("/student/dashboard")
       }
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Login error:', err)
       setError(err.response?.data?.message || err.response?.data?.msg || 'Invalid credentials')
+=======
+      logger.error('Login error', err)
+      
+      // ✅ Parse error message từ backend mới
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.msg 
+        || err.message 
+        || 'Invalid credentials'
+      
+      setError(errorMessage)
+>>>>>>> git-codespace
     } finally {
       setIsLoading(false)
     }

@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -39,7 +43,11 @@ export default function ClassDetailPage() {
       // Problems are nested in class data
       setProblems(classResponse.data.problems || [])
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error fetching class data:', err)
+=======
+      logger.error('Error fetching class data', err, { classId })
+>>>>>>> git-codespace
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -52,7 +60,11 @@ export default function ClassDetailPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
+<<<<<<< HEAD
       console.error('Failed to copy:', err)
+=======
+      logger.error('Failed to copy invite code', err)
+>>>>>>> git-codespace
       alert('Failed to copy invite code')
     }
   }

@@ -9,6 +9,10 @@ import { Card } from "@/components/ui/card"
 import { CreateClassDialog } from "@/components/create-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
+<<<<<<< HEAD
+=======
+import { logger } from "@/lib/logger"
+>>>>>>> git-codespace
 
 export default function TeacherDashboard() {
   const router = useRouter()
@@ -26,7 +30,11 @@ export default function TeacherDashboard() {
         const userData = JSON.parse(user)
         setUserName(userData.username || userData.email || 'Teacher')
       } catch (e) {
+<<<<<<< HEAD
         console.error('Error parsing user data:', e)
+=======
+        logger.error('Error parsing user data', e)
+>>>>>>> git-codespace
       }
     }
     fetchClasses()
@@ -38,7 +46,11 @@ export default function TeacherDashboard() {
       const response = await classAPI.getAll()
       setClasses(response.data)
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error fetching classes:', err)
+=======
+      logger.error('Error fetching classes', err)
+>>>>>>> git-codespace
       setError('Failed to load classes')
     } finally {
       setIsLoading(false)
@@ -55,7 +67,11 @@ export default function TeacherDashboard() {
       // Refresh classes list
       await fetchClasses()
     } catch (err: any) {
+<<<<<<< HEAD
       console.error('Error creating class:', err)
+=======
+      logger.error('Error creating class', err)
+>>>>>>> git-codespace
       alert(err.response?.data?.msg || 'Failed to create class')
     }
   }

@@ -1,4 +1,5 @@
 "use client"
+<<<<<<< HEAD
 import { useParams } from "next/navigation"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
@@ -177,6 +178,82 @@ export default function TeacherProblemDetailPage() {
       averageScore: avgScore.toFixed(1)
     }
   }, [groupedSubmissions])
+=======
+
+import { useParams } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, Users, Table as TableIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+
+// Hooks
+import { 
+  useProblemData,
+  useTeacherSubmissions,
+  useSubmissionStats,
+  useSubmissionFiltering,
+  useCodeViewer
+} from "@/hooks/problem"
+
+// Components
+import {
+  StatisticsCards,
+  StudentSubmissionCard,
+  SubmissionTable,
+  CodeViewModal,
+  StudentSubmissionsModal,
+  StatisticsTab,
+  ProblemDetailsTab
+} from "@/components/problem/teacher"
+
+export default function TeacherProblemDetailPage() {
+  const params = useParams()
+  const problemId = Number(params.id)
+
+  // Fetch problem data
+  const { problem, isLoading: problemLoading } = useProblemData(problemId)
+
+  // Fetch submissions
+  const {
+    submissions,
+    isLoading: submissionsLoading,
+    page,
+    totalPages,
+    isLoadingMore,
+    loadMoreSubmissions
+  } = useTeacherSubmissions(problemId)
+
+  // Calculate statistics
+  const { groupedSubmissions, stats } = useSubmissionStats(submissions)
+
+  // Filtering and sorting
+  const {
+    viewMode,
+    setViewMode,
+    filterStatus,
+    setFilterStatus,
+    sortBy,
+    setSortBy,
+    filteredAndSortedSubmissions,
+    selectedStudentSubmissions,
+    handleViewAllSubmissions,
+    closeStudentModal
+  } = useSubmissionFiltering(groupedSubmissions, submissions)
+
+  // Code viewer
+  const {
+    codeModalOpen,
+    codeModalData,
+    codeLoading,
+    viewCode,
+    closeCodeModal
+  } = useCodeViewer()
+
+  const isLoading = problemLoading || submissionsLoading
+>>>>>>> git-codespace
 
   if (isLoading) {
     return (
@@ -187,6 +264,7 @@ export default function TeacherProblemDetailPage() {
   }
 
   if (!problem) {
+<<<<<<< HEAD
     return <div>Problem not found</div>
   }
 
@@ -241,10 +319,26 @@ export default function TeacherProblemDetailPage() {
     } catch (err) {
       return 'N/A'
     }
+=======
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-foreground">Problem not found</h2>
+          <Link href="/teacher/classes" className="mt-4 inline-block text-primary hover:underline">
+            Return to classes
+          </Link>
+        </div>
+      </div>
+    )
+>>>>>>> git-codespace
   }
 
   return (
     <div className="min-h-screen bg-background">
+<<<<<<< HEAD
+=======
+      {/* Header */}
+>>>>>>> git-codespace
       <div className="border-b-4 border-border bg-card">
         <div className="mx-auto max-w-7xl px-6 py-6">
           <Link
@@ -275,6 +369,7 @@ export default function TeacherProblemDetailPage() {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -297,6 +392,14 @@ export default function TeacherProblemDetailPage() {
         </div>
 
         {/* Filters and View Toggle */}
+=======
+      {/* Main Content */}
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Statistics Cards */}
+        <StatisticsCards stats={stats} />
+
+        {/* View Mode and Filters */}
+>>>>>>> git-codespace
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
             <Button
@@ -318,6 +421,7 @@ export default function TeacherProblemDetailPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+<<<<<<< HEAD
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -335,6 +439,22 @@ export default function TeacherProblemDetailPage() {
                 </SelectContent>
               </Select>
             </div>
+=======
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[180px] font-bold">
+                <SelectValue placeholder="Filter Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="wrong answer">Wrong Answer</SelectItem>
+                <SelectItem value="compile error">Compile Error</SelectItem>
+                <SelectItem value="runtime error">Runtime Error</SelectItem>
+                <SelectItem value="time limit exceeded">Time Limit</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+>>>>>>> git-codespace
 
             <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
               <SelectTrigger className="w-[180px] font-bold">
@@ -349,6 +469,10 @@ export default function TeacherProblemDetailPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* Tabs */}
+>>>>>>> git-codespace
         <Tabs defaultValue="submissions" className="space-y-6">
           <TabsList>
             <TabsTrigger value="submissions">
@@ -358,6 +482,7 @@ export default function TeacherProblemDetailPage() {
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
           </TabsList>
 
+<<<<<<< HEAD
           <TabsContent value="submissions" className="space-y-4">
             {viewMode === 'grouped' ? (
               /* Grouped View - By Student */
@@ -436,6 +561,22 @@ export default function TeacherProblemDetailPage() {
                       </Card>
                     )
                   })
+=======
+          {/* Submissions Tab */}
+          <TabsContent value="submissions" className="space-y-4">
+            {viewMode === 'grouped' ? (
+              <div className="grid gap-4">
+                {filteredAndSortedSubmissions.length > 0 ? (
+                  filteredAndSortedSubmissions.map((submission: any) => (
+                    <StudentSubmissionCard
+                      key={submission.id}
+                      submission={submission}
+                      onViewAll={handleViewAllSubmissions}
+                      onViewCode={viewCode}
+                      codeLoading={codeLoading}
+                    />
+                  ))
+>>>>>>> git-codespace
                 ) : (
                   <Card className="border-4 border-border p-12 text-center">
                     <Users className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -445,6 +586,7 @@ export default function TeacherProblemDetailPage() {
                 )}
               </div>
             ) : (
+<<<<<<< HEAD
               /* Table View - All Submissions */
               <Card className="border-4 border-border">
                 <Table>
@@ -950,6 +1092,51 @@ export default function TeacherProblemDetailPage() {
           </DialogContent>
         </Dialog>
       </div>
+=======
+              <SubmissionTable
+                submissions={filteredAndSortedSubmissions}
+                onViewCode={viewCode}
+                codeLoading={codeLoading}
+              />
+            )}
+          </TabsContent>
+
+          {/* Problem Details Tab */}
+          <TabsContent value="details" className="space-y-4">
+            <ProblemDetailsTab problem={problem} />
+          </TabsContent>
+
+          {/* Statistics Tab */}
+          <TabsContent value="statistics" className="space-y-4">
+            <StatisticsTab
+              submissions={submissions}
+              groupedSubmissions={groupedSubmissions}
+              stats={stats}
+              problem={problem}
+              page={page}
+              totalPages={totalPages}
+              isLoadingMore={isLoadingMore}
+              loadMoreSubmissions={loadMoreSubmissions}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Modals */}
+      <StudentSubmissionsModal
+        student={selectedStudentSubmissions}
+        onClose={closeStudentModal}
+        onViewCode={viewCode}
+        codeLoading={codeLoading}
+      />
+
+      <CodeViewModal
+        isOpen={codeModalOpen}
+        onClose={closeCodeModal}
+        codeData={codeModalData}
+        isLoading={codeLoading}
+      />
+>>>>>>> git-codespace
     </div>
   )
 }

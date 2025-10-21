@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # /app/routes/__init__.py
 
 def register_routes(app):
@@ -15,6 +16,8 @@ def register_routes(app):
     app.register_blueprint(submission_bp)
     app.register_blueprint(internal_bp)
 =======
+=======
+>>>>>>> git-codespace
 # Routes package
 from .auth_routes import auth_bp
 from .class_routes import class_bp
@@ -33,4 +36,7 @@ __all__ = [
     'student_bp',
     'health_bp'
 ]
+<<<<<<< HEAD
+>>>>>>> git-codespace
+=======
 >>>>>>> git-codespace
