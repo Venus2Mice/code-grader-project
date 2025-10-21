@@ -40,19 +40,23 @@ def get_problems_status_in_class(class_id):
         if attempts > 0:
             # Calculate best score from all attempts
             for submission in submissions:
-                total_points = sum(tc.points for tc in problem.test_cases)
-                earned_points = 0
-                passed_tests = 0
+                # ✅ Use cached_score if available (already calculated by worker)
+                if submission.cached_score is not None:
+                    score = submission.cached_score
+                else:
+                    # Fallback: Calculate from results
+                    total_points = sum(tc.points for tc in problem.test_cases)
+                    earned_points = 0
+                    
+                    for result in submission.results:
+                        # Check for both 'Passed' and 'Accepted' status
+                        if result.status in ['Passed', 'Accepted']:
+                            test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
+                            if test_case:
+                                earned_points += test_case.points
+                    
+                    score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 
-                for result in submission.results:
-                    # Check for both 'Passed' and 'Accepted' status
-                    if result.status in ['Passed', 'Accepted']:
-                        passed_tests += 1
-                        test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
-                        if test_case:
-                            earned_points += test_case.points
-                
-                score = round((earned_points / total_points * 100)) if total_points > 0 else 0
                 best_score = max(best_score, score)
             
             # Update status based on best score (after checking all submissions)

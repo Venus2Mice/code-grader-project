@@ -22,6 +22,7 @@ def update_submission_result(submission_id):
 
     # Thêm kết quả chi tiết
     results_data = data.get('results', [])
+    new_results = []  # ✅ FIX: Store new results to calculate score
     
     if overall_status in ["Compile Error", "System Error"]:
         # Lưu compile error hoặc system error vào SubmissionResult
@@ -37,6 +38,7 @@ def update_submission_result(submission_id):
                 error_message=res_data.get('error_message', '')
             )
             db.session.add(new_result)
+            new_results.append(new_result)  # ✅ FIX: Track new result
         submission.cached_score = 0  # Cache score for compile error
         print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
     else:
@@ -55,14 +57,16 @@ def update_submission_result(submission_id):
                 error_message=res_data.get('error_message')
             )
             db.session.add(new_result)
+            new_results.append(new_result)  # ✅ FIX: Track new result
         
-        # NEW: Calculate and cache score for performance
+        # ✅ FIX: Calculate and cache score using NEW results (not old submission.results)
         problem = submission.problem
         total_points = sum(tc.points for tc in problem.test_cases)
         
         if total_points > 0:
             earned_points = 0
-            for result in submission.results:
+            # ✅ FIX: Loop through NEW results, not submission.results (which are old/deleted)
+            for result in new_results:
                 if result.status in ['Passed', 'Accepted']:
                     test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
                     if test_case:
@@ -70,6 +74,9 @@ def update_submission_result(submission_id):
             
             cached_score = round((earned_points / total_points * 100))
             submission.cached_score = cached_score
+            print(f"Submission {submission_id}: earned {earned_points}/{total_points} points = {cached_score}% score")
+        else:
+            submission.cached_score = 0
         
     db.session.commit()
     
