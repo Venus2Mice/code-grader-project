@@ -28,7 +28,7 @@ def cleanup_container_sandbox(container, submission_id):
     """
     try:
         # Remove all files in /sandbox except the compiled binary
-        cleanup_cmd = "cd /sandbox && rm -f input.txt output.txt exitcode.txt time_output.txt 2>/dev/null || true"
+        cleanup_cmd = "cd /sandbox && rm -f input.txt output.txt exitcode.txt time_output.txt program_stderr.txt run_wrapper.sh 2>/dev/null || true"
         container.exec_run(cleanup_cmd, workdir="/sandbox")
         logger.debug(f"[{submission_id}] Cleaned up sandbox files")
     except Exception as e:
@@ -78,45 +78,29 @@ def grade_stdio(submission, problem, test_cases, container, temp_dir_path, submi
         print(f"[{submission_id}] Compilation successful. Running test cases...")
         overall_status = "Accepted"
         
-        # ✅ OPTIMIZED: Parallel execution for multiple test cases (20-30% faster)
-        # Use ThreadPoolExecutor for I/O-bound operations (container exec)
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        # ❌ DISABLED: Parallel execution causes RACE CONDITION!
+        # Multiple test cases running on the SAME container will overwrite each other's:
+        # - input.txt
+        # - output.txt  
+        # - exitcode.txt
+        # - program_stderr.txt
+        # Result: Test case 2 overwrites output from test case 1!
+        #
+        # TODO: To re-enable parallel execution, need to either:
+        # 1. Create separate subdirectories for each test case (e.g., /sandbox/tc_1/, /sandbox/tc_2/)
+        # 2. Use separate containers for each test case
+        # 3. Use unique filenames with test case ID (e.g., input_1.txt, output_1.txt)
         
         results_list = []
-        max_workers = min(3, len(test_cases))  # Use up to 3 parallel workers
         
-        if len(test_cases) > 1 and max_workers > 1:
-            print(f"[{submission_id}] Running {len(test_cases)} test cases in parallel (workers={max_workers})...")
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all test cases
-                futures = {
-                    executor.submit(run_single_test_case, container, tc, problem, submission_id): tc
-                    for tc in test_cases
-                }
-                
-                # Collect results as they complete
-                for future in as_completed(futures):
-                    try:
-                        result = future.result()
-                        results_list.append(result)
-                        
-                        if result["status"] != "Accepted" and overall_status == "Accepted":
-                            overall_status = result["status"]
-                    except Exception as e:
-                        print(f"[{submission_id}] Error in parallel test execution: {e}")
-                        results_list.append({
-                            "test_case_id": None,
-                            "status": "System Error",
-                            "error_message": str(e)
-                        })
-        else:
-            # Sequential execution for single test case (no benefit from parallelization)
-            for tc in test_cases:
-                result = run_single_test_case(container, tc, problem, submission_id)
-                results_list.append(result)
-                
-                if result["status"] != "Accepted" and overall_status == "Accepted":
-                    overall_status = result["status"]
+        # ✅ SEQUENTIAL execution - safe and correct
+        print(f"[{submission_id}] Running {len(test_cases)} test cases sequentially...")
+        for tc in test_cases:
+            result = run_single_test_case(container, tc, problem, submission_id)
+            results_list.append(result)
+            
+            if result["status"] != "Accepted" and overall_status == "Accepted":
+                overall_status = result["status"]
 
         final_result["overall_status"] = overall_status
         final_result["results"] = results_list
@@ -164,20 +148,59 @@ def run_single_test_case(container, tc, problem, submission_id):
         # Put input file into container
         container.put_archive('/sandbox', tar_stream)
         
-        # ✅ FIX #2: Use /usr/bin/time to get accurate resource metrics
-        # Run with proper exit code capture (use double quotes for variable expansion)
+        # ✅ FIX #2: Properly capture exit code and separate stderr streams
+        # 
+        # CRITICAL FIX: The previous command had a severe bug where "; echo $?" captured
+        # the exit code of the redirection operation, not the program itself.
+        # This caused runtime errors (SIGFPE=136, SIGSEGV=139) to appear as exit_code=0,
+        # leading to "Wrong Answer" instead of "Runtime Error".
+        #
+        # Solution: Use a wrapper script that:
+        # 1. Runs the program with /usr/bin/time to capture resource metrics
+        # 2. Captures the actual program exit code immediately with $?
+        # 3. Separates program stderr from time metrics output
+        # 4. Properly handles timeout wrapper
+        wrapper_script = f'''#!/bin/bash
+# Run program with /usr/bin/time to capture metrics, and timeout to enforce limits
+# Separate stderr of program from time metrics
+/usr/bin/time -v -o /sandbox/time_output.txt timeout {time_limit_sec} ./main < /sandbox/input.txt > /sandbox/output.txt 2> /sandbox/program_stderr.txt
+
+# Capture the ACTUAL program exit code immediately
+PROGRAM_EXIT=$?
+
+# Save the actual program exit code
+echo $PROGRAM_EXIT > /sandbox/exitcode.txt
+
+# Exit with the program's exit code
+exit $PROGRAM_EXIT
+'''
+        
+        # Write wrapper script to container
+        script_bytes = wrapper_script.encode('utf-8')
+        tar_stream_script = io.BytesIO()
+        with tarfile.open(fileobj=tar_stream_script, mode='w') as tar:
+            tarinfo = tarfile.TarInfo(name='run_wrapper.sh')
+            tarinfo.size = len(script_bytes)
+            tarinfo.mode = 0o755  # Make executable
+            tar.addfile(tarinfo, io.BytesIO(script_bytes))
+        tar_stream_script.seek(0)
+        container.put_archive('/sandbox', tar_stream_script)
+        
+        # Execute wrapper script
         exec_result = container.exec_run(
-            ['/bin/bash', '-c', 
-             f'/usr/bin/time -v timeout {time_limit_sec} ./main < /sandbox/input.txt > /sandbox/output.txt 2> /sandbox/time_output.txt; echo $? > /sandbox/exitcode.txt'],
+            ['/bin/bash', '/sandbox/run_wrapper.sh'],
             workdir="/sandbox"
         )
         
         # Read the actual exit code from the program
         try:
-            exitcode_result = container.exec_run("cat /sandbox/exitcode.txt 2>/dev/null || echo 1", workdir="/sandbox")
+            exitcode_result = container.exec_run(
+                ['/bin/bash', '-c', 'cat /sandbox/exitcode.txt 2>/dev/null || echo 1'],
+                workdir="/sandbox"
+            )
             exit_code = int(exitcode_result.output.decode('utf-8', errors='ignore').strip())
         except:
-            exit_code = exec_result.exit_code
+            exit_code = exec_result.exit_code if exec_result.exit_code != 0 else 1
         
         # ✅ FIX #3: Read program output from file (limited to 1MB)
         MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB
@@ -193,17 +216,32 @@ def run_single_test_case(container, tc, problem, submission_id):
         
         output_str = output_bytes.decode('utf-8', errors='ignore').strip().replace('\r\n', '\n')
         
-        # ✅ FIX #4: Parse /usr/bin/time output for real metrics
+        # ✅ FIX #4: Read program stderr and /usr/bin/time output separately
         execution_time_ms = 0
         memory_used_kb = 0
         error_output = ""
+        program_stderr = ""
         
         try:
-            time_result = container.exec_run("cat /sandbox/time_output.txt 2>/dev/null", workdir="/sandbox")
-            time_output = time_result.output.decode('utf-8', errors='ignore')
-            error_output = time_output
+            # Read program's stderr (actual error messages from the program)
+            # Use array format with bash -c to properly handle redirection
+            stderr_result = container.exec_run(
+                ['/bin/bash', '-c', 'cat /sandbox/program_stderr.txt 2>/dev/null || true'],
+                workdir="/sandbox"
+            )
+            program_stderr = stderr_result.output.decode('utf-8', errors='ignore') if stderr_result.output else ""
             
-            # Parse /usr/bin/time -v output
+            # Read /usr/bin/time metrics output
+            time_result = container.exec_run(
+                ['/bin/bash', '-c', 'cat /sandbox/time_output.txt 2>/dev/null || true'],
+                workdir="/sandbox"
+            )
+            time_output = time_result.output.decode('utf-8', errors='ignore')
+            
+            # Combine both for error reporting
+            error_output = program_stderr if program_stderr else time_output
+            
+            # Parse /usr/bin/time -v output for resource metrics
             # Example: "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.05"
             # Example: "Maximum resident set size (kbytes): 2048"
             for line in time_output.split('\n'):
@@ -230,15 +268,25 @@ def run_single_test_case(container, tc, problem, submission_id):
                     if mem_match:
                         memory_used_kb = int(mem_match.group(1))
             
-            # Additional error detection from stderr
-            if 'floating point exception' in time_output.lower() or 'sigfpe' in time_output.lower():
-                exit_code = 136
-            elif 'segmentation fault' in time_output.lower() or 'sigsegv' in time_output.lower():
-                exit_code = 139
-            elif 'killed' in time_output.lower() or 'sigkill' in time_output.lower():
+            # ✅ CRITICAL FIX: Enhanced error detection from program stderr
+            # Check program's stderr for signal names/messages
+            stderr_lower = program_stderr.lower()
+            
+            if 'floating point exception' in stderr_lower or 'sigfpe' in stderr_lower or 'fpe' in stderr_lower:
+                if exit_code == 0:  # Override if not already set
+                    exit_code = 136
+            elif 'segmentation fault' in stderr_lower or 'sigsegv' in stderr_lower or 'segfault' in stderr_lower:
+                if exit_code == 0:
+                    exit_code = 139
+            elif 'killed' in stderr_lower and exit_code == 0:
                 exit_code = 137
+            elif 'aborted' in stderr_lower or 'sigabrt' in stderr_lower:
+                if exit_code == 0:
+                    exit_code = 134
+                    
         except Exception as e:
             logger.warning(f"[{submission_id}] Failed to parse time metrics: {e}")
+            
             
     except Exception as e:
         print(f"[{submission_id}] Error executing test case #{tc.id}: {e}")
