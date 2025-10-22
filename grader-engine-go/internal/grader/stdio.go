@@ -177,9 +177,24 @@ exit $PROGRAM_EXIT
 		}
 	}
 
-	// Check for runtime errors using language-specific error detection
+	// Check for runtime errors using enhanced error detection
 	if exitCodeInt != 0 {
+		// First try language-specific error detection
 		errorMsg := handler.ParseRuntimeError(exitCodeInt, stderr)
+
+		// If not detailed, use general error detector
+		if errorMsg == fmt.Sprintf("Runtime Error (exit code: %d)", exitCodeInt) || errorMsg == "" {
+			detector := NewErrorDetector()
+			runtimeErr := detector.DetectError(exitCodeInt, stderr, false)
+			if runtimeErr.ErrorType != "" {
+				// Format detailed error with hint
+				errorMsg = fmt.Sprintf("❌ %s\n\n%s", runtimeErr.ErrorType, runtimeErr.Description)
+				if runtimeErr.Hint != "" {
+					errorMsg += "\n\n💡 " + runtimeErr.Hint
+				}
+			}
+		}
+
 		return models.TestCaseResult{
 			TestCaseID:      &tc.ID,
 			Status:          "Runtime Error",

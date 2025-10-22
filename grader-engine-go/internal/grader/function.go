@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,13 +89,31 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 
 	if execErr != nil {
 		log.Printf("[%d] Execution error: %v", submissionID, execErr)
-		// Return single error result
+
+		// Parse runtime error details if available
+		errMsg := execErr.Error()
+		errorType := "Runtime Error"
+		errorDesc := errMsg
+
+		// Check if it's a detailed runtime error from the detector
+		if strings.HasPrefix(errMsg, "RUNTIME_ERROR:") {
+			parts := strings.Split(strings.TrimPrefix(errMsg, "RUNTIME_ERROR:"), "|")
+			if len(parts) >= 2 {
+				errorType = parts[0]
+				errorDesc = parts[1]
+				if len(parts) >= 3 && parts[2] != "" {
+					errorDesc = errorDesc + "\n\nTips to fix:\n" + parts[2]
+				}
+			}
+		}
+
+		// Return single error result with detailed information
 		return &models.GradingResult{
-			OverallStatus: "Runtime Error",
+			OverallStatus: errorType,
 			Results: []models.TestCaseResult{
 				{
-					Status:       "Runtime Error",
-					ErrorMessage: fmt.Sprintf("%v", execErr),
+					Status:       errorType,
+					ErrorMessage: errorDesc,
 				},
 			},
 		}, nil
@@ -146,26 +165,62 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 
 // runCompiledTestHarness executes the compiled test harness and returns all outputs
 // The test harness outputs one line per test case
+// Enhanced with comprehensive runtime error detection
 func (s *Service) runCompiledTestHarness(ctx context.Context, cli *client.Client, containerID string, handler language.LanguageHandler, multipliers language.ResourceMultipliers, baseTimeMs, baseMemoryKb int) (string, int, int, error) {
 	// Prepare execution environment
 	if err := handler.PrepareExecution(ctx, cli, containerID); err != nil {
 		return "", 0, 0, fmt.Errorf("failed to prepare execution: %w", err)
 	}
 
-	// Run the executable command
+	// Create wrapper script to capture metrics and exit code properly
+	adjustedTimeLimit := float64(baseTimeMs) * multipliers.TimeMultiplier / 1000.0
+	execCmd := handler.GetExecutableCommand()
+
+	wrapperScript := fmt.Sprintf(`#!/bin/bash
+/usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt
+PROGRAM_EXIT=$?
+echo $PROGRAM_EXIT > /sandbox/exitcode.txt
+exit $PROGRAM_EXIT
+`, adjustedTimeLimit, execCmd)
+
+	if err := s.copyFileToContainer(ctx, cli, containerID, "run_wrapper.sh", wrapperScript); err != nil {
+		return "", 0, 0, fmt.Errorf("failed to create wrapper script: %w", err)
+	}
+
+	// Make script executable
+	s.execInContainer(ctx, cli, containerID, []string{"chmod", "+x", "/sandbox/run_wrapper.sh"})
+
+	// Run the wrapper script
 	startTime := time.Now()
-	exitCode, output, err := s.execInContainer(ctx, cli, containerID, []string{handler.GetExecutableCommand()})
+	_, _, _ = s.execInContainer(ctx, cli, containerID, []string{"/bin/bash", "/sandbox/run_wrapper.sh"})
 	execTime := int(time.Since(startTime).Milliseconds())
 
-	if err != nil {
-		return "", execTime, 0, err
+	// Read the actual exit code from the program (not wrapper's exit code)
+	exitCodeStr := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/exitcode.txt")
+	exitCodeInt, _ := strconv.Atoi(strings.TrimSpace(exitCodeStr))
+
+	// Read output and error streams
+	output := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/output.txt")
+	stderr := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/program_stderr.txt")
+
+	// Check for timeout (exit code 124 from timeout command)
+	timeoutOccurred := exitCodeInt == 124 || (execTime > int(adjustedTimeLimit*1000) && execTime > baseTimeMs)
+
+	// Parse resource metrics from /usr/bin/time output
+	timeMetrics := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/time_output.txt")
+	_, memoryUsed := s.parseTimeMetrics(timeMetrics)
+
+	// Detect runtime errors using enhanced detector
+	if exitCodeInt != 0 {
+		detector := NewErrorDetector()
+		runtimeErr := detector.DetectError(exitCodeInt, stderr, timeoutOccurred)
+
+		// Return error as special format that will be caught in gradeFunctionBased
+		errorMsg := fmt.Sprintf("RUNTIME_ERROR:%s|%s|%s", runtimeErr.ErrorType, runtimeErr.Description, runtimeErr.Hint)
+		return "", execTime, memoryUsed, fmt.Errorf(errorMsg)
 	}
 
-	if exitCode != 0 {
-		return "", execTime, 0, fmt.Errorf("execution failed with exit code: %d", exitCode)
-	}
-
-	return output, execTime, 0, nil
+	return strings.TrimSpace(output), execTime, memoryUsed, nil
 }
 
 // generateTestHarness creates a test harness that wraps user code with test cases
