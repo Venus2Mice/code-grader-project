@@ -1,115 +1,91 @@
-# Agent Guidelines / Hướng dẫn cho AI Agent
+# Agent Guidelines
 
-## Core Principles / Nguyên tắc cơ bản
+## Core Principles
 
-### 1. Documentation Policy / Chính sách tài liệu
+### 1. Documentation Policy
 - **DO NOT** create reports or markdown documentation files unless explicitly requested by the user
-- **KHÔNG** tạo file báo cáo hay tài liệu markdown nếu không được yêu cầu rõ ràng từ người dùng
 - Focus on code implementation rather than excessive documentation
-- Tập trung vào việc triển khai code thay vì tạo tài liệu dư thừa
 
-### 2. Task Management / Quản lý công việc
+### 2. Task Management
 - **ALWAYS** create a todo list after identifying tasks that need to be completed
-- **LUÔN** tạo todo list sau khi xác định được các công việc cần hoàn tất
 - Break down complex tasks into smaller, manageable items
-- Phân tách công việc phức tạp thành các mục nhỏ hơn, dễ quản lý
 - Use the todo list tool to track progress
-- Sử dụng công cụ todo list để theo dõi tiến độ
 
-### 3. Completion Reporting / Báo cáo hoàn thành
+### 3. Completion Reporting
 - **ALWAYS** provide a summary of completed work when all tasks are finished
-- **LUÔN** báo cáo và tóm tắt những gì đã hoàn thành khi hoàn tất các công việc
 - Include:
-  - What was accomplished / Những gì đã hoàn thành
-  - Files created/modified / Các file đã tạo/chỉnh sửa
-  - Any important notes or warnings / Ghi chú hoặc cảnh báo quan trọng
-  - Next steps (if applicable) / Các bước tiếp theo (nếu có)
+  - What was accomplished
+  - Files created/modified
+  - Any important notes or warnings
+  - Next steps (if applicable)
 
-## Workflow / Quy trình làm việc
+## Workflow
 
-1. **Understand** the user's request / Hiểu yêu cầu của người dùng
-2. **Plan** by creating a todo list / Lập kế hoạch bằng cách tạo todo list
-3. **Execute** tasks one by one / Thực hiện từng công việc
-4. **Update** todo list as you progress / Cập nhật todo list trong quá trình làm việc
-5. **Summarize** upon completion / Tóm tắt khi hoàn thành
+1. **Understand** the user's request
+2. **Plan** by creating a todo list
+3. **Execute** tasks one by one
+4. **Update** todo list as you progress
+5. **Summarize** upon completion
 
-## Best Practices / Thực hành tốt nhất
+## Best Practices
 
 - Keep communication concise and focused on the task
-- Giữ giao tiếp ngắn gọn và tập trung vào công việc
 - Ask clarifying questions when requirements are unclear
-- Đặt câu hỏi làm rõ khi yêu cầu chưa rõ ràng
 - Test changes when possible before reporting completion
-- Kiểm tra thay đổi khi có thể trước khi báo cáo hoàn thành
 - Prioritize working code over documentation
-- Ưu tiên code hoạt động hơn là tài liệu
 
-## Design Principles / Nguyên tắc thiết kế
+## Design Principles
 
-### SOLID Principles / Nguyên tắc SOLID
+### SOLID Principles
 **MUST** follow SOLID principles in all code implementations:
-**BẮT BUỘC** tuân thủ nguyên tắc SOLID trong mọi triển khai code:
 
 #### 1. Single Responsibility Principle (SRP)
 - Each module/class should have only one reason to change
-- Mỗi module/class chỉ nên có một lý do để thay đổi
 - Example: Separate grading logic, Docker operations, and database access
-- Ví dụ: Tách biệt logic chấm bài, thao tác Docker, và truy cập database
 
 #### 2. Open-Closed Principle (OCP)
 - Open for extension, closed for modification
-- Mở cho mở rộng, đóng cho sửa đổi
 - Use interfaces and abstractions to allow new features without changing existing code
-- Dùng interface và abstraction để thêm tính năng mới mà không sửa code cũ
 - Example: Language handlers can be added without modifying grading service
-- Ví dụ: Có thể thêm handler ngôn ngữ mới mà không sửa grading service
 
 #### 3. Liskov Substitution Principle (LSP)
 - Subtypes must be substitutable for their base types
-- Subtype phải có thể thay thế cho base type
 - All language handlers must implement the same interface correctly
-- Tất cả language handler phải implement interface giống nhau đúng cách
 
 #### 4. Interface Segregation Principle (ISP)
 - Clients should not depend on interfaces they don't use
-- Client không nên phụ thuộc vào interface mà không dùng
 - Create focused, minimal interfaces rather than large general-purpose ones
-- Tạo interface tập trung, tối giản thay vì interface lớn đa năng
 - Example: Separate interfaces for stdio vs function-based grading
-- Ví dụ: Tách interface cho stdio và function-based grading
 
 #### 5. Dependency Inversion Principle (DIP)
 - Depend on abstractions, not concretions
-- Phụ thuộc vào abstraction, không phụ thuộc vào concrete
 - High-level modules should not depend on low-level modules
-- Module cấp cao không nên phụ thuộc vào module cấp thấp
 - Example: Grading service depends on LanguageHandler interface, not concrete handlers
-- Ví dụ: Grading service phụ thuộc vào LanguageHandler interface, không phải concrete handler
 
 ---
 
-## Fix Strategy Policy / Quy tắc chiến lược fix lỗi
+## Fix Strategy Policy
 
-### When Facing Multiple Fix Options / Khi gặp nhiều phương án fix
+### When Facing Multiple Fix Options
 
-**PRIORITY ORDER / THỨ TỰ ƯU TIÊN:**
+**PRIORITY ORDER:**
 
-1. **Extensibility First** - Chọn phương án phát triển tiếp được
-   - Ưu tiên fix theo cách có thể mở rộng trong tương lai
-   - Tránh hacky/temporary solutions
+1. **Extensibility First**
+   - Choose the solution that allows for future expansion
+   - Avoid hacky/temporary solutions
    - Example: Refactor architecture instead of quick patch
 
-2. **Redesign When Necessary** - Thiết kế lại nếu cần
-   - Nếu thiết kế cũ không phù hợp → thay đổi nó
-   - Không cứ giữ kiến trúc sai chỉ để tránh refactor
-   - Ví dụ: Function-based grading → từ "run per test case" → "run once, parse output"
+2. **Redesign When Necessary**
+   - If the old design does not fit → change it
+   - Don't keep wrong architecture just to avoid refactoring
+   - Example: Function-based grading → from "run per test case" → "run once, parse output"
 
-3. **Long-term Maintainability** - Khả năng bảo trì lâu dài
-   - Code sẽ được duy trì lâu → phải dễ hiểu, dễ sửa
-   - Performance optimization nếu cần, nhưng rõ ràng trong comment
-   - Document decisions in code comments nếu không rõ ràng
+3. **Long-term Maintainability**
+   - Code will be maintained for a long time → must be easy to understand and modify
+   - Performance optimization if needed, but make it clear in comments
+   - Document decisions in code comments if not obvious
 
-### Applied Fixes / Các fix đã áp dụng
+### Applied Fixes
 
 **Function-Based Grading Output Parsing (Oct 22, 2025):**
 - **Old Design**: Run test harness multiple times (once per test case)
@@ -125,4 +101,3 @@
 ---
 
 *This file serves as guidelines for AI agents working on this project.*
-*File này phục vụ như hướng dẫn cho các AI agent làm việc trên dự án này.*

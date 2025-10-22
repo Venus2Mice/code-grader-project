@@ -24,13 +24,17 @@ def update_submission_result(submission_id):
     results_data = data.get('results', [])
     new_results = []  # ✅ FIX: Store new results to calculate score
     
-    if overall_status in ["Compile Error", "System Error"]:
-        # Lưu compile error hoặc system error vào SubmissionResult
-        # Không có test_case_id cho compile error
+    # ✅ ENHANCED: Save all error types (Compile Error, Runtime Error, etc.)
+    # Check if this is an error that applies to all test cases (no test_case_id)
+    has_global_error = any(res.get('test_case_id') is None for res in results_data)
+    
+    if has_global_error or overall_status in ["Compile Error", "System Error", "Runtime Error", "Time Limit Exceeded", "Memory Limit Exceeded", "Output Limit Exceeded"]:
+        # Lưu error vào SubmissionResult
+        # Không có test_case_id cho compile error hoặc runtime error toàn cục
         for res_data in results_data:
             new_result = SubmissionResult(
                 submission_id=submission_id,
-                test_case_id=res_data.get('test_case_id'),  # Will be None for compile errors
+                test_case_id=res_data.get('test_case_id'),  # Will be None for global errors
                 status=res_data.get('status', overall_status),
                 execution_time_ms=res_data.get('execution_time_ms', 0),
                 memory_used_kb=res_data.get('memory_used_kb', 0),
@@ -39,7 +43,7 @@ def update_submission_result(submission_id):
             )
             db.session.add(new_result)
             new_results.append(new_result)  # ✅ FIX: Track new result
-        submission.cached_score = 0  # Cache score for compile error
+        submission.cached_score = 0  # Cache score for errors
         print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
     else:
         # Thêm kết quả chi tiết của từng test case

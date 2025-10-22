@@ -73,25 +73,65 @@ export default function ProblemSolvePage() {
   // Handle error display from submission results
   const handleErrorDisplay = (errorResult: any) => {
     const statusNorm = String(errorResult.status || '').toLowerCase()
+    const errorMsg = errorResult.error_message || ''
     
     if (statusNorm.includes('compile')) {
       setErrorModal({
         isOpen: true,
         title: "Compilation Error",
-        message: errorResult.error_message
+        message: errorMsg || 'Your code has compilation errors. Please fix them before submitting.'
       })
-    } else if (statusNorm.includes('runtime') || statusNorm.includes('time limit') || statusNorm.includes('memory limit')) {
-      const analysis = analyzeRuntimeError(errorResult.error_message)
-      setErrorModal({
-        isOpen: true,
-        title: `${analysis.errorType} - Test Case #${errorResult.test_case_id || 'N/A'}`,
-        message: `${errorResult.error_message}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
-      })
+    } else if (statusNorm.includes('runtime') || statusNorm.includes('time limit') || statusNorm.includes('memory limit') || statusNorm.includes('output limit')) {
+      // ✅ ENHANCED: Handle runtime errors with or without detailed message
+      if (!errorMsg || errorMsg === errorResult.status) {
+        // No detailed error message - provide generic runtime error info
+        let genericMessage = statusNorm
+        if (statusNorm.includes('time limit')) {
+          genericMessage = "⏱️ Time Limit Exceeded\n\nYour program took too long to execute.\n\nCommon causes:\n• Infinite loop without break condition\n• Inefficient algorithm\n• Excessive I/O operations"
+        } else if (statusNorm.includes('memory limit')) {
+          genericMessage = "💾 Memory Limit Exceeded\n\nYour program used too much memory.\n\nCommon causes:\n• Large array allocation\n• Memory leak\n• Too deep recursion"
+        } else if (statusNorm.includes('output limit')) {
+          genericMessage = "📄 Output Limit Exceeded\n\nYour program produced too much output.\n\nCommon causes:\n• Infinite printing loop (e.g., while(true) cout << ...)\n• Not reading input correctly\n• Debug statements in loops"
+        } else {
+          genericMessage = `❌ ${errorResult.status}\n\nA runtime error occurred during execution.\n\nPlease check your code for common issues like:\n• Division by zero\n• Array out of bounds\n• Null pointer access\n• Infinite loops`
+        }
+        
+        setErrorModal({
+          isOpen: true,
+          title: `${errorResult.status} - Test Case #${errorResult.test_case_id || 'N/A'}`,
+          message: genericMessage
+        })
+      } else {
+        // Has detailed error message from worker
+        const analysis = analyzeRuntimeError(errorMsg)
+        
+        // ✅ If the error message is already formatted with new details, use it directly
+        // (The analyzeRuntimeError will parse it and extract the suggestions)
+        let displayMessage: string
+        
+        if (errorMsg.includes('|') || errorMsg.includes('❌') || errorMsg.includes('💡')) {
+          // New detailed format - just add separator if needed
+          if (analysis.suggestions && !errorMsg.includes(analysis.suggestions)) {
+            displayMessage = `${errorMsg}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+          } else {
+            displayMessage = errorMsg
+          }
+        } else {
+          // Legacy format - combine error message with suggestions
+          displayMessage = `${errorMsg}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+        }
+        
+        setErrorModal({
+          isOpen: true,
+          title: `${analysis.errorType} - Test Case #${errorResult.test_case_id || 'N/A'}`,
+          message: displayMessage
+        })
+      }
     } else {
       setErrorModal({
         isOpen: true,
         title: `Error: ${errorResult.status || 'Unknown'}`,
-        message: errorResult.error_message
+        message: errorMsg || 'An error occurred during grading. Please try again.'
       })
     }
   }

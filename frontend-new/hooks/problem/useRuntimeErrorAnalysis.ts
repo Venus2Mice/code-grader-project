@@ -10,6 +10,52 @@ interface RuntimeErrorAnalysis {
 export function useRuntimeErrorAnalysis() {
   const analyzeRuntimeError = useCallback((errorMessage: string, exitCode?: string): RuntimeErrorAnalysis => {
     const error = errorMessage.toLowerCase()
+    
+    // ✅ NEW: Check for new detailed error format from Go worker
+    // Format: "ErrorType|Description|Hints"
+    // Example: "Arithmetic Exception (SIGFPE)|Division by zero...|Common causes:..."
+    if (errorMessage.includes('|') && 
+        (errorMessage.includes('SIGSEGV') || 
+         errorMessage.includes('SIGFPE') || 
+         errorMessage.includes('SIGABRT') ||
+         errorMessage.includes('Time Limit Exceeded') ||
+         errorMessage.includes('Memory Limit') ||
+         errorMessage.includes('Arithmetic Exception') ||
+         errorMessage.includes('Segmentation Fault'))) {
+      
+      const parts = errorMessage.split('|')
+      if (parts.length >= 2) {
+        const errorType = parts[0].trim()
+        const description = parts[1].trim()
+        const hints = parts.length > 2 ? parts[2].trim() : ""
+        
+        // Combine description and hints for display
+        let suggestions = description
+        if (hints) {
+          suggestions += "\n\n" + hints
+        }
+        
+        return { errorType, suggestions }
+      }
+    }
+    
+    // ✅ Check for raw error message that might have emoji and newlines
+    if (errorMessage.includes('❌') || 
+        errorMessage.includes('💡') ||
+        errorMessage.includes('⏱️') ||
+        errorMessage.includes('💾')) {
+      // This is already a formatted error message from new detector
+      // Extract the main error type from first line
+      const firstLine = errorMessage.split('\n')[0]
+      const errorType = firstLine.replace('❌', '').trim()
+      
+      return { 
+        errorType: errorType || "Runtime Error", 
+        suggestions: errorMessage 
+      }
+    }
+    
+    // ✅ Fallback to exit code-based analysis (for backward compatibility)
     const suggestions: string[] = []
     let errorType = "Runtime Error"
     

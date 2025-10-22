@@ -90,23 +90,60 @@ export function ErrorModal({ isOpen, onClose, title, message }: ErrorModalProps)
             </div>
           ) : hasRuntimeError ? (
             <>
-              <div className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4">
-                <p className="text-sm font-black text-red-900 dark:text-red-300 mb-2 uppercase">
-                  ❌ Chi tiết lỗi:
-                </p>
-                <pre className="bg-card border-2 border-red-400 dark:border-red-600 p-3 rounded text-sm font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap overflow-x-auto">
-{message.split('='.repeat(50))[0].trim()}
-                </pre>
-              </div>
-              
-              <div className="bg-blue-50 dark:bg-blue-950/30 border-4 border-blue-600 dark:border-blue-500 p-4">
-                <p className="text-sm font-black text-blue-900 dark:text-blue-300 mb-3 uppercase">
-                  💡 Hướng dẫn & Gợi ý:
-                </p>
-                <pre className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap leading-relaxed">
-{message.split('='.repeat(50))[1]?.trim() || ''}
-                </pre>
-              </div>
+              {/* Split message into error details and suggestions */}
+              {(() => {
+                const parts = message.split('='.repeat(50))
+                const errorDetail = parts[0]?.trim() || ''
+                const suggestions = parts[1]?.trim() || ''
+                
+                // ✅ NEW: Handle emoji-formatted detailed error messages
+                if (errorDetail.includes('❌') || errorDetail.includes('💡') || errorDetail.includes('⏱️') || errorDetail.includes('💾')) {
+                  return (
+                    <>
+                      <div className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4">
+                        <pre className="text-sm font-mono text-red-800 dark:text-red-300 whitespace-pre-wrap leading-relaxed">
+                          {errorDetail}
+                        </pre>
+                      </div>
+                      {suggestions && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 border-4 border-blue-600 dark:border-blue-500 p-4">
+                          <p className="text-sm font-black text-blue-900 dark:text-blue-300 mb-3 uppercase">
+                            💡 Gợi ý & Hướng dẫn:
+                          </p>
+                          <pre className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap leading-relaxed">
+                            {suggestions}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )
+                }
+                
+                // Legacy format
+                return (
+                  <>
+                    <div className="bg-red-50 dark:bg-red-950/30 border-4 border-red-600 dark:border-red-500 p-4">
+                      <p className="text-sm font-black text-red-900 dark:text-red-300 mb-2 uppercase">
+                        ❌ Chi tiết lỗi:
+                      </p>
+                      <pre className="bg-card border-2 border-red-400 dark:border-red-600 p-3 rounded text-sm font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap overflow-x-auto">
+                        {errorDetail}
+                      </pre>
+                    </div>
+                    
+                    {suggestions && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border-4 border-blue-600 dark:border-blue-500 p-4">
+                        <p className="text-sm font-black text-blue-900 dark:text-blue-300 mb-3 uppercase">
+                          💡 Hướng dẫn & Gợi ý:
+                        </p>
+                        <pre className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap leading-relaxed">
+                          {suggestions}
+                        </pre>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
               
               <div className="bg-yellow-50 dark:bg-yellow-950/30 border-4 border-yellow-400 dark:border-yellow-500 p-4">
                 <p className="text-sm font-black text-yellow-900 dark:text-yellow-300 mb-2 uppercase">

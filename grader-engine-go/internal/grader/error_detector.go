@@ -214,6 +214,24 @@ func (ed *ErrorDetector) detectSignalDeath(signal int, stderr string, exitCode i
 			Signal: "SIGSEGV",
 		}
 
+	case 13: // SIGPIPE - Broken pipe (output limit exceeded)
+		return RuntimeError{
+			ErrorType:   "Output Limit Exceeded (SIGPIPE)",
+			ExitCode:    exitCode,
+			Description: "Program produced too much output. The output pipe was closed because the limit was exceeded.",
+			Hint: "Common causes:\n" +
+				"• Infinite printing loop (e.g., while(true) cout << ...)\n" +
+				"• Printing too much data in output\n" +
+				"• Not reading input correctly, causing wrong output\n" +
+				"• Debug cout statements printing in loop\n" +
+				"\nSuggestions:\n" +
+				"• Check for infinite loops with print statements\n" +
+				"• Verify loop termination conditions\n" +
+				"• Remove unnecessary debug cout statements\n" +
+				"• Check that output matches problem requirements",
+			Signal: "SIGPIPE",
+		}
+
 	case 25: // SIGXFSZ - File size limit exceeded
 		return RuntimeError{
 			ErrorType:   "Output Limit Exceeded (SIGXFSZ)",

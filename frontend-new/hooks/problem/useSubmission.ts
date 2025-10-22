@@ -93,11 +93,30 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
         if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
           isTest ? setIsRunning(false) : setIsSubmitting(false)
           
-          // Check for errors and call onError callback
+          // ✅ ENHANCED: Check for errors and call onError callback
+          // Priority 1: Check if there's any error result with error_message
           if (submissionData.results && submissionData.results.length > 0) {
             const errorResult = submissionData.results.find((r: any) => r.error_message)
             if (errorResult && errorResult.error_message) {
               onError(errorResult)
+            }
+          }
+          
+          // ✅ NEW: Priority 2: Check overall status for runtime errors
+          // Even if no detailed error_message, show modal for known error statuses
+          const statusLower = String(submissionData.status || '').toLowerCase()
+          if (!submissionData.results || submissionData.results.length === 0) {
+            // No results but error status - create synthetic error for modal
+            if (statusLower.includes('error') || 
+                statusLower.includes('timeout') || 
+                statusLower.includes('time limit') ||
+                statusLower.includes('memory limit') ||
+                statusLower.includes('output limit')) {
+              onError({
+                status: submissionData.status,
+                error_message: submissionData.status || 'An error occurred during grading',
+                test_case_id: null
+              })
             }
           }
 
