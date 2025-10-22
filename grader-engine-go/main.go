@@ -73,6 +73,9 @@ func main() {
 		log.Printf("⚠️  Error stopping worker: %v", err)
 	}
 
+	// Print cleanup stats before shutdown
+	log.Printf("📊 Cleanup Service Stats: %v", containerPool.GetCleanupStats())
+
 	// Cleanup container pool
 	log.Println("🧹 Cleaning up container pool...")
 	containerPool.Shutdown()

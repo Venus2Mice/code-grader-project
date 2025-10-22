@@ -7,18 +7,21 @@ import (
 	"sync"
 	"time"
 
+	"grader-engine-go/internal/cleanup"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
 // ContainerPool manages a pool of reusable Docker containers
 type ContainerPool struct {
-	client     *client.Client
-	imageName  string
-	size       int
-	containers chan string // Channel of container IDs
-	mu         sync.Mutex
-	active     map[string]bool // Track active containers
+	client         *client.Client
+	imageName      string
+	size           int
+	containers     chan string // Channel of container IDs
+	mu             sync.Mutex
+	active         map[string]bool // Track active containers
+	cleanupService *cleanup.CleanupService
 }
 
 // NewContainerPool creates and initializes a new container pool
@@ -28,17 +31,26 @@ func NewContainerPool(size int, imageName string) (*ContainerPool, error) {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}
 
+	// Create cleanup service
+	cleanupSvc := cleanup.NewCleanupService(cli, 30*time.Second)
+
 	pool := &ContainerPool{
-		client:     cli,
-		imageName:  imageName,
-		size:       size,
-		containers: make(chan string, size),
-		active:     make(map[string]bool),
+		client:         cli,
+		imageName:      imageName,
+		size:           size,
+		containers:     make(chan string, size),
+		active:         make(map[string]bool),
+		cleanupService: cleanupSvc,
 	}
 
 	// Pre-create containers
 	if err := pool.initialize(); err != nil {
 		return nil, err
+	}
+
+	// Start automatic cleanup
+	if err := cleanupSvc.Start(); err != nil {
+		log.Printf("⚠️  Warning: Failed to start cleanup service: %v", err)
 	}
 
 	return pool, nil
@@ -58,6 +70,7 @@ func (p *ContainerPool) initialize() error {
 
 		p.containers <- containerID
 		p.active[containerID] = true
+		p.cleanupService.RegisterContainer(containerID)
 		log.Printf("   ✅ Created container %d/%d: %s", i+1, p.size, containerID[:12])
 	}
 
@@ -109,7 +122,7 @@ func (p *ContainerPool) Get(timeout time.Duration) (string, error) {
 		if err != nil || !inspect.State.Running {
 			log.Printf("⚠️  Container %s not running, creating new one", containerID[:12])
 			p.removeContainer(containerID)
-			
+
 			// Create a new container
 			newID, err := p.createContainer(ctx)
 			if err != nil {
@@ -117,9 +130,9 @@ func (p *ContainerPool) Get(timeout time.Duration) (string, error) {
 			}
 			return newID, nil
 		}
-		
+
 		return containerID, nil
-		
+
 	case <-time.After(timeout):
 		return "", fmt.Errorf("timeout waiting for available container")
 	}
@@ -145,11 +158,13 @@ func (p *ContainerPool) Return(containerID string) error {
 	}
 }
 
-// cleanupContainer removes temporary files from container
+// cleanupContainer removes temporary files from container for reuse
 func (p *ContainerPool) cleanupContainer(ctx context.Context, containerID string) error {
+	// Comprehensive cleanup: remove all files in sandbox and recreate directory
+	// This prevents any data contamination between different submissions
 	cleanupCmd := []string{
 		"sh", "-c",
-		"cd /sandbox && rm -f main.cpp main input.txt output.txt exitcode.txt time_output.txt program_stderr.txt run_wrapper.sh 2>/dev/null || true",
+		"rm -rf /sandbox && mkdir -p /sandbox && chmod 777 /sandbox",
 	}
 
 	execConfig := container.ExecOptions{
@@ -160,10 +175,17 @@ func (p *ContainerPool) cleanupContainer(ctx context.Context, containerID string
 
 	exec, err := p.client.ContainerExecCreate(ctx, containerID, execConfig)
 	if err != nil {
+		log.Printf("⚠️  Failed to create cleanup exec: %v", err)
 		return err
 	}
 
-	return p.client.ContainerExecStart(ctx, exec.ID, container.ExecStartOptions{})
+	if err := p.client.ContainerExecStart(ctx, exec.ID, container.ExecStartOptions{}); err != nil {
+		log.Printf("⚠️  Failed to execute cleanup: %v", err)
+		return err
+	}
+
+	log.Printf("✅ Cleaned up container: %s", containerID[:12])
+	return nil
 }
 
 // removeContainer removes a container from the pool
@@ -172,29 +194,30 @@ func (p *ContainerPool) removeContainer(containerID string) error {
 	delete(p.active, containerID)
 	p.mu.Unlock()
 
-	ctx := context.Background()
-	return p.client.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
+	// Use cleanup service for comprehensive cleanup including volumes
+	return p.cleanupService.CleanupContainerAndVolumes(context.Background(), containerID)
 }
 
 // Shutdown cleans up all containers in the pool
 func (p *ContainerPool) Shutdown() {
-	ctx := context.Background()
-
 	log.Println("🧹 Shutting down container pool...")
-	
-	// Close channel to prevent new additions
-	close(p.containers)
 
-	// Remove all containers
-	for containerID := range p.containers {
-		if err := p.client.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true}); err != nil {
-			log.Printf("⚠️  Failed to remove container %s: %v", containerID[:12], err)
-		} else {
-			log.Printf("   ✅ Removed container %s", containerID[:12])
-		}
+	// Use cleanup service for graceful shutdown
+	if p.cleanupService != nil {
+		p.cleanupService.GracefulShutdown()
 	}
 
 	// Close Docker client
 	p.client.Close()
 	log.Println("✅ Container pool shutdown complete")
+}
+
+// GetCleanupStats returns cleanup service statistics
+func (p *ContainerPool) GetCleanupStats() map[string]interface{} {
+	if p.cleanupService != nil {
+		return p.cleanupService.GetStats()
+	}
+	return map[string]interface{}{
+		"cleanup_service": "not initialized",
+	}
 }
