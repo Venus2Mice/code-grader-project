@@ -171,8 +171,6 @@ func (h *JavaHandler) ParseCompileError(compilerOutput string) string {
 
 // ParseRuntimeError determines Java runtime error type from exit code
 func (h *JavaHandler) ParseRuntimeError(exitCode int, stderr string) string {
-	stderrLower := strings.ToLower(stderr)
-
 	// Timeout
 	if exitCode == 124 {
 		return "Time Limit Exceeded"

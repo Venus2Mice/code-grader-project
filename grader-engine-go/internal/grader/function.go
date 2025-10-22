@@ -100,7 +100,7 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 
 // generateTestHarness creates a test harness that wraps user code with test cases
 func (s *Service) generateTestHarness(submission *models.Submission, handler language.LanguageHandler) (string, error) {
-	problem := submission.Problem
+	problem := &submission.Problem
 
 	switch submission.Language {
 	case "cpp":

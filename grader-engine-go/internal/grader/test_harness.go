@@ -22,7 +22,7 @@ func (s *Service) generateCppTestHarness(problem *models.Problem, userCode strin
 	for i, tc := range problem.TestCases {
 		// Parse input as JSON array (function arguments)
 		var args []interface{}
-		if err := json.Unmarshal([]byte(tc.Input), &args); err != nil {
+		if err := json.Unmarshal([]byte(tc.InputData), &args); err != nil {
 			return "", fmt.Errorf("failed to parse test case %d input: %w", i, err)
 		}
 
@@ -78,7 +78,7 @@ func (s *Service) generatePythonTestHarness(problem *models.Problem, userCode st
 	for i, tc := range problem.TestCases {
 		// Parse input as JSON array (function arguments)
 		var args []interface{}
-		if err := json.Unmarshal([]byte(tc.Input), &args); err != nil {
+		if err := json.Unmarshal([]byte(tc.InputData), &args); err != nil {
 			return "", fmt.Errorf("failed to parse test case %d input: %w", i, err)
 		}
 
@@ -126,7 +126,7 @@ func (s *Service) generateJavaTestHarness(problem *models.Problem, userCode stri
 	for i, tc := range problem.TestCases {
 		// Parse input as JSON array (function arguments)
 		var args []interface{}
-		if err := json.Unmarshal([]byte(tc.Input), &args); err != nil {
+		if err := json.Unmarshal([]byte(tc.InputData), &args); err != nil {
 			return "", fmt.Errorf("failed to parse test case %d input: %w", i, err)
 		}
 

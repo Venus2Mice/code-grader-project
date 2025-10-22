@@ -98,7 +98,7 @@ func TestRegistry_Get(t *testing.T) {
 
 func TestRegistry_Register(t *testing.T) {
 	// Create a new registry for testing (not the global one)
-	registry := &LanguageRegistry{
+	registry := &HandlerRegistry{
 		handlers: make(map[string]LanguageHandler),
 	}
 	
@@ -155,7 +155,7 @@ func TestRegistry_ThreadSafety(t *testing.T) {
 
 func TestRegistry_RegisterDuplicate(t *testing.T) {
 	// Create a new registry for testing
-	registry := &LanguageRegistry{
+	registry := &HandlerRegistry{
 		handlers: make(map[string]LanguageHandler),
 	}
 	
