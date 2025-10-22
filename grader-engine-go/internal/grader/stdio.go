@@ -120,8 +120,12 @@ func (s *Service) runTestCase(ctx context.Context, cli *client.Client, container
 	// Get executable command from handler
 	execCmd := handler.GetExecutableCommand()
 
+	// Use bash time for precise execution timing (millisecond accuracy)
+	// Format: real 0m0.003s (captures programs < 10ms accurately)
 	wrapperScript := fmt.Sprintf(`#!/bin/bash
-/usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s < /sandbox/input.txt > /sandbox/output.txt 2> /sandbox/program_stderr.txt
+exec 3>&1 4>&2
+TIME_OUTPUT=$( { time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s < /sandbox/input.txt > /sandbox/output.txt 2> /sandbox/program_stderr.txt 1>&3 2>&4; } 2>&1 )
+echo "$TIME_OUTPUT" > /sandbox/bash_time.txt
 PROGRAM_EXIT=$?
 echo $PROGRAM_EXIT > /sandbox/exitcode.txt
 exit $PROGRAM_EXIT
@@ -154,11 +158,20 @@ exit $PROGRAM_EXIT
 	// Read stderr
 	stderr := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/program_stderr.txt")
 
-	// Parse time metrics
-	timeMetrics := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/time_output.txt")
-	execTime, memoryUsed := s.parseTimeMetrics(timeMetrics)
+	// Try to parse bash time first (more accurate for fast programs)
+	bashTime := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/bash_time.txt")
+	execTime := s.parseBashTime(bashTime)
 
-	// Use actual time if parsing failed
+	// Parse memory from /usr/bin/time -v
+	timeMetrics := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/time_output.txt")
+	_, memoryUsed := s.parseTimeMetrics(timeMetrics)
+
+	// Fallback to /usr/bin/time if bash time parsing failed
+	if execTime == 0 {
+		execTime, _ = s.parseTimeMetrics(timeMetrics)
+	}
+
+	// Last resort: use actual time if both failed
 	if execTime == 0 {
 		execTime = int(actualTime.Milliseconds())
 	}

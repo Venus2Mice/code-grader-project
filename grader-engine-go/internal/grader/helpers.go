@@ -113,18 +113,33 @@ func (s *Service) readFileFromContainer(ctx context.Context, cli *client.Client,
 }
 
 // parseTimeMetrics extracts execution time and memory usage from /usr/bin/time output
+// Uses User time + System time for better precision (microsecond level)
 func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb int) {
 	lines := strings.Split(timeOutput, "\n")
 
+	var userTime, systemTime float64
+	foundUserTime := false
+	foundSystemTime := false
+
 	for _, line := range lines {
-		// Parse elapsed time: "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.05"
-		if strings.Contains(line, "Elapsed (wall clock) time") {
-			re := regexp.MustCompile(`(\d+):(\d+\.\d+)`)
+		// Parse User time: "User time (seconds): 0.00"
+		// This has microsecond precision even when showing 0.00
+		if strings.Contains(line, "User time (seconds):") {
+			re := regexp.MustCompile(`(\d+\.\d+)`)
 			matches := re.FindStringSubmatch(line)
-			if len(matches) == 3 {
-				minutes, _ := strconv.Atoi(matches[1])
-				seconds, _ := strconv.ParseFloat(matches[2], 64)
-				execTimeMs = int((float64(minutes)*60 + seconds) * 1000)
+			if len(matches) >= 1 {
+				userTime, _ = strconv.ParseFloat(matches[0], 64)
+				foundUserTime = true
+			}
+		}
+
+		// Parse System time: "System time (seconds): 0.00"
+		if strings.Contains(line, "System time (seconds):") {
+			re := regexp.MustCompile(`(\d+\.\d+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) >= 1 {
+				systemTime, _ = strconv.ParseFloat(matches[0], 64)
+				foundSystemTime = true
 			}
 		}
 
@@ -138,5 +153,35 @@ func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb 
 		}
 	}
 
+	// Calculate total CPU time (user + system)
+	// This is more accurate than wall clock time for CPU-bound programs
+	if foundUserTime || foundSystemTime {
+		totalTime := userTime + systemTime
+		execTimeMs = int(totalTime * 1000)
+
+		// If very fast program (< 1ms), report at least 1ms
+		// This prevents fallback to Docker overhead time
+		if execTimeMs == 0 && (foundUserTime || foundSystemTime) {
+			execTimeMs = 1
+		}
+	}
+
 	return
+}
+
+// parseBashTime extracts real time from bash time command output
+// Format: "real 0m0.003s" -> 3ms (millisecond precision)
+func (s *Service) parseBashTime(bashTimeOutput string) int {
+	// Parse format: real 0m0.123s or real 0m0.001s
+	re := regexp.MustCompile(`real\s+(\d+)m(\d+\.\d+)s`)
+	matches := re.FindStringSubmatch(bashTimeOutput)
+
+	if len(matches) == 3 {
+		minutes, _ := strconv.Atoi(matches[1])
+		seconds, _ := strconv.ParseFloat(matches[2], 64)
+		totalMs := int((float64(minutes)*60 + seconds) * 1000)
+		return totalMs
+	}
+
+	return 0
 }

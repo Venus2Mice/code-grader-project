@@ -176,8 +176,11 @@ func (s *Service) runCompiledTestHarness(ctx context.Context, cli *client.Client
 	adjustedTimeLimit := float64(baseTimeMs) * multipliers.TimeMultiplier / 1000.0
 	execCmd := handler.GetExecutableCommand()
 
+	// Use bash time for precise execution timing (millisecond accuracy)
 	wrapperScript := fmt.Sprintf(`#!/bin/bash
-/usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt
+exec 3>&1 4>&2
+TIME_OUTPUT=$( { time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt 1>&3 2>&4; } 2>&1 )
+echo "$TIME_OUTPUT" > /sandbox/bash_time.txt
 PROGRAM_EXIT=$?
 echo $PROGRAM_EXIT > /sandbox/exitcode.txt
 exit $PROGRAM_EXIT
@@ -193,7 +196,7 @@ exit $PROGRAM_EXIT
 	// Run the wrapper script
 	startTime := time.Now()
 	_, _, _ = s.execInContainer(ctx, cli, containerID, []string{"/bin/bash", "/sandbox/run_wrapper.sh"})
-	execTime := int(time.Since(startTime).Milliseconds())
+	actualTime := time.Since(startTime)
 
 	// Read the actual exit code from the program (not wrapper's exit code)
 	exitCodeStr := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/exitcode.txt")
@@ -203,12 +206,26 @@ exit $PROGRAM_EXIT
 	output := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/output.txt")
 	stderr := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/program_stderr.txt")
 
-	// Check for timeout (exit code 124 from timeout command)
-	timeoutOccurred := exitCodeInt == 124 || (execTime > int(adjustedTimeLimit*1000) && execTime > baseTimeMs)
+	// Try to parse bash time first (more accurate for fast programs)
+	bashTime := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/bash_time.txt")
+	execTime := s.parseBashTime(bashTime)
 
-	// Parse resource metrics from /usr/bin/time output
+	// Parse memory from /usr/bin/time -v
 	timeMetrics := s.readFileFromContainer(ctx, cli, containerID, "/sandbox/time_output.txt")
 	_, memoryUsed := s.parseTimeMetrics(timeMetrics)
+
+	// Fallback to /usr/bin/time if bash time parsing failed
+	if execTime == 0 {
+		execTime, _ = s.parseTimeMetrics(timeMetrics)
+	}
+
+	// Last resort: use actual time if both failed
+	if execTime == 0 {
+		execTime = int(actualTime.Milliseconds())
+	}
+
+	// Check for timeout (exit code 124 from timeout command)
+	timeoutOccurred := exitCodeInt == 124 || (execTime > int(adjustedTimeLimit*1000) && execTime > baseTimeMs)
 
 	// Detect runtime errors using enhanced detector
 	if exitCodeInt != 0 {
@@ -217,7 +234,7 @@ exit $PROGRAM_EXIT
 
 		// Return error as special format that will be caught in gradeFunctionBased
 		errorMsg := fmt.Sprintf("RUNTIME_ERROR:%s|%s|%s", runtimeErr.ErrorType, runtimeErr.Description, runtimeErr.Hint)
-		return "", execTime, memoryUsed, fmt.Errorf(errorMsg)
+		return "", execTime, memoryUsed, fmt.Errorf("%s", errorMsg)
 	}
 
 	return strings.TrimSpace(output), execTime, memoryUsed, nil
