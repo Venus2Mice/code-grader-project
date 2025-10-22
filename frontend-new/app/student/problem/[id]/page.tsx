@@ -141,16 +141,8 @@ export default function ProblemSolvePage() {
     runCode(code, language, handleErrorDisplay)
   }
 
-  // Handle submit with validation
+  // Handle submit
   const handleSubmit = () => {
-    if (language !== 'cpp') {
-      setErrorModal({
-        isOpen: true,
-        title: "Invalid Submission",
-        message: "Only C++ (.cpp) files can be submitted. Please select C++ as the language."
-      })
-      return
-    }
     submitCode(code, language, handleErrorDisplay)
   }
 

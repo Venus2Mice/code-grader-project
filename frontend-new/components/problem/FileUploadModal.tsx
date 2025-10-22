@@ -62,7 +62,9 @@ export function FileUploadModal({
                 📁 Accepted File Types:
               </p>
               <ul className="list-disc list-inside text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                <li><code className="bg-blue-200 dark:bg-blue-900 px-2 py-0.5 rounded font-bold">.cpp</code> - C++ source files (for submission)</li>
+                <li><code className="bg-blue-200 dark:bg-blue-900 px-2 py-0.5 rounded font-bold">.cpp</code> - C++ source files</li>
+                <li><code className="bg-blue-200 dark:bg-blue-900 px-2 py-0.5 rounded font-bold">.py</code> - Python source files</li>
+                <li><code className="bg-blue-200 dark:bg-blue-900 px-2 py-0.5 rounded font-bold">.java</code> - Java source files</li>
                 <li><code className="bg-blue-200 dark:bg-blue-900 px-2 py-0.5 rounded font-bold">.txt</code> - Text files (for editing only)</li>
               </ul>
             </div>
@@ -72,8 +74,7 @@ export function FileUploadModal({
                 ⚠️ Important:
               </p>
               <p className="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
-                Only <span className="font-bold">.cpp files</span> can be submitted for grading. 
-                .txt files are for viewing and editing purposes only.
+                The uploaded file will use the currently selected language for grading.
               </p>
             </div>
 
@@ -91,7 +92,7 @@ export function FileUploadModal({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".cpp,.txt"
+                accept=".cpp,.py,.java,.txt"
                 onChange={onFileUpload}
                 className="hidden"
               />

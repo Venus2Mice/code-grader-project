@@ -24,9 +24,10 @@ export function useFileUpload({
     const fileName = file.name.toLowerCase()
     const fileExtension = fileName.split('.').pop()
 
-    // Only allow .cpp and .txt files
-    if (fileExtension !== 'cpp' && fileExtension !== 'txt') {
-      onError("Invalid File Type", "Only .cpp and .txt files are allowed for upload.")
+    // Allow .cpp, .py, .java, and .txt files
+    const allowedExtensions = ['cpp', 'py', 'java', 'txt']
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      onError("Invalid File Type", "Only .cpp, .py, .java, and .txt files are allowed for upload.")
       return
     }
 

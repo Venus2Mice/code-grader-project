@@ -13,6 +13,26 @@ int main() {
     return 0;
 }`
 
+const DEFAULT_PYTHON_CODE = `# Write your solution here
+
+def main():
+    # Your code here
+    pass
+
+if __name__ == "__main__":
+    main()
+`
+
+const DEFAULT_JAVA_CODE = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Write your solution here
+        
+    }
+}
+`
+
 interface UseCodeEditorProps {
   problem: Problem | null
 }
@@ -21,6 +41,22 @@ export function useCodeEditor({ problem }: UseCodeEditorProps) {
   const [code, setCode] = useState(DEFAULT_CPP_CODE)
   const [language, setLanguage] = useState("cpp")
   const [originalTemplate, setOriginalTemplate] = useState("")
+
+  // Update code template when language changes
+  useEffect(() => {
+    if (!problem || problem.grading_mode === 'function') return
+    
+    // Set default template based on language for stdio mode
+    const templates: Record<string, string> = {
+      cpp: DEFAULT_CPP_CODE,
+      python: DEFAULT_PYTHON_CODE,
+      java: DEFAULT_JAVA_CODE
+    }
+    
+    const newTemplate = templates[language] || DEFAULT_CPP_CODE
+    setCode(newTemplate)
+    setOriginalTemplate(newTemplate)
+  }, [language, problem])
 
   useEffect(() => {
     if (!problem) return

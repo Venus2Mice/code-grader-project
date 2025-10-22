@@ -91,7 +91,7 @@ export function ProblemHeader({
             <span className="hidden sm:inline">{theme === "dark" ? "LIGHT" : "DARK"}</span>
           </Button>
 
-          <Select value={language} onValueChange={onLanguageChange} disabled>
+          <Select value={language} onValueChange={onLanguageChange}>
             <SelectTrigger className="w-24 md:w-32 font-black uppercase text-xs md:text-sm">
               <SelectValue />
             </SelectTrigger>
@@ -99,7 +99,6 @@ export function ProblemHeader({
               <SelectItem value="cpp">C++</SelectItem>
               <SelectItem value="python">Python</SelectItem>
               <SelectItem value="java">Java</SelectItem>
-              <SelectItem value="javascript">JavaScript</SelectItem>
             </SelectContent>
           </Select>
 
