@@ -81,9 +81,9 @@ func (h *JavaHandler) GetExecutableCommand() string {
 // Java has significant JVM overhead
 func (h *JavaHandler) GetResourceMultipliers() ResourceMultipliers {
 	return ResourceMultipliers{
-		TimeMultiplier:   3.0,    // Java is ~3x slower than C++ (including JVM startup)
-		MemoryMultiplier: 2.0,    // Java uses ~2x more memory
-		MemoryOverhead:   51200,  // ~50MB for JVM
+		TimeMultiplier:   3.0,   // Java is ~3x slower than C++ (including JVM startup)
+		MemoryMultiplier: 2.0,   // Java uses ~2x more memory
+		MemoryOverhead:   51200, // ~50MB for JVM
 	}
 }
 
@@ -99,10 +99,10 @@ func (h *JavaHandler) extractMainClassName(sourceCode string) string {
 	// Match: public class ClassName
 	publicClassRe := regexp.MustCompile(`public\s+class\s+(\w+)`)
 	matches := publicClassRe.FindStringSubmatch(sourceCode)
-	
+
 	if len(matches) > 1 {
 		className := matches[1]
-		
+
 		// Verify this class has a main method
 		mainMethodRe := regexp.MustCompile(`public\s+static\s+void\s+main\s*\(\s*String\s*\[\s*\]\s+\w+\s*\)`)
 		if mainMethodRe.MatchString(sourceCode) {
@@ -113,7 +113,7 @@ func (h *JavaHandler) extractMainClassName(sourceCode string) string {
 	// Fallback: look for any class with main method
 	classRe := regexp.MustCompile(`class\s+(\w+)`)
 	mainRe := regexp.MustCompile(`public\s+static\s+void\s+main`)
-	
+
 	if mainRe.MatchString(sourceCode) {
 		matches := classRe.FindStringSubmatch(sourceCode)
 		if len(matches) > 1 {
@@ -134,12 +134,12 @@ func (h *JavaHandler) ParseCompileError(compilerOutput string) string {
 		// javac error format: "filename.java:line: error: message"
 		if strings.Contains(line, ".java:") && strings.Contains(line, " error:") {
 			errors = append(errors, strings.TrimSpace(line))
-			
+
 			// Include next line (often contains the problematic code)
 			if i+1 < len(lines) && strings.TrimSpace(lines[i+1]) != "" {
 				errors = append(errors, "  "+strings.TrimSpace(lines[i+1]))
 			}
-			
+
 			// Include pointer line (^)
 			if i+2 < len(lines) && strings.Contains(lines[i+2], "^") {
 				errors = append(errors, "  "+strings.TrimSpace(lines[i+2]))
@@ -295,7 +295,7 @@ func (h *JavaHandler) extractRelevantStackTrace(fullStackTrace string, maxLines 
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Skip JVM internal classes
 		if strings.HasPrefix(trimmed, "at java.") ||
 			strings.HasPrefix(trimmed, "at sun.") ||

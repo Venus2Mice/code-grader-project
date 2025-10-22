@@ -5,30 +5,30 @@ import (
 )
 
 func TestPythonHandler_GetLanguage(t *testing.T) {
-	handler := &PythonHandler{}
+	handler := NewPythonHandler()
 	if handler.GetLanguage() != "python" {
 		t.Errorf("Expected 'python', got '%s'", handler.GetLanguage())
 	}
 }
 
 func TestPythonHandler_SupportsStdio(t *testing.T) {
-	handler := &PythonHandler{}
+	handler := NewPythonHandler()
 	if !handler.SupportsStdio() {
 		t.Error("PythonHandler should support stdio mode")
 	}
 }
 
 func TestPythonHandler_SupportsFunction(t *testing.T) {
-	handler := &PythonHandler{}
+	handler := NewPythonHandler()
 	if !handler.SupportsFunction() {
 		t.Error("PythonHandler should support function mode")
 	}
 }
 
 func TestPythonHandler_GetResourceMultipliers(t *testing.T) {
-	handler := &PythonHandler{}
+	handler := NewPythonHandler()
 	multipliers := handler.GetResourceMultipliers()
-	
+
 	if multipliers.TimeMultiplier != 5.0 {
 		t.Errorf("Expected time multiplier 5.0, got %f", multipliers.TimeMultiplier)
 	}
@@ -41,8 +41,8 @@ func TestPythonHandler_GetResourceMultipliers(t *testing.T) {
 }
 
 func TestPythonHandler_ParseRuntimeError(t *testing.T) {
-	handler := &PythonHandler{}
-	
+	handler := NewPythonHandler()
+
 	tests := []struct {
 		name     string
 		exitCode int
@@ -53,34 +53,34 @@ func TestPythonHandler_ParseRuntimeError(t *testing.T) {
 			name:     "ZeroDivisionError",
 			exitCode: 1,
 			stderr:   "Traceback (most recent call last):\n  File \"main.py\", line 5, in <module>\n    result = 10 / 0\nZeroDivisionError: division by zero",
-			expected: "Runtime Error: ZeroDivisionError\nDetails: division by zero\n💡 Hint: You're dividing by zero. Check your divisor values.",
+			expected: "Runtime Error: ZeroDivisionError\nZeroDivisionError: division by zero\n\nCommon cause: Division by zero or modulo by zero\n\nTraceback (last few calls):\n  File \"main.py\", line 5, in <module>\nZeroDivisionError: division by zero",
 		},
 		{
 			name:     "IndexError",
 			exitCode: 1,
 			stderr:   "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    print(arr[10])\nIndexError: list index out of range",
-			expected: "Runtime Error: IndexError\nDetails: list index out of range\n💡 Hint: You're accessing an invalid array/list index. Check your bounds.",
+			expected: "Runtime Error: IndexError\nIndexError: list index out of range\n\nCommon cause: List/array index out of range\n\nTraceback (last few calls):\n  File \"main.py\", line 3, in <module>\nIndexError: list index out of range",
 		},
 		{
 			name:     "NameError",
 			exitCode: 1,
 			stderr:   "Traceback (most recent call last):\n  File \"main.py\", line 2, in <module>\n    print(x)\nNameError: name 'x' is not defined",
-			expected: "Runtime Error: NameError\nDetails: name 'x' is not defined\n💡 Hint: You're using an undefined variable. Check your variable names.",
+			expected: "Runtime Error: NameError\nNameError: name 'x' is not defined\n\nCommon cause: Variable or function name not defined\n\nTraceback (last few calls):\n  File \"main.py\", line 2, in <module>\nNameError: name 'x' is not defined",
 		},
 		{
 			name:     "TypeError",
 			exitCode: 1,
 			stderr:   "Traceback (most recent call last):\n  File \"main.py\", line 1, in <module>\n    result = '2' + 2\nTypeError: can only concatenate str (not \"int\") to str",
-			expected: "Runtime Error: TypeError\nDetails: can only concatenate str (not \"int\") to str\n💡 Hint: Type mismatch in operation. Check your variable types.",
+			expected: "Runtime Error: TypeError\nTypeError: can only concatenate str (not \"int\") to str\n\nCommon cause: Operation on incompatible types\n\nTraceback (last few calls):\n  File \"main.py\", line 1, in <module>\nTypeError: can only concatenate str (not \"int\") to str",
 		},
 		{
 			name:     "RecursionError",
 			exitCode: 1,
 			stderr:   "Traceback (most recent call last):\n  File \"main.py\", line 5, in factorial\n    return n * factorial(n - 1)\nRecursionError: maximum recursion depth exceeded",
-			expected: "Runtime Error: RecursionError\nDetails: maximum recursion depth exceeded\n💡 Hint: Too many recursive calls. Check your base case or use iteration.",
+			expected: "Runtime Error: RecursionError\nRecursionError: maximum recursion depth exceeded\n\nCommon cause: Maximum recursion depth exceeded (infinite recursion?)\n\nTraceback (last few calls):\n  File \"main.py\", line 5, in factorial\nRecursionError: maximum recursion depth exceeded",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseRuntimeError(tt.exitCode, tt.stderr)
@@ -92,8 +92,8 @@ func TestPythonHandler_ParseRuntimeError(t *testing.T) {
 }
 
 func TestPythonHandler_ParseCompileError(t *testing.T) {
-	handler := &PythonHandler{}
-	
+	handler := NewPythonHandler()
+
 	tests := []struct {
 		name     string
 		output   string
@@ -105,9 +105,9 @@ func TestPythonHandler_ParseCompileError(t *testing.T) {
     if x == 10
               ^
 SyntaxError: invalid syntax`,
-			expected: `Syntax Error (line 5):
-if x == 10
-          ^
+			expected: `  File "/sandbox/main.py", line 5
+    if x == 10
+              ^
 SyntaxError: invalid syntax`,
 		},
 		{
@@ -116,13 +116,13 @@ SyntaxError: invalid syntax`,
     print("Hello")
     ^
 IndentationError: unexpected indent`,
-			expected: `Syntax Error (line 3):
-print("Hello")
-^
+			expected: `  File "/sandbox/main.py", line 3
+    print("Hello")
+    ^
 IndentationError: unexpected indent`,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseCompileError(tt.output)
@@ -134,9 +134,9 @@ IndentationError: unexpected indent`,
 }
 
 func TestPythonHandler_GetExecutableCommand(t *testing.T) {
-	handler := &PythonHandler{}
+	handler := NewPythonHandler()
 	cmd := handler.GetExecutableCommand()
-	
+
 	if cmd != "python3 main.py" {
 		t.Errorf("Expected 'python3 main.py', got '%s'", cmd)
 	}

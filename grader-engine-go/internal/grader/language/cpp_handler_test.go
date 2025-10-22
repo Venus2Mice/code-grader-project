@@ -5,30 +5,30 @@ import (
 )
 
 func TestCppHandler_GetLanguage(t *testing.T) {
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	if handler.GetLanguage() != "cpp" {
 		t.Errorf("Expected 'cpp', got '%s'", handler.GetLanguage())
 	}
 }
 
 func TestCppHandler_SupportsStdio(t *testing.T) {
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	if !handler.SupportsStdio() {
 		t.Error("CppHandler should support stdio mode")
 	}
 }
 
 func TestCppHandler_SupportsFunction(t *testing.T) {
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	if !handler.SupportsFunction() {
 		t.Error("CppHandler should support function mode")
 	}
 }
 
 func TestCppHandler_GetResourceMultipliers(t *testing.T) {
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	multipliers := handler.GetResourceMultipliers()
-	
+
 	if multipliers.TimeMultiplier != 1.0 {
 		t.Errorf("Expected time multiplier 1.0, got %f", multipliers.TimeMultiplier)
 	}
@@ -42,7 +42,7 @@ func TestCppHandler_GetResourceMultipliers(t *testing.T) {
 
 func TestCppHandler_ParseRuntimeError(t *testing.T) {
 	handler := &CppHandler{}
-	
+
 	tests := []struct {
 		name     string
 		exitCode int
@@ -53,28 +53,28 @@ func TestCppHandler_ParseRuntimeError(t *testing.T) {
 			name:     "Division by zero",
 			exitCode: 136,
 			stderr:   "Floating point exception",
-			expected: "Runtime Error: Floating point exception (SIGFPE)\nLikely cause: Division by zero or invalid arithmetic operation",
+			expected: "Runtime Error: Floating Point Exception (SIGFPE)\nCommon causes:\n• Division by zero\n• Integer overflow in arithmetic\n• Invalid modulo operation",
 		},
 		{
 			name:     "Segmentation fault",
 			exitCode: 139,
 			stderr:   "Segmentation fault",
-			expected: "Runtime Error: Segmentation fault (SIGSEGV)\nLikely cause: Invalid memory access (null pointer, array out of bounds, stack overflow)",
+			expected: "Runtime Error: Segmentation Fault (SIGSEGV)\nCommon causes:\n• Accessing out-of-bounds array index\n• Dereferencing null or invalid pointer\n• Stack overflow from deep recursion\n• Accessing freed memory",
 		},
 		{
 			name:     "Abort signal",
 			exitCode: 134,
 			stderr:   "Aborted",
-			expected: "Runtime Error: Program aborted (SIGABRT)\nLikely cause: Assertion failed or abort() called",
+			expected: "Runtime Error: Aborted (SIGABRT)\nCommon causes:\n• Failed assertion (assert())\n• Double free\n• Heap corruption",
 		},
 		{
 			name:     "Unknown error",
 			exitCode: 1,
 			stderr:   "Some error",
-			expected: "Runtime Error: Program exited with code 1\nSome error",
+			expected: "Runtime Error (exit code: 1)\nSome error",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseRuntimeError(tt.exitCode, tt.stderr)
@@ -87,7 +87,7 @@ func TestCppHandler_ParseRuntimeError(t *testing.T) {
 
 func TestCppHandler_ParseCompileError(t *testing.T) {
 	handler := &CppHandler{}
-	
+
 	tests := []struct {
 		name     string
 		output   string
@@ -102,8 +102,7 @@ main.cpp:5:5: error: 'x' was not declared in this scope
 main.cpp:6:12: error: expected ';' before '}' token
     6 | }
       |            ^`,
-			expected: `Compile Error:
-main.cpp:5:5: error: 'x' was not declared in this scope
+			expected: `main.cpp:5:5: error: 'x' was not declared in this scope
 main.cpp:6:12: error: expected ';' before '}' token`,
 		},
 		{
@@ -111,11 +110,10 @@ main.cpp:6:12: error: expected ';' before '}' token`,
 			output: `main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment
    10 |     int num = "hello";
       |               ^~~~~~~`,
-			expected: `Compile Error:
-main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment`,
+			expected: `main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment`,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseCompileError(tt.output)
@@ -127,9 +125,9 @@ main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment`,
 }
 
 func TestCppHandler_GetExecutableCommand(t *testing.T) {
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	cmd := handler.GetExecutableCommand()
-	
+
 	if cmd != "./main" {
 		t.Errorf("Expected './main', got '%s'", cmd)
 	}

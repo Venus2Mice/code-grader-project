@@ -8,7 +8,7 @@ import (
 func TestRegistry_Singleton(t *testing.T) {
 	registry1 := GetRegistry()
 	registry2 := GetRegistry()
-	
+
 	if registry1 != registry2 {
 		t.Error("GetRegistry() should return the same instance (singleton)")
 	}
@@ -17,17 +17,17 @@ func TestRegistry_Singleton(t *testing.T) {
 func TestRegistry_GetSupportedLanguages(t *testing.T) {
 	registry := GetRegistry()
 	languages := registry.GetSupportedLanguages()
-	
+
 	expectedLanguages := map[string]bool{
 		"cpp":    true,
 		"python": true,
 		"java":   true,
 	}
-	
+
 	if len(languages) != len(expectedLanguages) {
 		t.Errorf("Expected %d languages, got %d", len(expectedLanguages), len(languages))
 	}
-	
+
 	for _, lang := range languages {
 		if !expectedLanguages[lang] {
 			t.Errorf("Unexpected language: %s", lang)
@@ -37,7 +37,7 @@ func TestRegistry_GetSupportedLanguages(t *testing.T) {
 
 func TestRegistry_Get(t *testing.T) {
 	registry := GetRegistry()
-	
+
 	tests := []struct {
 		name     string
 		language string
@@ -69,11 +69,11 @@ func TestRegistry_Get(t *testing.T) {
 			wantErr:  true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler, err := registry.Get(tt.language)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Error("Expected error, got nil")
@@ -101,11 +101,11 @@ func TestRegistry_Register(t *testing.T) {
 	registry := &HandlerRegistry{
 		handlers: make(map[string]LanguageHandler),
 	}
-	
+
 	// Register a handler
-	handler := &CppHandler{}
+	handler := NewCppHandler()
 	registry.Register(handler)
-	
+
 	// Verify registration
 	retrieved, err := registry.Get("cpp")
 	if err != nil {
@@ -118,23 +118,23 @@ func TestRegistry_Register(t *testing.T) {
 
 func TestRegistry_ThreadSafety(t *testing.T) {
 	registry := GetRegistry()
-	
+
 	// Test concurrent reads
 	var wg sync.WaitGroup
 	numGoroutines := 100
-	
+
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			lang := "cpp"
 			if id%3 == 1 {
 				lang = "python"
 			} else if id%3 == 2 {
 				lang = "java"
 			}
-			
+
 			handler, err := registry.Get(lang)
 			if err != nil {
 				t.Errorf("Error getting handler: %v", err)
@@ -149,7 +149,7 @@ func TestRegistry_ThreadSafety(t *testing.T) {
 			}
 		}(i)
 	}
-	
+
 	wg.Wait()
 }
 
@@ -158,15 +158,15 @@ func TestRegistry_RegisterDuplicate(t *testing.T) {
 	registry := &HandlerRegistry{
 		handlers: make(map[string]LanguageHandler),
 	}
-	
+
 	// Register first handler
-	handler1 := &CppHandler{}
+	handler1 := NewCppHandler()
 	registry.Register(handler1)
-	
+
 	// Register duplicate (should replace)
-	handler2 := &CppHandler{}
+	handler2 := NewCppHandler()
 	registry.Register(handler2)
-	
+
 	// Verify the second handler replaced the first
 	retrieved, err := registry.Get("cpp")
 	if err != nil {

@@ -67,7 +67,7 @@ func main() {
 
 	// Graceful shutdown
 	log.Println("🛑 Shutting down gracefully...")
-	
+
 	// Stop worker
 	if err := w.Stop(); err != nil {
 		log.Printf("⚠️  Error stopping worker: %v", err)

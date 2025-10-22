@@ -1,0 +1,331 @@
+?   	grader-engine-go	[no test files]
+?   	grader-engine-go/internal/config	[no test files]
+?   	grader-engine-go/internal/database	[no test files]
+?   	grader-engine-go/internal/grader	[no test files]
+=== RUN   TestCppHandler_GetLanguage
+    cpp_handler_test.go:10: Expected 'cpp', got ''
+--- FAIL: TestCppHandler_GetLanguage (0.00s)
+=== RUN   TestCppHandler_SupportsStdio
+    cpp_handler_test.go:17: CppHandler should support stdio mode
+--- FAIL: TestCppHandler_SupportsStdio (0.00s)
+=== RUN   TestCppHandler_SupportsFunction
+    cpp_handler_test.go:24: CppHandler should support function mode
+--- FAIL: TestCppHandler_SupportsFunction (0.00s)
+=== RUN   TestCppHandler_GetResourceMultipliers
+--- PASS: TestCppHandler_GetResourceMultipliers (0.00s)
+=== RUN   TestCppHandler_ParseRuntimeError
+=== RUN   TestCppHandler_ParseRuntimeError/Division_by_zero
+    cpp_handler_test.go:82: Expected:
+        Runtime Error: Floating point exception (SIGFPE)
+        Likely cause: Division by zero or invalid arithmetic operation
+        Got:
+        Runtime Error: Floating Point Exception (SIGFPE)
+        Common causes:
+        • Division by zero
+        • Integer overflow in arithmetic
+        • Invalid modulo operation
+=== RUN   TestCppHandler_ParseRuntimeError/Segmentation_fault
+    cpp_handler_test.go:82: Expected:
+        Runtime Error: Segmentation fault (SIGSEGV)
+        Likely cause: Invalid memory access (null pointer, array out of bounds, stack overflow)
+        Got:
+        Runtime Error: Segmentation Fault (SIGSEGV)
+        Common causes:
+        • Accessing out-of-bounds array index
+        • Dereferencing null or invalid pointer
+        • Stack overflow from deep recursion
+        • Accessing freed memory
+=== RUN   TestCppHandler_ParseRuntimeError/Abort_signal
+    cpp_handler_test.go:82: Expected:
+        Runtime Error: Program aborted (SIGABRT)
+        Likely cause: Assertion failed or abort() called
+        Got:
+        Runtime Error: Aborted (SIGABRT)
+        Common causes:
+        • Failed assertion (assert())
+        • Double free
+        • Heap corruption
+=== RUN   TestCppHandler_ParseRuntimeError/Unknown_error
+    cpp_handler_test.go:82: Expected:
+        Runtime Error: Program exited with code 1
+        Some error
+        Got:
+        Runtime Error (exit code: 1)
+        Some error
+--- FAIL: TestCppHandler_ParseRuntimeError (0.00s)
+    --- FAIL: TestCppHandler_ParseRuntimeError/Division_by_zero (0.00s)
+    --- FAIL: TestCppHandler_ParseRuntimeError/Segmentation_fault (0.00s)
+    --- FAIL: TestCppHandler_ParseRuntimeError/Abort_signal (0.00s)
+    --- FAIL: TestCppHandler_ParseRuntimeError/Unknown_error (0.00s)
+=== RUN   TestCppHandler_ParseCompileError
+=== RUN   TestCppHandler_ParseCompileError/Syntax_error
+    cpp_handler_test.go:123: Expected:
+        Compile Error:
+        main.cpp:5:5: error: 'x' was not declared in this scope
+        main.cpp:6:12: error: expected ';' before '}' token
+        Got:
+        main.cpp:5:5: error: 'x' was not declared in this scope
+        main.cpp:6:12: error: expected ';' before '}' token
+=== RUN   TestCppHandler_ParseCompileError/Type_mismatch
+    cpp_handler_test.go:123: Expected:
+        Compile Error:
+        main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment
+        Got:
+        main.cpp:10:15: error: cannot convert 'const char*' to 'int' in assignment
+--- FAIL: TestCppHandler_ParseCompileError (0.00s)
+    --- FAIL: TestCppHandler_ParseCompileError/Syntax_error (0.00s)
+    --- FAIL: TestCppHandler_ParseCompileError/Type_mismatch (0.00s)
+=== RUN   TestCppHandler_GetExecutableCommand
+--- PASS: TestCppHandler_GetExecutableCommand (0.00s)
+=== RUN   TestJavaHandler_GetLanguage
+    java_handler_test.go:10: Expected 'java', got ''
+--- FAIL: TestJavaHandler_GetLanguage (0.00s)
+=== RUN   TestJavaHandler_SupportsStdio
+    java_handler_test.go:17: JavaHandler should support stdio mode
+--- FAIL: TestJavaHandler_SupportsStdio (0.00s)
+=== RUN   TestJavaHandler_SupportsFunction
+    java_handler_test.go:24: JavaHandler should support function mode
+--- FAIL: TestJavaHandler_SupportsFunction (0.00s)
+=== RUN   TestJavaHandler_GetResourceMultipliers
+--- PASS: TestJavaHandler_GetResourceMultipliers (0.00s)
+=== RUN   TestJavaHandler_ParseRuntimeError
+=== RUN   TestJavaHandler_ParseRuntimeError/NullPointerException
+    java_handler_test.go:88: Expected:
+        Runtime Error: NullPointerException
+        💡 Hint: You're accessing a null object. Check your object initialization.
+        Got:
+        Runtime Error:
+        Exception in thread "main" java.lang.NullPointerException
+        	at Main.main(Main.java:5)
+=== RUN   TestJavaHandler_ParseRuntimeError/ArrayIndexOutOfBoundsException
+    java_handler_test.go:88: Expected:
+        Runtime Error: ArrayIndexOutOfBoundsException
+        💡 Hint: Array index is out of bounds. Check your array access.
+        Got:
+        Runtime Error: ArrayIndexOutOfBoundsException
+        Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: Index 10 out of bounds for length 5
+        
+        Common cause: Array index out of bounds
+        
+        Stack trace (user code only):
+        	at Main.main(Main.java:8)
+=== RUN   TestJavaHandler_ParseRuntimeError/ArithmeticException
+    java_handler_test.go:88: Expected:
+        Runtime Error: ArithmeticException
+        💡 Hint: Arithmetic error (likely division by zero). Check your calculations.
+        Got:
+        Runtime Error: ArithmeticException
+        Exception in thread "main" java.lang.ArithmeticException: / by zero
+        
+        Common cause: Arithmetic error (e.g., division by zero)
+        
+        Stack trace (user code only):
+        	at Main.main(Main.java:3)
+=== RUN   TestJavaHandler_ParseRuntimeError/StackOverflowError
+    java_handler_test.go:88: Expected:
+        Runtime Error: StackOverflowError
+        💡 Hint: Too many recursive calls. Check your recursion depth or use iteration.
+        Got:
+        Runtime Error: Stack Overflow
+        Possible causes:
+        • Infinite recursion
+        • Very deep recursion
+=== RUN   TestJavaHandler_ParseRuntimeError/OutOfMemoryError
+    java_handler_test.go:88: Expected:
+        Runtime Error: OutOfMemoryError
+        💡 Hint: Program ran out of memory. Check for memory leaks or reduce memory usage.
+        Got:
+        Runtime Error: OutOfMemoryError
+        Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+        
+        Common cause: JVM ran out of memory
+        
+        Stack trace (user code only):
+        	at Main.main(Main.java:15)
+--- FAIL: TestJavaHandler_ParseRuntimeError (0.00s)
+    --- FAIL: TestJavaHandler_ParseRuntimeError/NullPointerException (0.00s)
+    --- FAIL: TestJavaHandler_ParseRuntimeError/ArrayIndexOutOfBoundsException (0.00s)
+    --- FAIL: TestJavaHandler_ParseRuntimeError/ArithmeticException (0.00s)
+    --- FAIL: TestJavaHandler_ParseRuntimeError/StackOverflowError (0.00s)
+    --- FAIL: TestJavaHandler_ParseRuntimeError/OutOfMemoryError (0.00s)
+=== RUN   TestJavaHandler_ParseCompileError
+=== RUN   TestJavaHandler_ParseCompileError/Syntax_error
+    java_handler_test.go:137: Expected:
+        Compile Error:
+        Main.java:5: error: ';' expected
+        Got:
+        Main.java:5: error: ';' expected
+          int x = 10
+          ^
+=== RUN   TestJavaHandler_ParseCompileError/Class_name_mismatch
+    java_handler_test.go:137: Expected:
+        Compile Error:
+        Main.java:1: error: class Solution is public, should be declared in a file named Solution.java
+        
+        💡 Hint: Your public class name must match the filename (Main.java)
+        Got:
+        Main.java:1: error: class Solution is public, should be declared in a file named Solution.java
+          public class Solution {
+          ^
+=== RUN   TestJavaHandler_ParseCompileError/Type_mismatch
+    java_handler_test.go:137: Expected:
+        Compile Error:
+        Main.java:10: error: incompatible types: String cannot be converted to int
+        Got:
+        Main.java:10: error: incompatible types: String cannot be converted to int
+          int num = "hello";
+          ^
+--- FAIL: TestJavaHandler_ParseCompileError (0.00s)
+    --- FAIL: TestJavaHandler_ParseCompileError/Syntax_error (0.00s)
+    --- FAIL: TestJavaHandler_ParseCompileError/Class_name_mismatch (0.00s)
+    --- FAIL: TestJavaHandler_ParseCompileError/Type_mismatch (0.00s)
+=== RUN   TestJavaHandler_GetExecutableCommand
+--- PASS: TestJavaHandler_GetExecutableCommand (0.00s)
+=== RUN   TestPythonHandler_GetLanguage
+    python_handler_test.go:10: Expected 'python', got ''
+--- FAIL: TestPythonHandler_GetLanguage (0.00s)
+=== RUN   TestPythonHandler_SupportsStdio
+    python_handler_test.go:17: PythonHandler should support stdio mode
+--- FAIL: TestPythonHandler_SupportsStdio (0.00s)
+=== RUN   TestPythonHandler_SupportsFunction
+    python_handler_test.go:24: PythonHandler should support function mode
+--- FAIL: TestPythonHandler_SupportsFunction (0.00s)
+=== RUN   TestPythonHandler_GetResourceMultipliers
+--- PASS: TestPythonHandler_GetResourceMultipliers (0.00s)
+=== RUN   TestPythonHandler_ParseRuntimeError
+=== RUN   TestPythonHandler_ParseRuntimeError/ZeroDivisionError
+    python_handler_test.go:88: Expected:
+        Runtime Error: ZeroDivisionError
+        Details: division by zero
+        💡 Hint: You're dividing by zero. Check your divisor values.
+        Got:
+        Runtime Error: ZeroDivisionError
+        ZeroDivisionError: division by zero
+        
+        Common cause: Division by zero or modulo by zero
+        
+        Traceback (last few calls):
+          File "main.py", line 5, in <module>
+        ZeroDivisionError: division by zero
+=== RUN   TestPythonHandler_ParseRuntimeError/IndexError
+    python_handler_test.go:88: Expected:
+        Runtime Error: IndexError
+        Details: list index out of range
+        💡 Hint: You're accessing an invalid array/list index. Check your bounds.
+        Got:
+        Runtime Error: IndexError
+        IndexError: list index out of range
+        
+        Common cause: List/array index out of range
+        
+        Traceback (last few calls):
+          File "main.py", line 3, in <module>
+        IndexError: list index out of range
+=== RUN   TestPythonHandler_ParseRuntimeError/NameError
+    python_handler_test.go:88: Expected:
+        Runtime Error: NameError
+        Details: name 'x' is not defined
+        💡 Hint: You're using an undefined variable. Check your variable names.
+        Got:
+        Runtime Error: NameError
+        NameError: name 'x' is not defined
+        
+        Common cause: Variable or function name not defined
+        
+        Traceback (last few calls):
+          File "main.py", line 2, in <module>
+        NameError: name 'x' is not defined
+=== RUN   TestPythonHandler_ParseRuntimeError/TypeError
+    python_handler_test.go:88: Expected:
+        Runtime Error: TypeError
+        Details: can only concatenate str (not "int") to str
+        💡 Hint: Type mismatch in operation. Check your variable types.
+        Got:
+        Runtime Error: TypeError
+        TypeError: can only concatenate str (not "int") to str
+        
+        Common cause: Operation on incompatible types
+        
+        Traceback (last few calls):
+          File "main.py", line 1, in <module>
+        TypeError: can only concatenate str (not "int") to str
+=== RUN   TestPythonHandler_ParseRuntimeError/RecursionError
+    python_handler_test.go:88: Expected:
+        Runtime Error: RecursionError
+        Details: maximum recursion depth exceeded
+        💡 Hint: Too many recursive calls. Check your base case or use iteration.
+        Got:
+        Runtime Error: RecursionError
+        RecursionError: maximum recursion depth exceeded
+        
+        Common cause: Maximum recursion depth exceeded (infinite recursion?)
+        
+        Traceback (last few calls):
+          File "main.py", line 5, in factorial
+        RecursionError: maximum recursion depth exceeded
+--- FAIL: TestPythonHandler_ParseRuntimeError (0.00s)
+    --- FAIL: TestPythonHandler_ParseRuntimeError/ZeroDivisionError (0.00s)
+    --- FAIL: TestPythonHandler_ParseRuntimeError/IndexError (0.00s)
+    --- FAIL: TestPythonHandler_ParseRuntimeError/NameError (0.00s)
+    --- FAIL: TestPythonHandler_ParseRuntimeError/TypeError (0.00s)
+    --- FAIL: TestPythonHandler_ParseRuntimeError/RecursionError (0.00s)
+=== RUN   TestPythonHandler_ParseCompileError
+=== RUN   TestPythonHandler_ParseCompileError/Syntax_error
+    python_handler_test.go:130: Expected:
+        Syntax Error (line 5):
+        if x == 10
+                  ^
+        SyntaxError: invalid syntax
+        Got:
+          File "/sandbox/main.py", line 5
+            if x == 10
+                      ^
+        SyntaxError: invalid syntax
+=== RUN   TestPythonHandler_ParseCompileError/Indentation_error
+    python_handler_test.go:130: Expected:
+        Syntax Error (line 3):
+        print("Hello")
+        ^
+        IndentationError: unexpected indent
+        Got:
+          File "/sandbox/main.py", line 3
+            print("Hello")
+            ^
+        IndentationError: unexpected indent
+--- FAIL: TestPythonHandler_ParseCompileError (0.00s)
+    --- FAIL: TestPythonHandler_ParseCompileError/Syntax_error (0.00s)
+    --- FAIL: TestPythonHandler_ParseCompileError/Indentation_error (0.00s)
+=== RUN   TestPythonHandler_GetExecutableCommand
+--- PASS: TestPythonHandler_GetExecutableCommand (0.00s)
+=== RUN   TestRegistry_Singleton
+--- PASS: TestRegistry_Singleton (0.00s)
+=== RUN   TestRegistry_GetSupportedLanguages
+--- PASS: TestRegistry_GetSupportedLanguages (0.00s)
+=== RUN   TestRegistry_Get
+=== RUN   TestRegistry_Get/Get_C++_handler
+=== RUN   TestRegistry_Get/Get_Python_handler
+=== RUN   TestRegistry_Get/Get_Java_handler
+=== RUN   TestRegistry_Get/Get_unsupported_language
+=== RUN   TestRegistry_Get/Get_empty_language
+--- PASS: TestRegistry_Get (0.00s)
+    --- PASS: TestRegistry_Get/Get_C++_handler (0.00s)
+    --- PASS: TestRegistry_Get/Get_Python_handler (0.00s)
+    --- PASS: TestRegistry_Get/Get_Java_handler (0.00s)
+    --- PASS: TestRegistry_Get/Get_unsupported_language (0.00s)
+    --- PASS: TestRegistry_Get/Get_empty_language (0.00s)
+=== RUN   TestRegistry_Register
+    registry_test.go:112: Failed to get registered handler: unsupported language: cpp
+    registry_test.go:115: Retrieved handler is not the same as registered
+--- FAIL: TestRegistry_Register (0.00s)
+=== RUN   TestRegistry_ThreadSafety
+--- PASS: TestRegistry_ThreadSafety (0.00s)
+=== RUN   TestRegistry_RegisterDuplicate
+    registry_test.go:173: Failed to get handler: unsupported language: cpp
+    registry_test.go:176: Duplicate registration did not replace the handler
+--- FAIL: TestRegistry_RegisterDuplicate (0.00s)
+FAIL
+FAIL	grader-engine-go/internal/grader/language	2.443s
+?   	grader-engine-go/internal/models	[no test files]
+?   	grader-engine-go/internal/pool	[no test files]
+?   	grader-engine-go/internal/worker	[no test files]
+FAIL

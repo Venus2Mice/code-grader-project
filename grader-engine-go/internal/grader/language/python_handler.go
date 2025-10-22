@@ -65,9 +65,9 @@ func (h *PythonHandler) GetExecutableCommand() string {
 // Python is typically 5-10x slower than C++ and uses more memory
 func (h *PythonHandler) GetResourceMultipliers() ResourceMultipliers {
 	return ResourceMultipliers{
-		TimeMultiplier:   5.0,    // Python is ~5x slower than C++
-		MemoryMultiplier: 2.0,    // Python uses ~2x more memory
-		MemoryOverhead:   20480,  // ~20MB for Python interpreter
+		TimeMultiplier:   5.0,   // Python is ~5x slower than C++
+		MemoryMultiplier: 2.0,   // Python uses ~2x more memory
+		MemoryOverhead:   20480, // ~20MB for Python interpreter
 	}
 }
 
@@ -193,7 +193,7 @@ func (h *PythonHandler) formatPythonException(exceptionType string, fullTracebac
 	}
 
 	hint, hasHint := hints[exceptionType]
-	
+
 	// Extract the exception message line
 	lines := strings.Split(fullTraceback, "\n")
 	var exceptionLine string
@@ -230,9 +230,9 @@ func (h *PythonHandler) extractRelevantTraceback(fullTraceback string, maxLines 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		// Include lines from main.py only
-		if strings.Contains(line, "File \"main.py\"") || 
-		   (len(relevant) > 0 && strings.HasPrefix(trimmed, "^")) ||
-		   (len(relevant) > 0 && !strings.HasPrefix(line, " ") && !strings.Contains(line, "File")) {
+		if strings.Contains(line, "File \"main.py\"") ||
+			(len(relevant) > 0 && strings.HasPrefix(trimmed, "^")) ||
+			(len(relevant) > 0 && !strings.HasPrefix(line, " ") && !strings.Contains(line, "File")) {
 			relevant = append(relevant, line)
 			if len(relevant) >= maxLines {
 				break

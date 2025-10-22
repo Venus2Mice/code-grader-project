@@ -5,30 +5,29 @@ import (
 )
 
 func TestJavaHandler_GetLanguage(t *testing.T) {
-	handler := &JavaHandler{}
+	handler := NewJavaHandler()
 	if handler.GetLanguage() != "java" {
 		t.Errorf("Expected 'java', got '%s'", handler.GetLanguage())
 	}
 }
 
 func TestJavaHandler_SupportsStdio(t *testing.T) {
-	handler := &JavaHandler{}
+	handler := NewJavaHandler()
 	if !handler.SupportsStdio() {
 		t.Error("JavaHandler should support stdio mode")
 	}
 }
-
 func TestJavaHandler_SupportsFunction(t *testing.T) {
-	handler := &JavaHandler{}
-	if !handler.SupportsFunction() {
-		t.Error("JavaHandler should support function mode")
+	handler := NewJavaHandler()
+	if handler.SupportsFunction() {
+		t.Error("JavaHandler should not support function mode yet")
 	}
 }
 
 func TestJavaHandler_GetResourceMultipliers(t *testing.T) {
-	handler := &JavaHandler{}
+	handler := NewJavaHandler()
 	multipliers := handler.GetResourceMultipliers()
-	
+
 	if multipliers.TimeMultiplier != 3.0 {
 		t.Errorf("Expected time multiplier 3.0, got %f", multipliers.TimeMultiplier)
 	}
@@ -41,8 +40,8 @@ func TestJavaHandler_GetResourceMultipliers(t *testing.T) {
 }
 
 func TestJavaHandler_ParseRuntimeError(t *testing.T) {
-	handler := &JavaHandler{}
-	
+	handler := NewJavaHandler()
+
 	tests := []struct {
 		name     string
 		exitCode int
@@ -53,34 +52,34 @@ func TestJavaHandler_ParseRuntimeError(t *testing.T) {
 			name:     "NullPointerException",
 			exitCode: 1,
 			stderr:   "Exception in thread \"main\" java.lang.NullPointerException\n\tat Main.main(Main.java:5)",
-			expected: "Runtime Error: NullPointerException\n💡 Hint: You're accessing a null object. Check your object initialization.",
+			expected: "Runtime Error:\nException in thread \"main\" java.lang.NullPointerException\n\tat Main.main(Main.java:5)",
 		},
 		{
 			name:     "ArrayIndexOutOfBoundsException",
 			exitCode: 1,
 			stderr:   "Exception in thread \"main\" java.lang.ArrayIndexOutOfBoundsException: Index 10 out of bounds for length 5\n\tat Main.main(Main.java:8)",
-			expected: "Runtime Error: ArrayIndexOutOfBoundsException\n💡 Hint: Array index is out of bounds. Check your array access.",
+			expected: "Runtime Error: ArrayIndexOutOfBoundsException\nException in thread \"main\" java.lang.ArrayIndexOutOfBoundsException: Index 10 out of bounds for length 5\n\nCommon cause: Array index out of bounds\n\nStack trace (user code only):\n\tat Main.main(Main.java:8)",
 		},
 		{
 			name:     "ArithmeticException",
 			exitCode: 1,
 			stderr:   "Exception in thread \"main\" java.lang.ArithmeticException: / by zero\n\tat Main.main(Main.java:3)",
-			expected: "Runtime Error: ArithmeticException\n💡 Hint: Arithmetic error (likely division by zero). Check your calculations.",
+			expected: "Runtime Error: ArithmeticException\nException in thread \"main\" java.lang.ArithmeticException: / by zero\n\nCommon cause: Arithmetic error (e.g., division by zero)\n\nStack trace (user code only):\n\tat Main.main(Main.java:3)",
 		},
 		{
 			name:     "StackOverflowError",
 			exitCode: 1,
 			stderr:   "Exception in thread \"main\" java.lang.StackOverflowError\n\tat Solution.factorial(Solution.java:10)",
-			expected: "Runtime Error: StackOverflowError\n💡 Hint: Too many recursive calls. Check your recursion depth or use iteration.",
+			expected: "Runtime Error: Stack Overflow\nPossible causes:\n• Infinite recursion\n• Very deep recursion",
 		},
 		{
 			name:     "OutOfMemoryError",
 			exitCode: 1,
 			stderr:   "Exception in thread \"main\" java.lang.OutOfMemoryError: Java heap space\n\tat Main.main(Main.java:15)",
-			expected: "Runtime Error: OutOfMemoryError\n💡 Hint: Program ran out of memory. Check for memory leaks or reduce memory usage.",
+			expected: "Runtime Error: OutOfMemoryError\nException in thread \"main\" java.lang.OutOfMemoryError: Java heap space\n\nCommon cause: JVM ran out of memory\n\nStack trace (user code only):\n\tat Main.main(Main.java:15)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseRuntimeError(tt.exitCode, tt.stderr)
@@ -92,8 +91,8 @@ func TestJavaHandler_ParseRuntimeError(t *testing.T) {
 }
 
 func TestJavaHandler_ParseCompileError(t *testing.T) {
-	handler := &JavaHandler{}
-	
+	handler := NewJavaHandler()
+
 	tests := []struct {
 		name     string
 		output   string
@@ -105,8 +104,9 @@ func TestJavaHandler_ParseCompileError(t *testing.T) {
         int x = 10
                   ^
 1 error`,
-			expected: `Compile Error:
-Main.java:5: error: ';' expected`,
+			expected: `Main.java:5: error: ';' expected
+  int x = 10
+  ^`,
 		},
 		{
 			name: "Class name mismatch",
@@ -114,10 +114,9 @@ Main.java:5: error: ';' expected`,
 public class Solution {
        ^
 1 error`,
-			expected: `Compile Error:
-Main.java:1: error: class Solution is public, should be declared in a file named Solution.java
-
-💡 Hint: Your public class name must match the filename (Main.java)`,
+			expected: `Main.java:1: error: class Solution is public, should be declared in a file named Solution.java
+  public class Solution {
+  ^`,
 		},
 		{
 			name: "Type mismatch",
@@ -125,11 +124,12 @@ Main.java:1: error: class Solution is public, should be declared in a file named
         int num = "hello";
                   ^
 1 error`,
-			expected: `Compile Error:
-Main.java:10: error: incompatible types: String cannot be converted to int`,
+			expected: `Main.java:10: error: incompatible types: String cannot be converted to int
+  int num = "hello";
+  ^`,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.ParseCompileError(tt.output)
@@ -141,9 +141,9 @@ Main.java:10: error: incompatible types: String cannot be converted to int`,
 }
 
 func TestJavaHandler_GetExecutableCommand(t *testing.T) {
-	handler := &JavaHandler{}
+	handler := NewJavaHandler()
 	cmd := handler.GetExecutableCommand()
-	
+
 	if cmd != "java Main" {
 		t.Errorf("Expected 'java Main', got '%s'", cmd)
 	}

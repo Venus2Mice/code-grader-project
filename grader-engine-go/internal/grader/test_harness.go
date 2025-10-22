@@ -31,14 +31,14 @@ func (s *Service) generateCppTestHarness(problem *models.Problem, userCode strin
 		for _, arg := range args {
 			argStrings = append(argStrings, formatCppValue(arg))
 		}
-		
+
 		callStr := fmt.Sprintf(`
 	// Test case %d
 	{
 		auto result = %s(%s);
 		cout << result << endl;
 	}`, i+1, problem.FunctionName, strings.Join(argStrings, ", "))
-		
+
 		testCalls = append(testCalls, callStr)
 	}
 
@@ -87,11 +87,11 @@ func (s *Service) generatePythonTestHarness(problem *models.Problem, userCode st
 		for _, arg := range args {
 			argStrings = append(argStrings, formatPythonValue(arg))
 		}
-		
+
 		callStr := fmt.Sprintf(`    # Test case %d
     result = %s(%s)
     print(result)`, i+1, funcName, strings.Join(argStrings, ", "))
-		
+
 		testCalls = append(testCalls, callStr)
 	}
 
@@ -135,11 +135,11 @@ func (s *Service) generateJavaTestHarness(problem *models.Problem, userCode stri
 		for _, arg := range args {
 			argStrings = append(argStrings, formatJavaValue(arg))
 		}
-		
+
 		callStr := fmt.Sprintf(`        // Test case %d
         result = solution.%s(%s);
         System.out.println(result);`, i+1, funcName, strings.Join(argStrings, ", "))
-		
+
 		testCalls = append(testCalls, callStr)
 	}
 
@@ -253,13 +253,13 @@ func extractJavaClassName(code string) string {
 	if len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	// Fallback: look for any class declaration
 	re = regexp.MustCompile(`class\s+(\w+)`)
 	matches = re.FindStringSubmatch(code)
 	if len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	return ""
 }
