@@ -10,6 +10,7 @@ import uuid
 try:
     from . import db
     from werkzeug.security import generate_password_hash, check_password_hash
+    from sqlalchemy.dialects.postgresql import JSONB
     Base = db.Model
     Column = db.Column
     Integer = db.Integer
@@ -25,6 +26,7 @@ try:
 except ImportError:
     from sqlalchemy.orm import declarative_base, relationship, backref
     from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Table
+    from sqlalchemy.dialects.postgresql import JSONB
     Base = declarative_base()
 
 # Bảng trung gian
@@ -82,8 +84,10 @@ class Problem(Base):
     difficulty = Column(String(20), default='medium')  # NEW: 'easy', 'medium', 'hard'
     grading_mode = Column(String(20), default='stdio')  # NEW: 'stdio', 'function'
     function_signature = Column(Text, nullable=True)  # NEW: For function grading mode
+    function_name = Column(String(100), nullable=True)  # NEW: Function name for function grading
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
+    language_limits = Column(JSONB, nullable=True)  # NEW: Language-specific limits {"cpp": {"timeMs": 1000, "memoryKb": 65536}}
     due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     

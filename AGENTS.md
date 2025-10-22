@@ -44,6 +44,48 @@
 - Prioritize working code over documentation
 - Ưu tiên code hoạt động hơn là tài liệu
 
+## Design Principles / Nguyên tắc thiết kế
+
+### SOLID Principles / Nguyên tắc SOLID
+**MUST** follow SOLID principles in all code implementations:
+**BẮT BUỘC** tuân thủ nguyên tắc SOLID trong mọi triển khai code:
+
+#### 1. Single Responsibility Principle (SRP)
+- Each module/class should have only one reason to change
+- Mỗi module/class chỉ nên có một lý do để thay đổi
+- Example: Separate grading logic, Docker operations, and database access
+- Ví dụ: Tách biệt logic chấm bài, thao tác Docker, và truy cập database
+
+#### 2. Open-Closed Principle (OCP)
+- Open for extension, closed for modification
+- Mở cho mở rộng, đóng cho sửa đổi
+- Use interfaces and abstractions to allow new features without changing existing code
+- Dùng interface và abstraction để thêm tính năng mới mà không sửa code cũ
+- Example: Language handlers can be added without modifying grading service
+- Ví dụ: Có thể thêm handler ngôn ngữ mới mà không sửa grading service
+
+#### 3. Liskov Substitution Principle (LSP)
+- Subtypes must be substitutable for their base types
+- Subtype phải có thể thay thế cho base type
+- All language handlers must implement the same interface correctly
+- Tất cả language handler phải implement interface giống nhau đúng cách
+
+#### 4. Interface Segregation Principle (ISP)
+- Clients should not depend on interfaces they don't use
+- Client không nên phụ thuộc vào interface mà không dùng
+- Create focused, minimal interfaces rather than large general-purpose ones
+- Tạo interface tập trung, tối giản thay vì interface lớn đa năng
+- Example: Separate interfaces for stdio vs function-based grading
+- Ví dụ: Tách interface cho stdio và function-based grading
+
+#### 5. Dependency Inversion Principle (DIP)
+- Depend on abstractions, not concretions
+- Phụ thuộc vào abstraction, không phụ thuộc vào concrete
+- High-level modules should not depend on low-level modules
+- Module cấp cao không nên phụ thuộc vào module cấp thấp
+- Example: Grading service depends on LanguageHandler interface, not concrete handlers
+- Ví dụ: Grading service phụ thuộc vào LanguageHandler interface, không phải concrete handler
+
 ---
 
 *This file serves as guidelines for AI agents working on this project.*
