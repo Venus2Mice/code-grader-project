@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	"grader-engine-go/internal/grader/language"
 	"grader-engine-go/internal/models"
@@ -69,7 +71,7 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 		return nil, fmt.Errorf("failed to prepare execution: %w", err)
 	}
 
-	// Step 5: Run test cases with language-specific settings
+	// Step 5: Execute test harness once and collect all outputs
 	overallStatus := "Accepted"
 	results := []models.TestCaseResult{}
 
@@ -79,14 +81,58 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 	// Get resource multipliers for this language
 	multipliers := handler.GetResourceMultipliers()
 
-	for i, tc := range submission.Problem.TestCases {
-		log.Printf("[%d] Running test case %d/%d...", submissionID, i+1, len(submission.Problem.TestCases))
+	log.Printf("[%d] Running compiled test harness (all %d test cases)...", submissionID, len(submission.Problem.TestCases))
 
-		result := s.runTestCase(ctx, cli, containerID, &tc, &submission.Problem, submissionID, handler, multipliers, baseTimeMs, baseMemoryKb)
+	// Run the compiled binary once - it will execute all test cases and output results
+	allOutputs, execTime, memUsed, execErr := s.runCompiledTestHarness(ctx, cli, containerID, handler, multipliers, baseTimeMs, baseMemoryKb)
+
+	if execErr != nil {
+		log.Printf("[%d] Execution error: %v", submissionID, execErr)
+		// Return single error result
+		return &models.GradingResult{
+			OverallStatus: "Runtime Error",
+			Results: []models.TestCaseResult{
+				{
+					Status:       "Runtime Error",
+					ErrorMessage: fmt.Sprintf("%v", execErr),
+				},
+			},
+		}, nil
+	}
+
+	// Parse outputs: each line is a test case result
+	outputLines := strings.Split(strings.TrimSpace(allOutputs), "\n")
+
+	for i, tc := range submission.Problem.TestCases {
+		var output string
+		if i < len(outputLines) {
+			output = strings.TrimSpace(outputLines[i])
+		}
+
+		// Compare output
+		expectedOutput := strings.TrimSpace(tc.ExpectedOutput)
+
+		var status string
+		if output == expectedOutput {
+			status = "Accepted"
+		} else if strings.Join(strings.Fields(output), " ") == strings.Join(strings.Fields(expectedOutput), " ") {
+			status = "Presentation Error"
+		} else {
+			status = "Wrong Answer"
+		}
+
+		result := models.TestCaseResult{
+			TestCaseID:      &tc.ID,
+			Status:          status,
+			ExecutionTimeMs: execTime,
+			MemoryUsedKb:    memUsed,
+			OutputReceived:  output,
+		}
+
 		results = append(results, result)
 
-		if result.Status != "Accepted" && overallStatus == "Accepted" {
-			overallStatus = result.Status
+		if status != "Accepted" && overallStatus == "Accepted" {
+			overallStatus = status
 		}
 	}
 
@@ -96,6 +142,30 @@ func (s *Service) gradeFunctionBased(submission *models.Submission, containerID 
 		OverallStatus: overallStatus,
 		Results:       results,
 	}, nil
+}
+
+// runCompiledTestHarness executes the compiled test harness and returns all outputs
+// The test harness outputs one line per test case
+func (s *Service) runCompiledTestHarness(ctx context.Context, cli *client.Client, containerID string, handler language.LanguageHandler, multipliers language.ResourceMultipliers, baseTimeMs, baseMemoryKb int) (string, int, int, error) {
+	// Prepare execution environment
+	if err := handler.PrepareExecution(ctx, cli, containerID); err != nil {
+		return "", 0, 0, fmt.Errorf("failed to prepare execution: %w", err)
+	}
+
+	// Run the executable command
+	startTime := time.Now()
+	exitCode, output, err := s.execInContainer(ctx, cli, containerID, []string{handler.GetExecutableCommand()})
+	execTime := int(time.Since(startTime).Milliseconds())
+
+	if err != nil {
+		return "", execTime, 0, err
+	}
+
+	if exitCode != 0 {
+		return "", execTime, 0, fmt.Errorf("execution failed with exit code: %d", exitCode)
+	}
+
+	return output, execTime, 0, nil
 }
 
 // generateTestHarness creates a test harness that wraps user code with test cases

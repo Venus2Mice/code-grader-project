@@ -14,6 +14,11 @@ import (
 
 // copyFileToContainer copies a file content to a container's /sandbox directory
 func copyFileToContainer(ctx context.Context, cli *client.Client, containerID, filename, content string) error {
+	// First, ensure /sandbox directory exists
+	if err := ensureSandboxDirectory(ctx, cli, containerID); err != nil {
+		return fmt.Errorf("failed to ensure sandbox directory: %w", err)
+	}
+
 	// Create tar archive
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -38,6 +43,40 @@ func copyFileToContainer(ctx context.Context, cli *client.Client, containerID, f
 	err := cli.CopyToContainer(ctx, containerID, "/sandbox", &buf, container.CopyToContainerOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to copy to container: %w", err)
+	}
+
+	return nil
+}
+
+// ensureSandboxDirectory creates /sandbox directory if it doesn't exist
+func ensureSandboxDirectory(ctx context.Context, cli *client.Client, containerID string) error {
+	// Create exec instance to create directory
+	execConfig := container.ExecOptions{
+		Cmd:          []string{"mkdir", "-p", "/sandbox"},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	exec, err := cli.ContainerExecCreate(ctx, containerID, execConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create exec for mkdir: %w", err)
+	}
+
+	// Execute mkdir
+	resp, err := cli.ContainerExecAttach(ctx, exec.ID, container.ExecStartOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to attach to mkdir exec: %w", err)
+	}
+	defer resp.Close()
+
+	// Wait for exec to complete
+	inspect, err := cli.ContainerExecInspect(ctx, exec.ID)
+	if err != nil {
+		return fmt.Errorf("failed to inspect mkdir exec: %w", err)
+	}
+
+	if inspect.ExitCode != 0 {
+		return fmt.Errorf("mkdir failed with exit code %d", inspect.ExitCode)
 	}
 
 	return nil

@@ -88,5 +88,41 @@
 
 ---
 
+## Fix Strategy Policy / Quy tắc chiến lược fix lỗi
+
+### When Facing Multiple Fix Options / Khi gặp nhiều phương án fix
+
+**PRIORITY ORDER / THỨ TỰ ƯU TIÊN:**
+
+1. **Extensibility First** - Chọn phương án phát triển tiếp được
+   - Ưu tiên fix theo cách có thể mở rộng trong tương lai
+   - Tránh hacky/temporary solutions
+   - Example: Refactor architecture instead of quick patch
+
+2. **Redesign When Necessary** - Thiết kế lại nếu cần
+   - Nếu thiết kế cũ không phù hợp → thay đổi nó
+   - Không cứ giữ kiến trúc sai chỉ để tránh refactor
+   - Ví dụ: Function-based grading → từ "run per test case" → "run once, parse output"
+
+3. **Long-term Maintainability** - Khả năng bảo trì lâu dài
+   - Code sẽ được duy trì lâu → phải dễ hiểu, dễ sửa
+   - Performance optimization nếu cần, nhưng rõ ràng trong comment
+   - Document decisions in code comments nếu không rõ ràng
+
+### Applied Fixes / Các fix đã áp dụng
+
+**Function-Based Grading Output Parsing (Oct 22, 2025):**
+- **Old Design**: Run test harness multiple times (once per test case)
+  - Problem: Inefficient (recompile/re-exec per test case)
+- **Alternative 1**: Add output markers (TEST_1, TEST_2)
+  - Problem: Hard to parse, error-prone
+- **Selected: Alternative 2** ✅ (BEST): Run once, parse output lines
+  - Solution: Test harness runs all test cases once, outputs N lines
+  - Backend parses one line per test case
+  - Files modified: `grader-engine-go/internal/grader/function.go`
+  - Benefits: Efficient, clean, extensible, maintainable
+
+---
+
 *This file serves as guidelines for AI agents working on this project.*
 *File này phục vụ như hướng dẫn cho các AI agent làm việc trên dự án này.*

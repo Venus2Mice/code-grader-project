@@ -82,8 +82,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - RABBITMQ_HOST=rabbitmq
       - BACKEND_API_URL=http://backend:5000
-      - DOCKER_IMAGE=alpine:latest  # Base image for containers
-      - CONTAINER_POOL_SIZE=5  # Number of pre-warmed containers
+      - DOCKER_IMAGE=code-grader-project-sandbox:latest
+      - CONTAINER_POOL_SIZE=5
     depends_on:
       - postgres
       - rabbitmq

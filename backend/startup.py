@@ -66,7 +66,24 @@ def run_migrations():
         print("✅ Database upgrade completed!")
         return True
     
-    # If upgrade fails, init first then upgrade
+    # If upgrade fails due to multiple heads, merge them
+    if "Multiple head revisions" in result.stderr:
+        print("   Resolving multiple migration heads...")
+        subprocess.run("flask db merge heads", shell=True, capture_output=True)
+        
+        # Try upgrade again
+        result = subprocess.run(
+            "flask db upgrade",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            print("✅ Database upgrade completed (merged heads)!")
+            return True
+    
+    # If upgrade still fails, init first then upgrade
     print("   Database not initialized, creating new migration...")
     subprocess.run("flask db init", shell=True, capture_output=True)
     

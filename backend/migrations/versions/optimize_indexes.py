@@ -1,7 +1,7 @@
 """Add performance indexes to critical tables
 
 Revision ID: optimize_indexes_001
-Revises: f9a8b7c6d5e4
+Revises: a1b2c3d4e5f6
 Create Date: 2025-10-18 14:00:00.000000
 
 """
