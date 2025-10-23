@@ -79,35 +79,118 @@ def seed_test_data_command():
     db.session.commit()
     print(f"-> Student '{student_user.full_name}' đã tham gia lớp '{new_class.name}'.")
 
-    # 6. Giáo viên tạo một bài tập trong lớp
-    new_problem = Problem(
-        title="Bài Test: Tổng hai số",
-        description="Viết chương trình nhập vào 2 số nguyên a và b, in ra tổng của chúng.",
-        class_id=new_class.id
-    )
+    # 6. Giáo viên tạo các bài tập LeetCode-style (với function signature)
     
-    # 7. Tạo các test case cho bài tập đó
-    tc1 = TestCase(
-        input_data="5 10",
-        expected_output="15"
+    # Problem 1: Python - Two Sum
+    problem1 = Problem(
+        title="Two Sum",
+        description="Given an array of integers nums and an integer target, return the indices of the two numbers that add up to target.\nYou may assume that each input has exactly one solution, and you may not use the same element twice.",
+        class_id=new_class.id,
+        function_signature="def twoSum(nums: List[int], target: int) -> List[int]:",
+        test_cases=[
+            TestCase(
+                inputs=[
+                    {"type": "int[]", "value": [2, 7, 11, 15]},
+                    {"type": "int", "value": 9}
+                ],
+                expected_output={"type": "int[]", "value": [0, 1]},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[
+                    {"type": "int[]", "value": [3, 2, 4]},
+                    {"type": "int", "value": 6}
+                ],
+                expected_output={"type": "int[]", "value": [1, 2]},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[
+                    {"type": "int[]", "value": [3, 3]},
+                    {"type": "int", "value": 6}
+                ],
+                expected_output={"type": "int[]", "value": [0, 1]},
+                points=10,
+                is_hidden=True
+            )
+        ]
     )
-    tc2 = TestCase(
-        input_data="-1 -2",
-        expected_output="-3"
-    )
-    new_problem.test_cases.append(tc1)
-    new_problem.test_cases.append(tc2)
-
-    db.session.add(new_problem)
+    db.session.add(problem1)
     db.session.commit()
-    print(f"-> Đã tạo Problem '{new_problem.title}' (ID: {new_problem.id}) với 2 test cases.")
+    print(f"-> Đã tạo Problem '{problem1.title}' (ID: {problem1.id}) - Python - 3 test cases.")
 
-    print("\nHoàn tất việc seed dữ liệu test!")
+    # Problem 2: C++ - Palindrome Number
+    problem2 = Problem(
+        title="Palindrome Number",
+        description="Given an integer x, return true if x is a palindrome, and false otherwise.",
+        class_id=new_class.id,
+        function_signature="bool isPalindrome(int x);",
+        test_cases=[
+            TestCase(
+                inputs=[{"type": "int", "value": 121}],
+                expected_output={"type": "bool", "value": True},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[{"type": "int", "value": -121}],
+                expected_output={"type": "bool", "value": False},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[{"type": "int", "value": 10}],
+                expected_output={"type": "bool", "value": False},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[{"type": "int", "value": 0}],
+                expected_output={"type": "bool", "value": True},
+                points=10,
+                is_hidden=True
+            )
+        ]
+    )
+    db.session.add(problem2)
+    db.session.commit()
+    print(f"-> Đã tạo Problem '{problem2.title}' (ID: {problem2.id}) - C++ - 4 test cases.")
+
+    # Problem 3: Java - Reverse String
+    problem3 = Problem(
+        title="Reverse String",
+        description="Write a function that reverses a string. The input string is given as an array of characters s.",
+        class_id=new_class.id,
+        function_signature="public void reverseString(char[] s);",
+        test_cases=[
+            TestCase(
+                inputs=[{"type": "char[]", "value": ["h", "e", "l", "l", "o"]}],
+                expected_output={"type": "char[]", "value": ["o", "l", "l", "e", "h"]},
+                points=10,
+                is_hidden=False
+            ),
+            TestCase(
+                inputs=[{"type": "char[]", "value": ["H", "a", "n", "n", "a", "h"]}],
+                expected_output={"type": "char[]", "value": ["h", "a", "n", "n", "a", "H"]},
+                points=10,
+                is_hidden=False
+            )
+        ]
+    )
+    db.session.add(problem3)
+    db.session.commit()
+    print(f"-> Đã tạo Problem '{problem3.title}' (ID: {problem3.id}) - Java - 2 test cases.")
+
+    print("\n✅ Hoàn tất việc seed dữ liệu test với format LeetCode-style!")
     print("--- Credentials ---")
     print("Teacher Email: teacher.test@example.com")
     print("Student Email: student.test@example.com")
     print("Password (cho cả hai): password123")
     print("-------------------")
+    print(f"📚 Class: Lớp Test C++ (ID: {new_class.id}, Invite Code: {new_class.invite_code})")
+    print(f"📝 Problems: {len([problem1, problem2, problem3])} bài tập LeetCode-style")
 
 
 @click.command(name='cleanup_test_submissions')
