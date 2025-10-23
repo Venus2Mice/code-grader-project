@@ -20,8 +20,17 @@ def setup_logging(app):
     log_level = logging.DEBUG if app.debug else logging.INFO
     app.logger.setLevel(log_level)
     
-    # Remove default handlers
+    # Remove default handlers to prevent duplicates
     app.logger.handlers.clear()
+    
+    # Check if handlers already exist (prevent duplicate setup)
+    if hasattr(app, '_logging_configured') and app._logging_configured:
+        return app.logger
+    
+    # Detect if running in werkzeug reloader subprocess
+    # Only the main process should log startup messages
+    import sys
+    is_reloader = os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
     
     # Create formatters
     detailed_formatter = logging.Formatter(
@@ -62,7 +71,7 @@ def setup_logging(app):
     error_handler.setFormatter(detailed_formatter)
     app.logger.addHandler(error_handler)
     
-    # Daily rotating log for audit trail
+    # Daily rotating log for audit trail (important events only)
     audit_log_file = os.path.join(logs_dir, 'audit.log')
     audit_handler = TimedRotatingFileHandler(
         audit_log_file,
@@ -70,16 +79,17 @@ def setup_logging(app):
         interval=1,
         backupCount=30  # Keep 30 days
     )
-    audit_handler.setLevel(logging.INFO)
+    audit_handler.setLevel(logging.WARNING)  # Only warnings, errors, and critical events
     audit_handler.setFormatter(detailed_formatter)
     app.logger.addHandler(audit_handler)
     
-    # Log startup message
-    app.logger.info('='*60)
-    app.logger.info(f'Code Grader Application Started')
-    app.logger.info(f'Environment: {"Development" if app.debug else "Production"}')
-    app.logger.info(f'Log Level: {logging.getLevelName(log_level)}')
-    app.logger.info('='*60)
+    # Mark as configured to prevent duplicate setup
+    app._logging_configured = True
+    
+    # Log startup message only once (not in reloader subprocess)
+    if not is_reloader:
+        env = "Development" if app.debug else "Production"
+        app.logger.info(f'Code Grader started | Env: {env} | LogLevel: {logging.getLevelName(log_level)}')
     
     return app.logger
 

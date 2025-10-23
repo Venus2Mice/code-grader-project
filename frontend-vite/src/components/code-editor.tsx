@@ -1,7 +1,4 @@
-"use client"
-
-import { useRef } from "react"
-import dynamic from "next/dynamic"
+import { useRef, lazy, Suspense } from "react"
 import type { OnMount } from "@monaco-editor/react"
 
 interface CodeEditorProps {
@@ -10,11 +7,8 @@ interface CodeEditorProps {
   language: string
 }
 
-// Dynamically import Monaco Editor only when needed
-const Editor = dynamic(() => import("@monaco-editor/react").then(mod => ({ default: mod.default })), {
-  ssr: false,
-  loading: () => <EditorSkeleton />
-})
+// Lazy load Monaco Editor
+const MonacoEditor = lazy(() => import("@monaco-editor/react"))
 
 // Loading skeleton
 function EditorSkeleton() {
@@ -36,28 +30,30 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
   }
 
   return (
-    <Editor
-      height="100%"
-      language={language}
-      value={value}
-      onChange={(value) => onChange(value || "")}
-      onMount={handleEditorDidMount}
-      options={{
-        minimap: { enabled: false },
-        fontSize: 14,
-        lineNumbers: "on",
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        tabSize: 4,
-        wordWrap: "on",
-        padding: { top: 16, bottom: 16 },
-        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-        fontLigatures: true,
-        cursorBlinking: "smooth",
-        cursorSmoothCaretAnimation: "on",
-        smoothScrolling: true,
-        renderLineHighlight: "all",
-      }}
-    />
+    <Suspense fallback={<EditorSkeleton />}>
+      <MonacoEditor
+        height="100%"
+        language={language}
+        value={value}
+        onChange={(value) => onChange(value || "")}
+        onMount={handleEditorDidMount}
+        options={{
+          minimap: { enabled: false },
+          fontSize: 14,
+          lineNumbers: "on",
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 4,
+          wordWrap: "on",
+          padding: { top: 16, bottom: 16 },
+          fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+          fontLigatures: true,
+          cursorBlinking: "smooth",
+          cursorSmoothCaretAnimation: "on",
+          smoothScrolling: true,
+          renderLineHighlight: "all",
+        }}
+      />
+    </Suspense>
   )
 }

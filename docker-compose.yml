@@ -1,28 +1,19 @@
 services:
-  # Frontend (Next.js) - DEVELOPMENT MODE
-  # Sử dụng Dockerfile.dev cho hot reload và dev features
+  # Frontend (Vite + React) - PRODUCTION READY
+  # Lightweight SPA with Nginx serving static files
   frontend:
     build:
-      context: ./frontend-new
-      dockerfile: Dockerfile.dev
+      context: ./frontend-vite
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend-new:/app
-      - /app/.next
-      - /app/node_modules
+      - "3000:80"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
-      - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
-      - NODE_OPTIONS=--max_old_space_size=2048
+      - VITE_API_URL=http://backend:5000
     depends_on:
       - backend
     networks:
       - app-network
     restart: unless-stopped
-    platform: linux/amd64
 
   # Backend (Flask API)
   backend:

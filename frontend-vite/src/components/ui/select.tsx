@@ -1,4 +1,3 @@
-"use client"
 
 import type * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
@@ -31,7 +30,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-4 border-border data-[placeholder]:text-muted-foreground focus-visible:ring-4 focus-visible:ring-ring bg-card hover:bg-muted flex w-full items-center justify-between gap-2 px-4 py-2 font-bold uppercase tracking-wide shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] transition-all outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-12 data-[size=sm]:h-10",
+        "border-4 border-border data-[placeholder]:text-muted-foreground focus-visible:ring-4 focus-visible:ring-ring bg-card hover:bg-muted flex w-full items-center justify-between gap-2 px-4 py-2 font-bold uppercase tracking-wide shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] transition-all outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-12 data-[size=sm]:h-10",
         className,
       )}
       {...props}
@@ -55,7 +54,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover text-popover-foreground border-4 border-border relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]",
+          "bg-popover text-popover-foreground border-4 border-border relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)]",
           className,
         )}
         position={position}

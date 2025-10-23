@@ -45,7 +45,8 @@ export function testLogger() {
   
   // Test 4: Environment check
   console.log('\n📝 Test 4: Environment Detection')
-  console.log('NODE_ENV:', process.env.NODE_ENV)
+  console.log('MODE:', import.meta.env.MODE)
+  console.log('DEV:', import.meta.env.DEV)
   console.log('Hostname:', window.location.hostname)
   console.log('Expected: Logs visible if development or localhost')
   console.log('Expected: Logs hidden if production')
@@ -81,6 +82,6 @@ export function testLogger() {
 }
 
 // Auto-run in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.log('💡 Tip: Run testLogger() in console to test logging')
 }

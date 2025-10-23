@@ -28,7 +28,7 @@ class Logger {
   constructor() {
     // Multiple checks to ensure we're really in development
     this.isDevelopment = 
-      process.env.NODE_ENV === 'development' || 
+      import.meta.env.DEV || 
       (typeof window !== 'undefined' && window.location.hostname === 'localhost')
     
     // In production, COMPLETELY disable logging

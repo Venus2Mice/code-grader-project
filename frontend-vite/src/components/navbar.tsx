@@ -1,8 +1,6 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
 import { Code2, LogOut, User, Moon, Sun } from "lucide-react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { useTheme } from "@/components/theme-provider"
 
 interface NavbarProps {
@@ -18,7 +16,7 @@ export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
     <nav className="border-b-4 border-border bg-card">
       <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
         <Link
-          href="/"
+          to="/"
           className="flex items-center gap-2 md:gap-3 text-lg md:text-2xl font-black uppercase tracking-tight"
         >
           <div className="h-8 w-8 md:h-10 md:w-10 bg-primary border-4 border-border flex items-center justify-center">

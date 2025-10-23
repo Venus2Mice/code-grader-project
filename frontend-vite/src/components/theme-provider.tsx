@@ -1,4 +1,3 @@
-"use client"
 
 import type React from "react"
 
@@ -36,7 +35,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div style={{ visibility: mounted ? "visible" : "hidden" }}>{children}</div>
+      {children}
     </ThemeContext.Provider>
   )
 }

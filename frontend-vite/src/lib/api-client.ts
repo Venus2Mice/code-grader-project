@@ -6,7 +6,7 @@
 import { toast } from "@/hooks/use-toast"
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"
 const MAX_RETRIES = 3
 const RETRY_DELAY = 1000 // ms
 

@@ -6,7 +6,7 @@
  */
 
 // Only run in production
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+if (typeof window !== 'undefined' && import.meta.env.PROD) {
   // Store original console methods (for internal use if needed)
   const originalConsole = {
     log: console.log,

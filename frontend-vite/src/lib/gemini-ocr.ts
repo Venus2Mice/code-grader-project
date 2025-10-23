@@ -151,7 +151,7 @@ export async function extractCodeFromImage(
   const { language = 'python', apiKey } = options;
   
   // Get API key from env or parameter
-  const GEMINI_API_KEY = apiKey || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  const GEMINI_API_KEY = apiKey || import.meta.env.VITE_GEMINI_API_KEY;
   
   if (!GEMINI_API_KEY) {
     return {

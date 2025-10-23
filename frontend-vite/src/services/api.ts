@@ -1,13 +1,33 @@
-import axios, { AxiosInstance, AxiosError } from 'axios'
+import axios from 'axios'
+import type { AxiosInstance, AxiosError } from 'axios'
 import { logger } from '@/lib/logger'
 
-// Base API URL - sẽ lấy từ env variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+// Base API URL - use /api proxy in Docker, localhost in dev
+// In Docker: Nginx will proxy /api requests to backend:5000
+// In dev (npm run dev): Vite dev server proxies to VITE_API_URL
+const getApiUrl = () => {
+  // Check if running in browser and if it's localhost
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    if (isLocalhost) {
+      // Development: use env var or localhost:5000
+      return import.meta.env.VITE_API_URL || 'http://localhost:5000'
+    } else {
+      // Production in Docker: use /api proxy (Nginx proxies to backend)
+      return '/api'
+    }
+  }
+  // SSR fallback
+  return '/api'
+}
+
+const API_BASE_URL = getApiUrl()
 
 // Debug log - chỉ trong development
 logger.info('API initialized', {
   baseURL: API_BASE_URL,
-  hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
+  hasEnvVar: !!import.meta.env.VITE_API_URL,
+  isProduction: typeof window !== 'undefined' && window.location.hostname !== 'localhost'
 })
 
 // Create axios instance with default config

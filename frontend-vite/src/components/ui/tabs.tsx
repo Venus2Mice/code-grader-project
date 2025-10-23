@@ -1,4 +1,3 @@
-"use client"
 
 import type * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
@@ -27,7 +26,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-4 border-transparent data-[state=active]:border-border text-foreground inline-flex h-auto items-center justify-center px-6 py-3 font-bold uppercase tracking-wide whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:data-[state=active]:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]",
+        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-4 border-transparent data-[state=active]:border-border text-foreground inline-flex h-auto items-center justify-center px-6 py-3 font-bold uppercase tracking-wide whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:data-[state=active]:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)]",
         className,
       )}
       {...props}
