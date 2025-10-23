@@ -9,6 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # - time: resource measurement
 # - python3, python3-pip: Python support
 # - openjdk-11-jdk: Java support
+# - wget, unzip: for downloading libraries
 RUN apt-get update && \
     apt-get install -y \
         build-essential \
@@ -16,14 +17,31 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         openjdk-11-jdk \
+        wget \
+        unzip \
+        git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify compiler installations
+# Install nlohmann/json for C++ (header-only library)
+RUN mkdir -p /usr/local/include/nlohmann && \
+    wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O /usr/local/include/nlohmann/json.hpp
+
+# Download and install Gson for Java
+RUN mkdir -p /opt/gson && \
+    wget https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar -O /opt/gson/gson.jar
+
+# Set Java classpath to include Gson
+ENV CLASSPATH="/opt/gson/gson.jar:."
+
+# Verify compiler installations and libraries
 RUN echo "=== Compiler Versions ===" && \
     g++ --version && \
     python3 --version && \
-    javac -version
+    javac -version && \
+    echo "=== JSON Library Check ===" && \
+    test -f /usr/local/include/nlohmann/json.hpp && echo "✓ nlohmann/json installed" || echo "✗ nlohmann/json missing" && \
+    test -f /opt/gson/gson.jar && echo "✓ Gson installed" || echo "✗ Gson missing"
 
 #tạo 1 thư mục làm việc bên trong container
 WORKDIR /sandbox

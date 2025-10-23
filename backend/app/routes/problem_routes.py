@@ -3,6 +3,7 @@ from .class_routes import class_bp
 from ..models import db, Problem, Class, TestCase, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
+import json
 
 # Blueprint này vẫn được tạo ra để chứa các route không lồng trong class
 # Ví dụ: /api/problems/123
@@ -14,11 +15,10 @@ problem_bp = Blueprint('problems', __name__, url_prefix='/api/problems')
 @jwt_required()
 @role_required('teacher')
 def create_problem_in_class(class_id):
-    """Tạo bài tập mới trong một lớp học cụ thể."""
+    """Create new problem in a class with LeetCode-style format."""
     target_class = Class.query.get_or_404(class_id)
     teacher_id = get_jwt_identity()
 
-    # Đảm bảo teacher chỉ có thể tạo bài tập trong lớp của mình
     if str(target_class.teacher_id) != teacher_id:
         return jsonify({"msg": "Forbidden"}), 403
 
@@ -26,43 +26,36 @@ def create_problem_in_class(class_id):
     
     title = data.get('title')
     description = data.get('description')
-    difficulty = data.get('difficulty', 'medium')  # NEW: easy/medium/hard
-    grading_mode = data.get('grading_mode', 'stdio')  # NEW: stdio/function
-    function_signature = data.get('function_signature')  # NEW: For function mode
+    difficulty = data.get('difficulty', 'medium')
+    function_signature = data.get('function_signature')
     time_limit_ms = data.get('time_limit_ms', 1000)
     memory_limit_kb = data.get('memory_limit_kb', 256000)
-    test_cases = data.get('test_cases', []) # Nhận một danh sách test case
+    test_cases = data.get('test_cases', [])
 
     if not title:
         return jsonify({"msg": "Problem title is required"}), 400
     
-    # Validate difficulty
+    if not function_signature:
+        return jsonify({"msg": "Function signature is required"}), 400
+    
     if difficulty not in ['easy', 'medium', 'hard']:
         return jsonify({"msg": "Invalid difficulty. Must be easy, medium, or hard"}), 400
-    
-    # Validate grading_mode
-    if grading_mode not in ['stdio', 'function']:
-        return jsonify({"msg": "Invalid grading_mode. Must be stdio or function"}), 400
-    
-    # If function mode, require function_signature
-    if grading_mode == 'function' and not function_signature:
-        return jsonify({"msg": "function_signature is required for function grading mode"}), 400
 
-    # Validate test cases points
     if not test_cases or len(test_cases) == 0:
         return jsonify({"msg": "At least one test case is required"}), 400
     
+    # Validate test cases structure
     total_points = 0
     for tc_data in test_cases:
-        points = tc_data.get('points', 10)
+        if 'inputs' not in tc_data or 'expected_output' not in tc_data:
+            return jsonify({"msg": "Each test case must have 'inputs' and 'expected_output'"}), 400
         
-        # Check for negative points
+        points = tc_data.get('points', 10)
         if points < 0:
             return jsonify({"msg": "Test case points cannot be negative"}), 400
         
         total_points += points
     
-    # Check total points
     if total_points == 0:
         return jsonify({"msg": "Total points must be greater than 0"}), 400
     
@@ -72,21 +65,23 @@ def create_problem_in_class(class_id):
     new_problem = Problem(
         title=title,
         description=description,
-        difficulty=difficulty,  # NEW
-        grading_mode=grading_mode,  # NEW
-        function_signature=function_signature,  # NEW
+        difficulty=difficulty,
+        function_signature=function_signature,
         time_limit_ms=time_limit_ms,
         memory_limit_kb=memory_limit_kb,
         class_id=class_id
     )
 
-    # Thêm các test case với points
+    # Add test cases with structured inputs/outputs
     for tc_data in test_cases:
+        inputs_json = json.dumps(tc_data.get('inputs'))
+        expected_output_json = json.dumps(tc_data.get('expected_output'))
+        
         new_tc = TestCase(
-            input_data=tc_data.get('input'),
-            expected_output=tc_data.get('output'),
+            inputs=inputs_json,
+            expected_output=expected_output_json,
             is_hidden=tc_data.get('is_hidden', False),
-            points=tc_data.get('points', 10)  # NEW: Points support
+            points=tc_data.get('points', 10)
         )
         new_problem.test_cases.append(new_tc)
 
@@ -96,8 +91,8 @@ def create_problem_in_class(class_id):
     return jsonify({
         "id": new_problem.id, 
         "title": new_problem.title,
-        "difficulty": new_problem.difficulty,  # NEW
-        "grading_mode": new_problem.grading_mode  # NEW
+        "difficulty": new_problem.difficulty,
+        "function_signature": new_problem.function_signature
     }), 201
 
 
@@ -106,14 +101,13 @@ def create_problem_in_class(class_id):
 @class_bp.route('/<int:class_id>/problems', methods=['GET'])
 @jwt_required()
 def get_problems_in_class(class_id):
-    """Lấy danh sách các bài tập trong một lớp học."""
-    # (Thêm logic kiểm tra xem user có phải là thành viên của lớp không)
+    """Get list of problems in a class."""
     problems = Problem.query.filter_by(class_id=class_id).all()
     problem_list = [{
         "id": p.id, 
         "title": p.title,
-        "difficulty": p.difficulty,  # NEW
-        "grading_mode": p.grading_mode,  # NEW
+        "difficulty": p.difficulty,
+        "function_signature": p.function_signature,
         "time_limit_ms": p.time_limit_ms,
         "memory_limit_kb": p.memory_limit_kb,
         "created_at": p.created_at.isoformat() if p.created_at else None
@@ -125,30 +119,28 @@ def get_problems_in_class(class_id):
 @problem_bp.route('/<int:problem_id>', methods=['GET'])
 @jwt_required()
 def get_problem_details(problem_id):
-    """Lấy chi tiết một bài tập."""
+    """Get problem details with structured test cases."""
     problem = Problem.query.get_or_404(problem_id)
-    # (Thêm logic kiểm tra quyền truy cập)
     
-    # Include test cases with points
+    # Include test cases with structured inputs/outputs
     test_cases_data = [{
         "id": tc.id,
-        "input": tc.input_data,
-        "expected_output": tc.expected_output,
+        "inputs": json.loads(tc.inputs) if tc.inputs else [],
+        "expected_output": json.loads(tc.expected_output) if tc.expected_output else {},
         "is_hidden": tc.is_hidden,
-        "points": tc.points  # NEW
+        "points": tc.points
     } for tc in problem.test_cases]
     
     return jsonify({
         "id": problem.id,
-        "class_id": problem.class_id,  # FIXED: Add class_id for navigation
+        "class_id": problem.class_id,
         "title": problem.title,
         "description": problem.description,
-        "difficulty": problem.difficulty,  # NEW
-        "grading_mode": problem.grading_mode,  # NEW
-        "function_signature": problem.function_signature,  # NEW
+        "difficulty": problem.difficulty,
+        "function_signature": problem.function_signature,
         "time_limit_ms": problem.time_limit_ms,
         "memory_limit_kb": problem.memory_limit_kb,
-        "test_cases": test_cases_data,  # NEW: Include test cases
+        "test_cases": test_cases_data,
         "created_at": problem.created_at.isoformat() if problem.created_at else None
     })
 

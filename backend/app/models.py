@@ -81,13 +81,13 @@ class Problem(Base):
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
-    difficulty = Column(String(20), default='medium')  # NEW: 'easy', 'medium', 'hard'
-    grading_mode = Column(String(20), default='stdio')  # NEW: 'stdio', 'function'
-    function_signature = Column(Text, nullable=True)  # NEW: For function grading mode
-    function_name = Column(String(100), nullable=True)  # NEW: Function name for function grading
+    difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
+    function_signature = Column(Text, nullable=False)  # Required for all problems
+    function_name = Column(String(100), nullable=True)  # Extracted from signature
+    parameter_types = Column(JSONB, nullable=True)  # NEW: ["int[]", "int"] - extracted from signature
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
-    language_limits = Column(JSONB, nullable=True)  # NEW: Language-specific limits {"cpp": {"timeMs": 1000, "memoryKb": 65536}}
+    language_limits = Column(JSONB, nullable=True)  # Language-specific limits {"cpp": {"timeMs": 1000, "memoryKb": 65536}}
     due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -95,14 +95,23 @@ class Problem(Base):
     test_cases = relationship('TestCase', back_populates='problem', cascade="all, delete-orphan")
     submissions = relationship('Submission', back_populates='problem', cascade="all, delete-orphan")
 
+    def get_limit_for_language(self, language):
+        """Get time and memory limits for specific language with fallback to defaults"""
+        if self.language_limits and language in self.language_limits:
+            lang_limits = self.language_limits[language]
+            time_ms = lang_limits.get('timeMs', self.time_limit_ms)
+            memory_kb = lang_limits.get('memoryKb', self.memory_limit_kb)
+            return time_ms, memory_kb
+        return self.time_limit_ms, self.memory_limit_kb
+
 class TestCase(Base):
     __tablename__ = 'test_cases'
     id = Column(Integer, primary_key=True)
     problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False)
-    input_data = Column(Text)
-    expected_output = Column(Text)
+    inputs = Column(JSONB, nullable=False)  # NEW: Array of {type, value} objects
+    expected_output = Column(JSONB, nullable=False)  # NEW: {type, value} object
     is_hidden = Column(Boolean, default=False)
-    points = Column(Integer, default=10)  # NEW: Points for this test case
+    points = Column(Integer, default=10)  # Points for this test case
     
     problem = relationship('Problem', back_populates='test_cases')
     results = relationship('SubmissionResult', back_populates='test_case')

@@ -100,7 +100,7 @@ class ClassCreateSchema(Schema):
 
 
 class ProblemCreateSchema(Schema):
-    """Schema for creating a problem"""
+    """Schema for creating a problem with LeetCode-style format"""
     title = fields.Str(
         required=True,
         validate=validate.Length(min=3, max=200),
@@ -115,6 +115,11 @@ class ProblemCreateSchema(Schema):
         required=True,
         validate=validate.Range(min=1),
         error_messages={'required': 'Class ID is required'}
+    )
+    function_signature = fields.Str(
+        required=True,
+        validate=validate.Length(min=5),
+        error_messages={'required': 'Function signature is required'}
     )
     difficulty = fields.Str(
         missing='medium',
@@ -131,35 +136,43 @@ class ProblemCreateSchema(Schema):
         validate=validate.Range(min=1024, max=1048576),
         error_messages={'validator_failed': 'Memory limit must be between 1MB and 1GB'}
     )
-    problem_type = fields.Str(
-        missing='stdio',
-        validate=validate.OneOf(['stdio', 'function-base']),
-        error_messages={'validator_failed': 'Problem type must be stdio or function-base'}
-    )
+
+
+class TestCaseInputSchema(Schema):
+    """Schema for a single test case input parameter"""
+    type = fields.Str(required=True)  # e.g., "int", "int[]", "string"
+    value = fields.Raw(required=True)  # Can be any JSON type
+
+
+class TestCaseOutputSchema(Schema):
+    """Schema for test case expected output"""
+    type = fields.Str(required=True)
+    value = fields.Raw(required=True)
 
 
 class TestCaseCreateSchema(Schema):
-    """Schema for creating a test case"""
+    """Schema for creating a test case with structured inputs"""
     problem_id = fields.Int(
         required=True,
         validate=validate.Range(min=1),
         error_messages={'required': 'Problem ID is required'}
     )
-    input_data = fields.Str(
+    inputs = fields.List(
+        fields.Nested(TestCaseInputSchema),
         required=True,
-        allow_none=True,
-        error_messages={'required': 'Input data is required (can be empty string)'}
+        error_messages={'required': 'Inputs array is required'}
     )
-    expected_output = fields.Str(
+    expected_output = fields.Nested(
+        TestCaseOutputSchema,
         required=True,
         error_messages={'required': 'Expected output is required'}
     )
+    is_hidden = fields.Bool(missing=False)
     points = fields.Int(
         missing=10,
         validate=validate.Range(min=0, max=100),
         error_messages={'validator_failed': 'Points must be between 0 and 100'}
     )
-    is_hidden = fields.Bool(missing=False)
 
 
 class PaginationSchema(Schema):

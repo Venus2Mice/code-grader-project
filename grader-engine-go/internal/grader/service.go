@@ -46,7 +46,7 @@ func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, erro
 		return nil, fmt.Errorf("problem not found for submission %d", submissionID)
 	}
 
-	log.Printf("[%d] Problem: %s, Test cases: %d", 
+	log.Printf("[%d] Problem: %s, Test cases: %d",
 		submissionID, submission.Problem.Title, len(submission.Problem.TestCases))
 
 	// Get container from pool
@@ -64,13 +64,8 @@ func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, erro
 		Results:       []models.TestCaseResult{},
 	}
 
-	// Route to appropriate grading mode
-	switch submission.Problem.GradingMode {
-	case "function":
-		result, err = s.gradeFunctionBased(&submission, containerID)
-	default: // "stdio"
-		result, err = s.gradeStdio(&submission, containerID)
-	}
+	// Use unified LeetCode-style grading
+	result, err = s.gradeStructured(&submission, containerID)
 
 	if err != nil {
 		log.Printf("[%d] Grading error: %v", submissionID, err)
@@ -116,7 +111,7 @@ func (s *Service) updateBackend(submissionID int, result *models.GradingResult) 
 
 		if attempt < maxRetries-1 {
 			waitTime := time.Duration(1<<uint(attempt)) * time.Second
-			log.Printf("[%d] ⚠️  Backend update failed (attempt %d/%d), retrying in %v...", 
+			log.Printf("[%d] ⚠️  Backend update failed (attempt %d/%d), retrying in %v...",
 				submissionID, attempt+1, maxRetries, waitTime)
 			time.Sleep(waitTime)
 		}
