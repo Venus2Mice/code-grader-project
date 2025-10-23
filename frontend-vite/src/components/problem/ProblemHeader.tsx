@@ -82,7 +82,7 @@ export function ProblemHeader({
             variant="outline"
             size="sm"
             onClick={toggleTheme}
-            className="gap-2 font-black uppercase text-xs md:text-sm bg-transparent hover:bg-muted"
+            className="gap-2 font-black uppercase text-xs md:text-sm bg-background hover:bg-muted hover:text-foreground"
             title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {theme === "dark" ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
@@ -104,7 +104,7 @@ export function ProblemHeader({
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm hover:bg-accent/10 hover:text-accent-foreground hover:border-accent"
+              className="gap-2 font-black uppercase bg-background text-xs md:text-sm hover:bg-blue-100 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 hover:border-blue-700 dark:hover:border-blue-500"
               onClick={onReset}
               title="Reset code to original template"
             >
@@ -116,7 +116,7 @@ export function ProblemHeader({
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm hover:bg-accent/10 hover:text-accent-foreground hover:border-accent"
+            className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm hover:bg-purple-100 dark:hover:bg-purple-950 hover:text-purple-700 dark:hover:text-purple-300 hover:border-purple-700 dark:hover:border-purple-500"
             onClick={onUpload}
             disabled={isRunning || isSubmitting}
             title="Upload .cpp or .txt file"
