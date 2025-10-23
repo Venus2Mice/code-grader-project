@@ -177,10 +177,9 @@ func (s *Service) runCompiledTestHarness(ctx context.Context, cli *client.Client
 	execCmd := handler.GetExecutableCommand()
 
 	// Use bash time for precise execution timing (millisecond accuracy)
+	// Fixed: Remove conflicting file descriptor redirections
 	wrapperScript := fmt.Sprintf(`#!/bin/bash
-exec 3>&1 4>&2
-TIME_OUTPUT=$( { time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt 1>&3 2>&4; } 2>&1 )
-echo "$TIME_OUTPUT" > /sandbox/bash_time.txt
+{ time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt; } 2> /sandbox/bash_time.txt
 PROGRAM_EXIT=$?
 echo $PROGRAM_EXIT > /sandbox/exitcode.txt
 exit $PROGRAM_EXIT
