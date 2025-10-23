@@ -145,7 +145,7 @@ def get_class_details(class_id):
             "title": problem.title,
             "description": problem.description,
             "difficulty": problem.difficulty,
-            "grading_mode": problem.grading_mode,
+            "function_signature": problem.function_signature,
             "time_limit_ms": problem.time_limit_ms,
             "memory_limit_kb": problem.memory_limit_kb,
             "created_at": problem.created_at.isoformat() if problem.created_at else None

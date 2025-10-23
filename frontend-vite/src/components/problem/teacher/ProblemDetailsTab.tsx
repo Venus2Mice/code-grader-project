@@ -2,6 +2,54 @@
 import { Card } from "@/components/ui/card"
 import type { Problem } from "@/types/problem"
 
+// Helper function to format structured test case data for display
+function formatTestCaseData(data: any, isInput: boolean = false, functionSig?: string): string {
+  if (!data) return "(empty)"
+  
+  // Handle array of inputs (LeetCode-style format)
+  if (Array.isArray(data)) {
+    if (data.length === 0) return "(empty)"
+    
+    // Extract parameter names from function signature if available
+    let paramNames: string[] = []
+    if (isInput && functionSig) {
+      // Parse parameter names from signature
+      const match = functionSig.match(/\(([^)]*)\)/)
+      if (match) {
+        const params = match[1].split(',').map(p => {
+          // Extract just the parameter name
+          const parts = p.trim().split(/\s+/)
+          return parts[parts.length - 1].replace(/[&*]/g, '')
+        })
+        paramNames = params
+      }
+    }
+    
+    // Format each input with parameter name
+    return data.map((input: any, idx: number) => {
+      const paramName = paramNames[idx] || `param${idx + 1}`
+      if (input.type && input.value !== undefined) {
+        const value = typeof input.value === 'string' 
+          ? `"${input.value}"` 
+          : JSON.stringify(input.value)
+        return `${paramName} = ${value}`
+      }
+      return `${paramName} = ${JSON.stringify(input)}`
+    }).join('\n')
+  }
+  
+  // Handle single output object
+  if (data.type && data.value !== undefined) {
+    const value = typeof data.value === 'string'
+      ? `"${data.value}"`
+      : JSON.stringify(data.value)
+    return value
+  }
+  
+  // Fallback to JSON stringify with formatting
+  return JSON.stringify(data, null, 2)
+}
+
 interface ProblemDetailsTabProps {
   problem: Problem
 }
@@ -69,13 +117,13 @@ export function ProblemDetailsTab({ problem }: ProblemDetailsTabProps) {
                       <div>
                         <span className="font-medium text-foreground">Input:</span>
                         <pre className="mt-1 rounded bg-background p-2 text-muted-foreground">
-                          {testCase.input}
+                          {formatTestCaseData(testCase.inputs)}
                         </pre>
                       </div>
                       <div>
                         <span className="font-medium text-foreground">Expected Output:</span>
                         <pre className="mt-1 rounded bg-background p-2 text-muted-foreground">
-                          {testCase.expected_output || testCase.expectedOutput}
+                          {formatTestCaseData(testCase.expected_output)}
                         </pre>
                       </div>
                     </div>

@@ -74,12 +74,10 @@ def create_problem_in_class(class_id):
 
     # Add test cases with structured inputs/outputs
     for tc_data in test_cases:
-        inputs_json = json.dumps(tc_data.get('inputs'))
-        expected_output_json = json.dumps(tc_data.get('expected_output'))
-        
+        # JSONB columns accept Python dict/list directly, no need for json.dumps()
         new_tc = TestCase(
-            inputs=inputs_json,
-            expected_output=expected_output_json,
+            inputs=tc_data.get('inputs'),
+            expected_output=tc_data.get('expected_output'),
             is_hidden=tc_data.get('is_hidden', False),
             points=tc_data.get('points', 10)
         )
@@ -123,10 +121,11 @@ def get_problem_details(problem_id):
     problem = Problem.query.get_or_404(problem_id)
     
     # Include test cases with structured inputs/outputs
+    # Note: JSONB fields are already deserialized by SQLAlchemy, no need for json.loads()
     test_cases_data = [{
         "id": tc.id,
-        "inputs": json.loads(tc.inputs) if tc.inputs else [],
-        "expected_output": json.loads(tc.expected_output) if tc.expected_output else {},
+        "inputs": tc.inputs if tc.inputs else [],
+        "expected_output": tc.expected_output if tc.expected_output else {},
         "is_hidden": tc.is_hidden,
         "points": tc.points
     } for tc in problem.test_cases]

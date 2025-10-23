@@ -5,6 +5,54 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Problem } from "@/types/problem"
 import type { Submission } from "@/types/submission"
 
+// Helper function to format structured test case data for display
+function formatTestCaseData(data: any, isInput: boolean = false, functionSig?: string): string {
+  if (!data) return "(empty)"
+  
+  // Handle array of inputs (LeetCode-style format)
+  if (Array.isArray(data)) {
+    if (data.length === 0) return "(empty)"
+    
+    // Extract parameter names from function signature if available
+    let paramNames: string[] = []
+    if (isInput && functionSig) {
+      // Parse parameter names from signature
+      const match = functionSig.match(/\(([^)]*)\)/)
+      if (match) {
+        const params = match[1].split(',').map(p => {
+          // Extract just the parameter name
+          const parts = p.trim().split(/\s+/)
+          return parts[parts.length - 1].replace(/[&*]/g, '')
+        })
+        paramNames = params
+      }
+    }
+    
+    // Format each input with parameter name
+    return data.map((input: any, idx: number) => {
+      const paramName = paramNames[idx] || `param${idx + 1}`
+      if (input.type && input.value !== undefined) {
+        const value = typeof input.value === 'string' 
+          ? `"${input.value}"` 
+          : JSON.stringify(input.value)
+        return `${paramName} = ${value}`
+      }
+      return `${paramName} = ${JSON.stringify(input)}`
+    }).join('\n')
+  }
+  
+  // Handle single output object
+  if (data.type && data.value !== undefined) {
+    const value = typeof data.value === 'string'
+      ? `"${data.value}"`
+      : JSON.stringify(data.value)
+    return value
+  }
+  
+  // Fallback to JSON stringify with formatting
+  return JSON.stringify(data, null, 2)
+}
+
 interface ProblemDescriptionProps {
   problem: Problem
   submissions: Submission[]
@@ -45,11 +93,10 @@ export function ProblemDescription({
             <ul className="space-y-2 text-sm font-bold text-foreground">
               <li>TIME LIMIT: {problem.time_limit || 1000}MS</li>
               <li>MEMORY LIMIT: {problem.memory_limit ? Math.round(problem.memory_limit / 1024) : 256}MB</li>
-              <li>GRADING MODE: {problem.grading_mode?.toUpperCase() || 'STDIO'}</li>
             </ul>
           </div>
 
-          {problem.grading_mode === 'function' && problem.function_signature && (
+          {problem.function_signature && (
             <div>
               <h3 className="mb-3 text-lg font-black uppercase text-foreground">FUNCTION SIGNATURE</h3>
               <div className="border-4 border-border bg-slate-800 dark:bg-accent p-3">
@@ -90,13 +137,13 @@ export function ProblemDescription({
                         <div>
                           <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
                           <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
-                            <code>{testCase.input || "(empty)"}</code>
+                            <code>{formatTestCaseData(testCase.inputs, true, problem.function_signature)}</code>
                           </pre>
                         </div>
                         <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">EXPECTED OUTPUT:</div>
+                          <div className="mb-1 text-xs font-black uppercase text-foreground">OUTPUT:</div>
                           <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
-                            <code>{testCase.expected_output || "(empty)"}</code>
+                            <code>{formatTestCaseData(testCase.expected_output, false)}</code>
                           </pre>
                         </div>
                       </div>

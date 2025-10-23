@@ -72,7 +72,7 @@ def get_problems_status_in_class(class_id):
                 "title": problem.title,
                 "description": problem.description,
                 "difficulty": problem.difficulty,
-                "grading_mode": problem.grading_mode,
+                "function_signature": problem.function_signature,
                 "time_limit": problem.time_limit_ms,
                 "memory_limit": problem.memory_limit_kb // 1024  # Convert KB to MB
             },

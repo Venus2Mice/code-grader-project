@@ -41,51 +41,93 @@ export function useCodeEditor({ problem }: UseCodeEditorProps) {
   const [language, setLanguage] = useState("cpp")
   const [originalTemplate, setOriginalTemplate] = useState("")
 
-  // Update code template when language changes
-  useEffect(() => {
-    if (!problem || problem.grading_mode === 'function') return
-    
-    // Set default template based on language for stdio mode
-    const templates: Record<string, string> = {
-      cpp: DEFAULT_CPP_CODE,
-      python: DEFAULT_PYTHON_CODE,
-      java: DEFAULT_JAVA_CODE
+  // Helper function to generate template based on language and function signature
+  const generateTemplate = (lang: string, signature?: string): string => {
+    if (!signature) {
+      // No function signature, return default template based on language
+      const templates: Record<string, string> = {
+        cpp: DEFAULT_CPP_CODE,
+        python: DEFAULT_PYTHON_CODE,
+        java: DEFAULT_JAVA_CODE
+      }
+      return templates[lang] || DEFAULT_CPP_CODE
     }
-    
-    const newTemplate = templates[language] || DEFAULT_CPP_CODE
+
+    // Has function signature, generate language-specific template
+    const sig = signature.trim()
+    if (lang === 'python') {
+      return `from typing import List, Optional
+
+${sig}
+    # Write your solution here
+    pass
+`
+    } else if (lang === 'java') {
+      return `import java.util.*;
+
+class Solution {
+    ${sig} {
+        // Write your solution here
+        
+    }
+}
+`
+    } else {
+      // C++
+      return `#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class Solution {
+public:
+    ${sig} {
+        // Write your solution here
+        
+    }
+};
+`
+    }
+  }
+
+  // Update code when language changes
+  useEffect(() => {
+    if (!problem) return
+
+    // Generate template for the selected language
+    const newTemplate = generateTemplate(language, problem.function_signature)
     setCode(newTemplate)
     setOriginalTemplate(newTemplate)
   }, [language, problem])
 
+  // Initialize template based on problem and detected language
   useEffect(() => {
     if (!problem) return
 
-    // Load function template if problem is in function mode
-    if (problem.grading_mode === 'function' && problem.function_signature) {
-      const signature = problem.function_signature
-      let templateCode = ''
+    // Detect language from function signature and set it
+    if (problem.function_signature) {
+      const signature = problem.function_signature.trim()
+      let detectedLang = 'cpp'
       
-      if (signature.includes('def ') || signature.includes('->')) {
-        // Python function
-        setLanguage('python')
-        templateCode = `${signature}\n    # Write your solution here\n    pass\n`
-      } else if (signature.includes('function ') || signature.includes('=>')) {
-        // JavaScript function
-        setLanguage('javascript')
-        templateCode = `${signature} {\n    // Write your solution here\n}\n`
-      } else if (signature.includes('public ') && signature.includes('class ')) {
-        // Java function
-        setLanguage('java')
-        templateCode = `${signature}\n        // Write your solution here\n    }\n}\n`
-      } else {
-        // C++ or C function (default)
-        setLanguage('cpp')
-        templateCode = `${signature} {\n    // Write your solution here\n}\n`
+      // Detect Python
+      if (signature.includes('def ') || signature.includes('->') || signature.includes(': List[')) {
+        detectedLang = 'python'
+      } 
+      // Detect Java
+      else if (signature.includes('public ') && (signature.includes('class ') || signature.includes('void ') || signature.includes('int ') || signature.includes('boolean ') || signature.includes('String '))) {
+        detectedLang = 'java'
       }
       
-      setCode(templateCode)
-      setOriginalTemplate(templateCode)
+      // Update language and template
+      setLanguage(detectedLang)
+      const newTemplate = generateTemplate(detectedLang, signature)
+      setCode(newTemplate)
+      setOriginalTemplate(newTemplate)
     } else {
+      // No function signature, use default C++ template
+      setLanguage('cpp')
+      setCode(DEFAULT_CPP_CODE)
       setOriginalTemplate(DEFAULT_CPP_CODE)
     }
   }, [problem])
