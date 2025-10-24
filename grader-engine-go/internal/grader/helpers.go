@@ -114,6 +114,7 @@ func (s *Service) readFileFromContainer(ctx context.Context, cli *client.Client,
 
 // parseTimeMetrics extracts execution time and memory usage from /usr/bin/time output
 // Uses User time + System time for better precision (microsecond level)
+// FIX #6: Improved regex patterns to avoid false matches
 func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb int) {
 	lines := strings.Split(timeOutput, "\n")
 
@@ -125,30 +126,33 @@ func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb 
 		// Parse User time: "User time (seconds): 0.00"
 		// This has microsecond precision even when showing 0.00
 		if strings.Contains(line, "User time (seconds):") {
-			re := regexp.MustCompile(`(\d+\.\d+)`)
+			// FIX #6: More specific regex to match after colon
+			re := regexp.MustCompile(`User time \(seconds\):\s*(\d+\.\d+)`)
 			matches := re.FindStringSubmatch(line)
-			if len(matches) >= 1 {
-				userTime, _ = strconv.ParseFloat(matches[0], 64)
+			if len(matches) > 1 {
+				userTime, _ = strconv.ParseFloat(matches[1], 64)
 				foundUserTime = true
 			}
 		}
 
 		// Parse System time: "System time (seconds): 0.00"
 		if strings.Contains(line, "System time (seconds):") {
-			re := regexp.MustCompile(`(\d+\.\d+)`)
+			// FIX #6: More specific regex to match after colon
+			re := regexp.MustCompile(`System time \(seconds\):\s*(\d+\.\d+)`)
 			matches := re.FindStringSubmatch(line)
-			if len(matches) >= 1 {
-				systemTime, _ = strconv.ParseFloat(matches[0], 64)
+			if len(matches) > 1 {
+				systemTime, _ = strconv.ParseFloat(matches[1], 64)
 				foundSystemTime = true
 			}
 		}
 
 		// Parse memory: "Maximum resident set size (kbytes): 2048"
+		// FIX #6: More specific regex to avoid matching other numbers in the line
 		if strings.Contains(line, "Maximum resident set size") {
-			re := regexp.MustCompile(`(\d+)`)
+			re := regexp.MustCompile(`Maximum resident set size \(kbytes\):\s*(\d+)`)
 			matches := re.FindStringSubmatch(line)
-			if len(matches) > 0 {
-				memoryKb, _ = strconv.Atoi(matches[0])
+			if len(matches) > 1 {
+				memoryKb, _ = strconv.Atoi(matches[1])
 			}
 		}
 	}

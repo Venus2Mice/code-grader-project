@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { submissionAPI } from "@/services/api"
 import { CodeEditor } from "@/components/code-editor"
@@ -19,7 +18,9 @@ import {
   useRuntimeErrorAnalysis,
   useSubmission,
   useSubmissionHistory,
-  useProblemData
+  useProblemData,
+  useErrorModal,
+  useErrorHandler
 } from "@/hooks/problem"
 import { getStatusDisplay, formatVietnameseDate } from "@/lib/problemUtils"
 import { logger } from "@/lib/logger"
@@ -50,11 +51,10 @@ export default function ProblemSolvePage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isResetModalOpen, setIsResetModalOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-  const [errorModal, setErrorModal] = useState({
-    isOpen: false,
-    title: "",
-    message: ""
-  })
+
+  // Use error modal and handler hooks
+  const { errorModal, openError, closeError } = useErrorModal()
+  const { handleErrorDisplay } = useErrorHandler()
 
   // File upload
   const fileUploadProps = useFileUpload({
@@ -63,86 +63,25 @@ export default function ProblemSolvePage() {
       setIsUploadModalOpen(false)
     },
     onError: (title, message) => {
-      setErrorModal({ isOpen: true, title, message })
+      openError(title, message)
     },
     analyzeCppCode,
     gradingMode: problem?.grading_mode
   })
 
-  // Handle error display from submission results
-  const handleErrorDisplay = (errorResult: any) => {
-    const statusNorm = String(errorResult.status || '').toLowerCase()
-    const errorMsg = errorResult.error_message || ''
-    
-    if (statusNorm.includes('compile')) {
-      setErrorModal({
-        isOpen: true,
-        title: "Compilation Error",
-        message: errorMsg || 'Your code has compilation errors. Please fix them before submitting.'
-      })
-    } else if (statusNorm.includes('runtime') || statusNorm.includes('time limit') || statusNorm.includes('memory limit') || statusNorm.includes('output limit')) {
-      // ✅ ENHANCED: Handle runtime errors with or without detailed message
-      if (!errorMsg || errorMsg === errorResult.status) {
-        // No detailed error message - provide generic runtime error info
-        let genericMessage = statusNorm
-        if (statusNorm.includes('time limit')) {
-          genericMessage = "⏱️ Time Limit Exceeded\n\nYour program took too long to execute.\n\nCommon causes:\n• Infinite loop without break condition\n• Inefficient algorithm\n• Excessive I/O operations"
-        } else if (statusNorm.includes('memory limit')) {
-          genericMessage = "💾 Memory Limit Exceeded\n\nYour program used too much memory.\n\nCommon causes:\n• Large array allocation\n• Memory leak\n• Too deep recursion"
-        } else if (statusNorm.includes('output limit')) {
-          genericMessage = "📄 Output Limit Exceeded\n\nYour program produced too much output.\n\nCommon causes:\n• Infinite printing loop (e.g., while(true) cout << ...)\n• Not reading input correctly\n• Debug statements in loops"
-        } else {
-          genericMessage = `❌ ${errorResult.status}\n\nA runtime error occurred during execution.\n\nPlease check your code for common issues like:\n• Division by zero\n• Array out of bounds\n• Null pointer access\n• Infinite loops`
-        }
-        
-        setErrorModal({
-          isOpen: true,
-          title: `${errorResult.status} - Test Case #${errorResult.test_case_id || 'N/A'}`,
-          message: genericMessage
-        })
-      } else {
-        // Has detailed error message from worker
-        const analysis = analyzeRuntimeError(errorMsg)
-        
-        // ✅ If the error message is already formatted with new details, use it directly
-        // (The analyzeRuntimeError will parse it and extract the suggestions)
-        let displayMessage: string
-        
-        if (errorMsg.includes('|') || errorMsg.includes('❌') || errorMsg.includes('💡')) {
-          // New detailed format - just add separator if needed
-          if (analysis.suggestions && !errorMsg.includes(analysis.suggestions)) {
-            displayMessage = `${errorMsg}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
-          } else {
-            displayMessage = errorMsg
-          }
-        } else {
-          // Legacy format - combine error message with suggestions
-          displayMessage = `${errorMsg}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
-        }
-        
-        setErrorModal({
-          isOpen: true,
-          title: `${analysis.errorType} - Test Case #${errorResult.test_case_id || 'N/A'}`,
-          message: displayMessage
-        })
-      }
-    } else {
-      setErrorModal({
-        isOpen: true,
-        title: `Error: ${errorResult.status || 'Unknown'}`,
-        message: errorMsg || 'An error occurred during grading. Please try again.'
-      })
-    }
+  // Wrapper for error handling that matches useSubmission callback signature
+  const onSubmissionError = (errorResult: any) => {
+    handleErrorDisplay(errorResult, analyzeRuntimeError)
   }
 
   // Handle run
   const handleRun = () => {
-    runCode(code, language, handleErrorDisplay)
+    runCode(code, language, onSubmissionError)
   }
 
   // Handle submit
   const handleSubmit = () => {
-    submitCode(code, language, handleErrorDisplay)
+    submitCode(code, language, onSubmissionError)
   }
 
   // Handle view submission
@@ -174,11 +113,10 @@ export default function ProblemSolvePage() {
   // Handle view error details from test results
   const handleViewErrorDetails = (errorMessage: string, testCaseId: number) => {
     const analysis = analyzeRuntimeError(errorMessage)
-    setErrorModal({
-      isOpen: true,
-      title: `${analysis.errorType} - Test Case #${testCaseId || 'N/A'}`,
-      message: `${errorMessage}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
-    })
+    openError(
+      `${analysis.errorType} - Test Case #${testCaseId || 'N/A'}`,
+      `${errorMessage}\n\n${'='.repeat(50)}\n\n${analysis.suggestions}`
+    )
   }
 
   if (isLoading) {
@@ -274,7 +212,7 @@ export default function ProblemSolvePage() {
 
       <ErrorModal
         isOpen={errorModal.isOpen}
-        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+        onClose={closeError}
         title={errorModal.title}
         message={errorModal.message}
       />

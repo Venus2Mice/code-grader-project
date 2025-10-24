@@ -126,7 +126,7 @@ def seed_test_data_command():
         title="Palindrome Number",
         description="Given an integer x, return true if x is a palindrome, and false otherwise.",
         class_id=new_class.id,
-        function_signature="bool isPalindrome(int x);",
+        function_signature="def isPalindrome(x: int) -> bool:",
         test_cases=[
             TestCase(
                 inputs=[{"type": "int", "value": 121}],
@@ -163,7 +163,7 @@ def seed_test_data_command():
         title="Reverse String",
         description="Write a function that reverses a string. The input string is given as an array of characters s.",
         class_id=new_class.id,
-        function_signature="public void reverseString(char[] s);",
+        function_signature="def reverseString(s: List[str]) -> List[str]:",
         test_cases=[
             TestCase(
                 inputs=[{"type": "char[]", "value": ["h", "e", "l", "l", "o"]}],

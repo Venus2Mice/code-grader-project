@@ -125,7 +125,9 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
                         <div>
                           <div className="font-black uppercase mb-1 text-foreground">EXPECTED OUTPUT:</div>
                           <pre className="bg-background border-2 border-green-600 p-2 text-green-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
-                            {result.expected_output}
+                            {typeof result.expected_output === 'object' && result.expected_output.value !== undefined
+                              ? JSON.stringify(result.expected_output.value)
+                              : result.expected_output}
                           </pre>
                         </div>
                       )}

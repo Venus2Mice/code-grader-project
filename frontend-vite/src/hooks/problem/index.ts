@@ -6,6 +6,8 @@ export { useRuntimeErrorAnalysis } from './useRuntimeErrorAnalysis'
 export { useSubmission } from './useSubmission'
 export { useSubmissionHistory } from './useSubmissionHistory'
 export { useProblemData } from './useProblemData'
+export { useErrorModal } from './useErrorModal'
+export { useErrorHandler } from './useErrorHandler'
 
 // Teacher-specific hooks
 export { useSubmissionStats } from './useSubmissionStats'

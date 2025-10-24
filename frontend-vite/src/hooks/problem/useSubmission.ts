@@ -83,92 +83,104 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       totalTests: totalTestsComputed,
       results: resultsArr
     }
-  }, [problem])
+  }, [problem?.id])
 
   const pollSubmission = useCallback(async (
     submissionId: number, 
     isTest: boolean,
     onError: (result: any) => void
   ) => {
-    let pollCount = 0
-    
-    const poll = async (): Promise<void> => {
-      try {
-        pollCount++
-        const backoffMs = Math.min(1000 * Math.pow(2, pollCount - 1), 8000)
-        
+    const MAX_POLL_ATTEMPTS = 15
+    const MAX_BACKOFF_MS = 8000
+    const INITIAL_BACKOFF_MS = 1000
+
+    try {
+      // Iterative polling instead of recursive (prevents stack overflow)
+      for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt++) {
+        // Calculate exponential backoff
+        const backoffMs = Math.min(
+          INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1),
+          MAX_BACKOFF_MS
+        )
+
+        // Wait before polling
         await new Promise(resolve => setTimeout(resolve, backoffMs))
-        
-        const resultResponse = await submissionAPI.getById(submissionId)
-        const submissionData = resultResponse.data
-        
-        // 🔍 DEBUG: Log full submission data
-        console.log('🔍 VITE POLLING RESULT:', JSON.stringify(submissionData, null, 2))
-        
-        // Check if grading is complete
-        if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
-          isTest ? setIsRunning(false) : setIsSubmitting(false)
-          
-          // ✅ ENHANCED: Check for errors and call onError callback
-          // Priority 1: Check if there's any error result with error_message
-          if (submissionData.results && submissionData.results.length > 0) {
-            const errorResult = submissionData.results.find((r: any) => r.error_message)
-            if (errorResult && errorResult.error_message) {
-              onError(errorResult)
+
+        try {
+          const resultResponse = await submissionAPI.getById(submissionId)
+          const submissionData = resultResponse.data
+
+          // 🔍 DEBUG: Log full submission data
+          console.log('🔍 VITE POLLING RESULT:', JSON.stringify(submissionData, null, 2))
+
+          // Check if grading is complete
+          if (submissionData.status !== 'Pending' && submissionData.status !== 'Running') {
+            isTest ? setIsRunning(false) : setIsSubmitting(false)
+
+            // ✅ ENHANCED: Check for errors and call onError callback
+            // Priority 1: Check if there's any error result with error_message
+            if (submissionData.results && submissionData.results.length > 0) {
+              const errorResult = submissionData.results.find((r: any) => r.error_message)
+              if (errorResult && errorResult.error_message) {
+                onError(errorResult)
+              }
             }
-          }
-          
-          // ✅ NEW: Priority 2: Check overall status for runtime errors
-          // Even if no detailed error_message, show modal for known error statuses
-          const statusLower = String(submissionData.status || '').toLowerCase()
-          if (!submissionData.results || submissionData.results.length === 0) {
-            // No results but error status - create synthetic error for modal
-            if (statusLower.includes('error') || 
-                statusLower.includes('timeout') || 
+
+            // ✅ NEW: Priority 2: Check overall status for runtime errors
+            // Even if no detailed error_message, show modal for known error statuses
+            const statusLower = String(submissionData.status || '').toLowerCase()
+            if (!submissionData.results || submissionData.results.length === 0) {
+              // No results but error status - create synthetic error for modal
+              if (
+                statusLower.includes('error') ||
+                statusLower.includes('timeout') ||
                 statusLower.includes('time limit') ||
                 statusLower.includes('memory limit') ||
-                statusLower.includes('output limit')) {
-              onError({
-                status: submissionData.status,
-                error_message: submissionData.status || 'An error occurred during grading',
-                test_case_id: null
-              })
+                statusLower.includes('output limit')
+              ) {
+                onError({
+                  status: submissionData.status,
+                  error_message: submissionData.status || 'An error occurred during grading',
+                  test_case_id: null
+                })
+              }
             }
+
+            const result = computeResults(submissionData)
+            setTestResults({ ...result, isTest })
+
+            // Call completion callback for actual submissions
+            if (!isTest && onSubmissionComplete) {
+              onSubmissionComplete()
+            }
+            return
           }
 
-          const result = computeResults(submissionData)
-          setTestResults({ ...result, isTest })
-          
-          // Call completion callback for actual submissions
-          if (!isTest && onSubmissionComplete) {
-            onSubmissionComplete()
-          }
-          return
+          // Still pending - continue to next iteration
+        } catch (pollErr) {
+          logger.error('Error polling results', pollErr)
+          // Continue polling on network errors
         }
-        
-        // Still pending - continue polling
-        if (pollCount < 15) {
-          await poll()
-        } else {
-          isTest ? setIsRunning(false) : setIsSubmitting(false)
-          setTestResults({
-            status: "error",
-            message: isTest ? "Test timeout - taking too long" : "Grading timeout - please check submission history",
-            isTest
-          })
-        }
-      } catch (pollErr) {
-        logger.error('Error polling results', pollErr)
-        isTest ? setIsRunning(false) : setIsSubmitting(false)
-        setTestResults({
-          status: "error",
-          message: isTest ? "Failed to get test results" : "Failed to get submission results",
-          isTest
-        })
       }
+
+      // Max attempts exceeded
+      isTest ? setIsRunning(false) : setIsSubmitting(false)
+      setTestResults({
+        status: 'error',
+        message: isTest 
+          ? 'Test timeout - taking too long' 
+          : 'Grading timeout - please check submission history',
+        isTest
+      })
+    } catch (err) {
+      logger.error('Fatal error in poll submission', err)
+      isTest ? setIsRunning(false) : setIsSubmitting(false)
+      setTestResults({
+        status: 'error',
+        message: isTest ? 'Failed to get test results' : 'Failed to get submission results',
+        isTest
+      })
     }
-    
-    await poll()
   }, [computeResults, onSubmissionComplete])
 
   const runCode = useCallback(async (

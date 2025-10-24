@@ -26,7 +26,10 @@ export interface TestResult {
   test_case_id: number | null
   status: string
   output_received?: string
-  expected_output?: string
+  expected_output?: {
+    type: string
+    value: any
+  }
   error_message?: string
   execution_time_ms?: number
   memory_used_kb?: number

@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { ErrorBoundary } from '@/components/error-boundary'
 import HomePage from '@/pages/Home'
 import LoginPage from '@/pages/Login'
 import RegisterPage from '@/pages/Register'
@@ -16,23 +17,25 @@ import TeacherProblemView from '@/pages/teacher/ProblemView'
 
 function App() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      
-      {/* Student routes */}
-      <Route path="/student/dashboard" element={<StudentDashboard />} />
-      <Route path="/student/class/:id" element={<StudentClassDetail />} />
-      <Route path="/student/problem/:id" element={<StudentProblemView />} />
-      
-      {/* Teacher routes */}
-      <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-      <Route path="/teacher/class/:id" element={<TeacherClassDetail />} />
-      <Route path="/teacher/class/:id/create-problem" element={<TeacherCreateProblem />} />
-      <Route path="/teacher/problem/:id" element={<TeacherProblemView />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* Student routes */}
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/student/class/:id" element={<StudentClassDetail />} />
+        <Route path="/student/problem/:id" element={<StudentProblemView />} />
+        
+        {/* Teacher routes */}
+        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+        <Route path="/teacher/class/:id" element={<TeacherClassDetail />} />
+        <Route path="/teacher/class/:id/create-problem" element={<TeacherCreateProblem />} />
+        <Route path="/teacher/problem/:id" element={<TeacherProblemView />} />
+      </Routes>
+    </ErrorBoundary>
   )
 }
 

@@ -23,11 +23,14 @@ type TestOutput struct {
 
 // GenerateTestHarness creates test harness code based on language
 func GenerateTestHarness(problem *models.Problem, language string) (string, error) {
-	// Parse function signature
-	sig, err := parser.ParseSignature(problem.FunctionSignature, language)
+	// Parse function signature - ALWAYS parse as Python first since DB stores Python syntax
+	sig, err := parser.ParseSignature(problem.FunctionSignature, "python")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse signature: %w", err)
 	}
+
+	// Update signature language to target language for proper type handling
+	sig.Language = language
 
 	switch language {
 	case "python":
@@ -50,9 +53,10 @@ func generatePythonHarness(problem *models.Problem, sig *parser.FunctionSignatur
 	sb.WriteString("import sys\n")
 	sb.WriteString("from typing import List, Optional\n\n")
 
-	// User code placeholder (will be replaced with actual code)
+	// Convert signature to Python and generate user code placeholder
+	pythonSig := parser.ConvertSignatureToLanguage(sig, "python")
 	sb.WriteString("# USER_CODE_START\n")
-	sb.WriteString(problem.FunctionSignature + "\n")
+	sb.WriteString(pythonSig + "\n")
 	sb.WriteString("    pass\n")
 	sb.WriteString("# USER_CODE_END\n\n")
 
@@ -104,17 +108,20 @@ func generatePythonHarness(problem *models.Problem, sig *parser.FunctionSignatur
 func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) (string, error) {
 	var sb strings.Builder
 
-	// Includes
+	// Includes - only use standard library
 	sb.WriteString("#include <iostream>\n")
 	sb.WriteString("#include <vector>\n")
 	sb.WriteString("#include <string>\n")
-	sb.WriteString("#include <nlohmann/json.hpp>\n\n")
-	sb.WriteString("using namespace std;\n")
-	sb.WriteString("using json = nlohmann::json;\n\n")
+	sb.WriteString("#include <sstream>\n")
+	sb.WriteString("#include <iomanip>\n\n")
+	sb.WriteString("using namespace std;\n\n")
+
+	// Convert signature to C++ syntax
+	cppSig := parser.ConvertSignatureToLanguage(sig, "cpp")
 
 	// User code placeholder
 	sb.WriteString("// USER_CODE_START\n")
-	sb.WriteString(problem.FunctionSignature + " {\n")
+	sb.WriteString(cppSig + " {\n")
 	sb.WriteString("    // Student implementation\n")
 	sb.WriteString("}\n")
 	sb.WriteString("// USER_CODE_END\n\n")
@@ -127,7 +134,7 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 	// Generate test cases
 	for i, tc := range problem.TestCases {
 		sb.WriteString(fmt.Sprintf("    // Test case %d\n", i+1))
-		sb.WriteString("    try {\n")
+		sb.WriteString("    {\n")
 
 		// Parse inputs
 		var inputs []TestInput
@@ -157,12 +164,8 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 		sb.WriteString(fmt.Sprintf("        auto result = %s(%s);\n",
 			sig.FunctionName, strings.Join(paramNames, ", ")))
 
-		// Output result as JSON
-		sb.WriteString("        json j = result;\n")
-		sb.WriteString("        cout << j.dump() << endl;\n")
-		sb.WriteString("    } catch (const exception& e) {\n")
-		sb.WriteString("        json err = {{\"error\", e.what()}};\n")
-		sb.WriteString("        cout << err.dump() << endl;\n")
+		// Output result - simple format
+		sb.WriteString("        cout << result << endl;\n")
 		sb.WriteString("    }\n\n")
 	}
 
@@ -180,13 +183,25 @@ func generateJavaHarness(problem *models.Problem, sig *parser.FunctionSignature)
 	sb.WriteString("import com.google.gson.Gson;\n")
 	sb.WriteString("import java.util.*;\n\n")
 
+	// Convert signature to Java syntax
+	javaSig := parser.ConvertSignatureToLanguage(sig, "java")
+
 	// Solution class with user code
 	sb.WriteString("class Solution {\n")
 	sb.WriteString("    // USER_CODE_START\n")
-	sb.WriteString("    " + problem.FunctionSignature + " {\n")
+	sb.WriteString("    " + javaSig + " {\n")
 	sb.WriteString("        // Student implementation\n")
 	if strings.Contains(sig.ReturnType, "[]") {
-		sb.WriteString("        return new " + strings.ReplaceAll(sig.ReturnType, "[]", "[0]") + ";\n")
+		javaReturnType := parser.ConvertSignatureToLanguage(sig, "java")
+		// Extract just the return type
+		returnTypeStart := strings.Index(javaReturnType, "public ") + 7
+		returnTypeEnd := strings.Index(javaReturnType[returnTypeStart:], " ")
+		if returnTypeEnd != -1 {
+			returnType := javaReturnType[returnTypeStart : returnTypeStart+returnTypeEnd]
+			sb.WriteString("        return new " + strings.ReplaceAll(returnType, "[]", "[0]") + ";\n")
+		} else {
+			sb.WriteString("        return null;\n")
+		}
 	} else {
 		sb.WriteString("        return null;\n")
 	}

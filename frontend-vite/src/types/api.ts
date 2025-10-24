@@ -146,7 +146,10 @@ export interface TestResult {
   test_case_id: number
   status: "accepted" | "wrong_answer" | "runtime_error" | "time_limit_exceeded" | "memory_limit_exceeded"
   output_received?: string
-  expected_output?: string
+  expected_output?: {
+    type: string
+    value: any
+  }
   error_message?: string
   execution_time_ms: number
   memory_used_kb: number

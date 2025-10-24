@@ -82,9 +82,11 @@ func parsePythonSignature(signature string) (*FunctionSignature, error) {
 			if len(parts) == 2 {
 				paramName := strings.TrimSpace(parts[0])
 				paramType := strings.TrimSpace(parts[1])
+				// Normalize Python type to generic type
+				normalizedType := pythonTypeToGeneric(paramType)
 				params = append(params, ParameterInfo{
 					Name: paramName,
-					Type: paramType,
+					Type: normalizedType,
 				})
 			} else {
 				// No type annotation
@@ -96,10 +98,16 @@ func parsePythonSignature(signature string) (*FunctionSignature, error) {
 		}
 	}
 
+	// Normalize return type
+	normalizedReturnType := returnTypeStr
+	if returnTypeStr != "" {
+		normalizedReturnType = pythonTypeToGeneric(returnTypeStr)
+	}
+
 	return &FunctionSignature{
 		FunctionName: funcName,
 		Parameters:   params,
-		ReturnType:   returnTypeStr,
+		ReturnType:   normalizedReturnType,
 		Language:     "python",
 	}, nil
 }
@@ -347,6 +355,144 @@ func javaTypeToGeneric(t string) string {
 
 	if generic, ok := typeMap[t]; ok {
 		return generic
+	}
+	return t
+}
+
+// ConvertSignatureToLanguage converts a parsed signature to target language syntax
+func ConvertSignatureToLanguage(sig *FunctionSignature, targetLang string) string {
+	if sig == nil {
+		return ""
+	}
+
+	// If already in target language, reconstruct and return
+	if sig.Language == targetLang {
+		return reconstructSignature(sig, targetLang)
+	}
+
+	// Convert to target language
+	return reconstructSignature(sig, targetLang)
+}
+
+// reconstructSignature builds signature string in target language
+func reconstructSignature(sig *FunctionSignature, targetLang string) string {
+	var sb strings.Builder
+
+	switch targetLang {
+	case "python":
+		sb.WriteString("def ")
+		sb.WriteString(sig.FunctionName)
+		sb.WriteString("(")
+		for i, param := range sig.Parameters {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(param.Name)
+			sb.WriteString(": ")
+			sb.WriteString(genericTypeToPython(param.Type))
+		}
+		sb.WriteString(") -> ")
+		sb.WriteString(genericTypeToPython(sig.ReturnType))
+		sb.WriteString(":")
+		return sb.String()
+
+	case "java":
+		sb.WriteString("public ")
+		sb.WriteString(genericTypeToJava(sig.ReturnType))
+		sb.WriteString(" ")
+		sb.WriteString(sig.FunctionName)
+		sb.WriteString("(")
+		for i, param := range sig.Parameters {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(genericTypeToJava(param.Type))
+			sb.WriteString(" ")
+			sb.WriteString(param.Name)
+		}
+		sb.WriteString(")")
+		return sb.String()
+
+	case "cpp":
+		sb.WriteString(genericTypeToCpp(sig.ReturnType))
+		sb.WriteString(" ")
+		sb.WriteString(sig.FunctionName)
+		sb.WriteString("(")
+		for i, param := range sig.Parameters {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(genericTypeToCpp(param.Type))
+			sb.WriteString(" ")
+			sb.WriteString(param.Name)
+		}
+		sb.WriteString(")")
+		return sb.String()
+
+	default:
+		return ""
+	}
+}
+
+// genericTypeToPython converts generic type to Python syntax
+func genericTypeToPython(t string) string {
+	typeMap := map[string]string{
+		"int":      "int",
+		"long":     "int",
+		"double":   "float",
+		"float":    "float",
+		"bool":     "bool",
+		"string":   "str",
+		"char":     "str",
+		"int[]":    "List[int]",
+		"string[]": "List[str]",
+		"double[]": "List[float]",
+		"int[][]":  "List[List[int]]",
+	}
+	if pythonType, ok := typeMap[t]; ok {
+		return pythonType
+	}
+	return t
+}
+
+// genericTypeToJava converts generic type to Java syntax
+func genericTypeToJava(t string) string {
+	typeMap := map[string]string{
+		"int":      "int",
+		"long":     "long",
+		"double":   "double",
+		"float":    "float",
+		"bool":     "boolean",
+		"string":   "String",
+		"char":     "char",
+		"int[]":    "int[]",
+		"string[]": "String[]",
+		"double[]": "double[]",
+		"int[][]":  "int[][]",
+	}
+	if javaType, ok := typeMap[t]; ok {
+		return javaType
+	}
+	return t
+}
+
+// genericTypeToCpp converts generic type to C++ syntax
+func genericTypeToCpp(t string) string {
+	typeMap := map[string]string{
+		"int":      "int",
+		"long":     "long long",
+		"double":   "double",
+		"float":    "float",
+		"bool":     "bool",
+		"string":   "string",
+		"char":     "char",
+		"int[]":    "vector<int>",
+		"string[]": "vector<string>",
+		"double[]": "vector<double>",
+		"int[][]":  "vector<vector<int>>",
+	}
+	if cppType, ok := typeMap[t]; ok {
+		return cppType
 	}
 	return t
 }

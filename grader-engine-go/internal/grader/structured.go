@@ -86,6 +86,26 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 	// Run the compiled program once - it executes all test cases
 	allOutputs, execTime, memUsed, execErr := s.runTestHarness(ctx, cli, containerID, handler, multipliers, baseTimeMs, baseMemoryKb)
 
+	// CRITICAL FIX #7: Check if memory limit exceeded BEFORE processing outputs
+	if memUsed > baseMemoryKb {
+		log.Printf("[%d] MEMORY LIMIT EXCEEDED: Used %d KB, limit %d KB", submissionID, memUsed, baseMemoryKb)
+		return &models.GradingResult{
+			OverallStatus: "Memory Limit Exceeded",
+			Results: []models.TestCaseResult{
+				{
+					Status:          "Memory Limit Exceeded",
+					ExecutionTimeMs: execTime,
+					MemoryUsedKb:    memUsed,
+					ErrorMessage:    fmt.Sprintf("Program used %d KB of memory, but limit is %d KB", memUsed, baseMemoryKb),
+				},
+			},
+		}, nil
+	}
+
+	// FIX #9: Parse output lines even if there's a runtime error
+	// This way we can capture partial outputs when program crashes mid-execution
+	outputLines := strings.Split(strings.TrimSpace(allOutputs), "\n")
+
 	if execErr != nil {
 		log.Printf("[%d] Execution error: %v", submissionID, execErr)
 
@@ -105,24 +125,60 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 			}
 		}
 
+		// FIX #9: Try to parse partial outputs if available
+		partialResults := []models.TestCaseResult{}
+		for i, tc := range submission.Problem.TestCases {
+			var outputStr string
+			if i < len(outputLines) {
+				outputStr = strings.TrimSpace(outputLines[i])
+			}
+
+			if outputStr != "" && i < len(outputLines) {
+				// Successfully got output for this test case, show what we have
+				partialResults = append(partialResults, models.TestCaseResult{
+					TestCaseID:      &tc.ID,
+					Status:          "Partial Run - " + errorType,
+					OutputReceived:  outputStr,
+					ExecutionTimeMs: execTime,
+					MemoryUsedKb:    memUsed,
+					ErrorMessage:    "Program terminated with error before completing all test cases",
+				})
+			} else {
+				// No output for this test case
+				partialResults = append(partialResults, models.TestCaseResult{
+					TestCaseID:      &tc.ID,
+					Status:          errorType,
+					ExecutionTimeMs: execTime,
+					MemoryUsedKb:    memUsed,
+					ErrorMessage:    errorDesc,
+				})
+			}
+		}
+
 		return &models.GradingResult{
 			OverallStatus: errorType,
-			Results: []models.TestCaseResult{
-				{
-					Status:       errorType,
-					ErrorMessage: errorDesc,
-				},
-			},
+			Results:       partialResults,
 		}, nil
 	}
-
-	// Parse outputs: each line is JSON output for one test case
-	outputLines := strings.Split(strings.TrimSpace(allOutputs), "\n")
 
 	for i, tc := range submission.Problem.TestCases {
 		var outputStr string
 		if i < len(outputLines) {
 			outputStr = strings.TrimSpace(outputLines[i])
+		}
+
+		// CRITICAL FIX #1: Check if output is missing (output lines < test cases)
+		if outputStr == "" && i >= len(outputLines) {
+			log.Printf("[%d] WARNING: Test case %d has no output (program may have crashed)", submissionID, i+1)
+			results = append(results, models.TestCaseResult{
+				TestCaseID:      &tc.ID,
+				Status:          "System Error",
+				ErrorMessage:    "No output received for this test case - program may have terminated early",
+				ExecutionTimeMs: execTime,
+				MemoryUsedKb:    memUsed,
+			})
+			overallStatus = "System Error"
+			continue
 		}
 
 		// Parse expected output
@@ -134,6 +190,20 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 				Status:       "System Error",
 				ErrorMessage: "Failed to parse expected output",
 			})
+			continue
+		}
+
+		// CRITICAL FIX #2: Detect empty output before processing
+		if outputStr == "" {
+			log.Printf("[%d] WARNING: Test case %d received empty output", submissionID, i+1)
+			results = append(results, models.TestCaseResult{
+				TestCaseID:      &tc.ID,
+				Status:          "System Error",
+				ErrorMessage:    "Empty output received - program may have encountered an error",
+				ExecutionTimeMs: execTime,
+				MemoryUsedKb:    memUsed,
+			})
+			overallStatus = "System Error"
 			continue
 		}
 
@@ -229,8 +299,16 @@ exit $PROGRAM_EXIT
 		execTime = int(actualTime.Milliseconds())
 	}
 
-	// Check for timeout
-	timeoutOccurred := exitCodeInt == 124 || (execTime > int(adjustedTimeLimit*1000) && execTime > baseTimeMs)
+	// FIX #5: Improve timeout detection logic
+	// Priority 1: Exit code 124 = timeout command terminated the process
+	timeoutOccurred := exitCodeInt == 124
+	
+	// Priority 2: If not caught by timeout command, check against time limit with tolerance
+	if !timeoutOccurred && baseTimeMs > 0 {
+		adjustedTimeLimitMs := int(adjustedTimeLimit * 1000)
+		toleranceMs := 100 // 100ms tolerance for system overhead
+		timeoutOccurred = execTime > (adjustedTimeLimitMs + toleranceMs)
+	}
 
 	// Detect runtime errors
 	if exitCodeInt != 0 {
@@ -244,6 +322,7 @@ exit $PROGRAM_EXIT
 }
 
 // compareOutputs compares actual output JSON with expected output
+// FIX #3: Enhanced comparison with type-specific logic and precision handling
 func compareOutputs(actualJSON string, expected generator.TestOutput) bool {
 	// Parse actual output
 	var actual interface{}
@@ -263,9 +342,21 @@ func compareOutputs(actualJSON string, expected generator.TestOutput) bool {
 		expectedBool, ok2 := toBool(expected.Value)
 		return ok1 && ok2 && actualBool == expectedBool
 
+	case "float", "double":
+		// FIX #3: Add epsilon-based comparison for floating point
+		actualFloat, ok1 := toFloat(actual)
+		expectedFloat, ok2 := toFloat(expected.Value)
+		if !ok1 || !ok2 {
+			return false
+		}
+		// Use epsilon comparison: allow up to 1e-9 difference
+		epsilon := 1e-9
+		return absoluteFloat(actualFloat-expectedFloat) < epsilon
+
 	case "string":
-		actualStr := fmt.Sprintf("%v", actual)
-		expectedStr := fmt.Sprintf("%v", expected.Value)
+		// FIX #3: Normalize whitespace for string comparison
+		actualStr := normalizeString(fmt.Sprintf("%v", actual))
+		expectedStr := normalizeString(fmt.Sprintf("%v", expected.Value))
 		return actualStr == expectedStr
 
 	case "int[]", "long[]":
@@ -274,12 +365,47 @@ func compareOutputs(actualJSON string, expected generator.TestOutput) bool {
 	case "string[]":
 		return compareArrays(actual, expected.Value)
 
+	case "float[]", "double[]":
+		// FIX #3: Add array comparison with epsilon tolerance
+		return compareFloatArrays(actual, expected.Value)
+
 	default:
 		// Generic comparison
 		actualJSON, _ := json.Marshal(actual)
 		expectedJSON, _ := json.Marshal(expected.Value)
 		return string(actualJSON) == string(expectedJSON)
 	}
+}
+
+// Helper functions
+
+// FIX #3: Add float conversion with better error handling
+func toFloat(v interface{}) (float64, bool) {
+	switch val := v.(type) {
+	case float64:
+		return val, true
+	case float32:
+		return float64(val), true
+	case int:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	default:
+		return 0, false
+	}
+}
+
+// FIX #3: Add absolute value for float comparison
+func absoluteFloat(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// FIX #3: Normalize string by trimming whitespace
+func normalizeString(s string) string {
+	return strings.TrimSpace(s)
 }
 
 // Helper functions
@@ -310,4 +436,38 @@ func compareArrays(actual, expected interface{}) bool {
 		return false
 	}
 	return string(actualJSON) == string(expectedJSON)
+}
+
+// FIX #3: Add float array comparison with epsilon tolerance
+func compareFloatArrays(actual, expected interface{}) bool {
+	actualArray, ok1 := actual.([]interface{})
+	if !ok1 {
+		// Fallback to standard comparison if not array
+		return compareArrays(actual, expected)
+	}
+
+	expectedArray, ok2 := expected.([]interface{})
+	if !ok2 {
+		return false
+	}
+
+	// Check length
+	if len(actualArray) != len(expectedArray) {
+		return false
+	}
+
+	// Compare each element with epsilon tolerance
+	epsilon := 1e-9
+	for i := range actualArray {
+		actualVal, ok1 := toFloat(actualArray[i])
+		expectedVal, ok2 := toFloat(expectedArray[i])
+		if !ok1 || !ok2 {
+			return false
+		}
+		if absoluteFloat(actualVal-expectedVal) >= epsilon {
+			return false
+		}
+	}
+
+	return true
 }
