@@ -2,6 +2,7 @@ package grader
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"grader-engine-go/internal/pool"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Service handles the grading logic
@@ -35,9 +37,13 @@ func NewService(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPo
 func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, error) {
 	log.Printf("[%d] Starting grading process...", submissionID)
 
-	// Fetch submission with eager loading
+	// FIX #11: Use pessimistic locking to prevent race conditions
+	// Fetch submission with exclusive lock and eager loading
 	var submission models.Submission
-	err := s.db.Preload("Problem.TestCases").First(&submission, submissionID).Error
+	err := s.db.WithContext(context.Background()).
+		Clauses(clause.Locking{Strength: "UPDATE"}). // Pessimistic lock
+		Preload("Problem.TestCases").
+		First(&submission, submissionID).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch submission: %w", err)
 	}

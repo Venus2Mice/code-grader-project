@@ -81,14 +81,39 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 	baseTimeMs, baseMemoryKb := submission.Problem.GetLimitForLanguage(submission.Language)
 	multipliers := handler.GetResourceMultipliers()
 
+	// FIX #12: Validate resource multipliers are within acceptable range
+	if multipliers.TimeMultiplier < 0.1 || multipliers.TimeMultiplier > 10 {
+		log.Printf("[%d] WARNING: Invalid time multiplier %f, clamping to valid range", submissionID, multipliers.TimeMultiplier)
+		if multipliers.TimeMultiplier < 0.1 {
+			multipliers.TimeMultiplier = 0.1
+		} else if multipliers.TimeMultiplier > 10 {
+			multipliers.TimeMultiplier = 10
+		}
+	}
+
+	if multipliers.MemoryMultiplier < 0.1 || multipliers.MemoryMultiplier > 10 {
+		log.Printf("[%d] WARNING: Invalid memory multiplier %f, clamping to valid range", submissionID, multipliers.MemoryMultiplier)
+		if multipliers.MemoryMultiplier < 0.1 {
+			multipliers.MemoryMultiplier = 0.1
+		} else if multipliers.MemoryMultiplier > 10 {
+			multipliers.MemoryMultiplier = 10
+		}
+	}
+
+	// Compute adjusted memory limit considering language characteristics
+	adjustedMemoryKb := int(float64(baseMemoryKb) * multipliers.MemoryMultiplier)
+	if multipliers.MemoryOverhead > 0 {
+		adjustedMemoryKb += multipliers.MemoryOverhead
+	}
+
 	log.Printf("[%d] Running test harness (all %d test cases)...", submissionID, len(submission.Problem.TestCases))
 
 	// Run the compiled program once - it executes all test cases
 	allOutputs, execTime, memUsed, execErr := s.runTestHarness(ctx, cli, containerID, handler, multipliers, baseTimeMs, baseMemoryKb)
 
 	// CRITICAL FIX #7: Check if memory limit exceeded BEFORE processing outputs
-	if memUsed > baseMemoryKb {
-		log.Printf("[%d] MEMORY LIMIT EXCEEDED: Used %d KB, limit %d KB", submissionID, memUsed, baseMemoryKb)
+	if memUsed > adjustedMemoryKb {
+		log.Printf("[%d] MEMORY LIMIT EXCEEDED: Used %d KB, limit %d KB (adjusted)", submissionID, memUsed, adjustedMemoryKb)
 		return &models.GradingResult{
 			OverallStatus: "Memory Limit Exceeded",
 			Results: []models.TestCaseResult{
@@ -96,7 +121,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 					Status:          "Memory Limit Exceeded",
 					ExecutionTimeMs: execTime,
 					MemoryUsedKb:    memUsed,
-					ErrorMessage:    fmt.Sprintf("Program used %d KB of memory, but limit is %d KB", memUsed, baseMemoryKb),
+					ErrorMessage:    fmt.Sprintf("Program used %d KB of memory, but limit is %d KB", memUsed, adjustedMemoryKb),
 				},
 			},
 		}, nil
@@ -224,7 +249,8 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 		}
 
 		// Compare outputs
-		match := compareOutputs(outputStr, expectedOutput)
+		// FIX #10: Pass submission ID and test case number for detailed logging
+		match := compareOutputsWithLogging(outputStr, expectedOutput, submissionID, i+1)
 
 		status := "Accepted"
 		if !match {
@@ -302,7 +328,7 @@ exit $PROGRAM_EXIT
 	// FIX #5: Improve timeout detection logic
 	// Priority 1: Exit code 124 = timeout command terminated the process
 	timeoutOccurred := exitCodeInt == 124
-	
+
 	// Priority 2: If not caught by timeout command, check against time limit with tolerance
 	if !timeoutOccurred && baseTimeMs > 0 {
 		adjustedTimeLimitMs := int(adjustedTimeLimit * 1000)
@@ -375,6 +401,44 @@ func compareOutputs(actualJSON string, expected generator.TestOutput) bool {
 		expectedJSON, _ := json.Marshal(expected.Value)
 		return string(actualJSON) == string(expectedJSON)
 	}
+}
+
+// FIX #10: Wrapper function for compareOutputs with detailed logging
+func compareOutputsWithLogging(actualJSON string, expected generator.TestOutput, submissionID int, testCaseNum int) bool {
+	match := compareOutputs(actualJSON, expected)
+
+	if !match {
+		// Log details about the mismatch for debugging
+		log.Printf("[%d] Test case %d mismatch detected:", submissionID, testCaseNum)
+		log.Printf("[%d]   Expected type: %s, value: %v", submissionID, expected.Type, expected.Value)
+		log.Printf("[%d]   Actual output: %s", submissionID, actualJSON)
+
+		// Try to provide specific debugging info based on type
+		switch expected.Type {
+		case "int", "long":
+			var actualVal interface{}
+			if err := json.Unmarshal([]byte(actualJSON), &actualVal); err == nil {
+				actualInt, _ := toInt(actualVal)
+				expectedInt, _ := toInt(expected.Value)
+				log.Printf("[%d]   Difference: actual=%d vs expected=%d", submissionID, actualInt, expectedInt)
+			}
+		case "float", "double":
+			var actualVal interface{}
+			if err := json.Unmarshal([]byte(actualJSON), &actualVal); err == nil {
+				actualFloat, _ := toFloat(actualVal)
+				expectedFloat, _ := toFloat(expected.Value)
+				diff := absoluteFloat(actualFloat - expectedFloat)
+				log.Printf("[%d]   Difference: actual=%.10f vs expected=%.10f (diff=%.10e)", submissionID, actualFloat, expectedFloat, diff)
+			}
+		case "string":
+			log.Printf("[%d]   String comparison failed (check whitespace/format)", submissionID)
+		}
+	} else {
+		// FIX #10: Log successful matches at debug level
+		log.Printf("[%d] Test case %d: PASS (type: %s)", submissionID, testCaseNum, expected.Type)
+	}
+
+	return match
 }
 
 // Helper functions

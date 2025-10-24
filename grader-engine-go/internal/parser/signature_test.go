@@ -16,7 +16,7 @@ func TestParsePythonSignature(t *testing.T) {
 			name:           "Two Sum",
 			signature:      "def twoSum(nums: List[int], target: int) -> List[int]:",
 			expectedFunc:   "twoSum",
-			expectedReturn: "List[int]",
+			expectedReturn: "int[]",
 			paramCount:     2,
 		},
 		{

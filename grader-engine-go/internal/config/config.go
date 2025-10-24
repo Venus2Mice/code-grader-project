@@ -26,6 +26,11 @@ type Config struct {
 	DefaultTimeLimit   int // milliseconds
 	DefaultMemoryLimit int // kilobytes
 
+	// Database connection pool settings
+	DBMaxIdleConns    int // Maximum idle connections
+	DBMaxOpenConns    int // Maximum open connections
+	DBConnMaxLifetime int // Connection max lifetime in minutes
+
 	// Temp directory
 	TempDir string
 }
@@ -41,6 +46,9 @@ func Load() (*Config, error) {
 		ContainerPoolSize:  getEnvInt("CONTAINER_POOL_SIZE", 3),
 		DefaultTimeLimit:   getEnvInt("DEFAULT_TIME_LIMIT", 1000),
 		DefaultMemoryLimit: getEnvInt("DEFAULT_MEMORY_LIMIT", 256000),
+		DBMaxIdleConns:     getEnvInt("DB_MAX_IDLE_CONNS", 10),
+		DBMaxOpenConns:     getEnvInt("DB_MAX_OPEN_CONNS", 100),
+		DBConnMaxLifetime:  getEnvInt("DB_CONN_MAX_LIFETIME_MINUTES", 60),
 		TempDir:            getEnv("TEMP_DIR", "/tmp/grader"),
 	}
 
@@ -50,6 +58,22 @@ func Load() (*Config, error) {
 	}
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
+	}
+
+	// Validate container pool size (1-20)
+	if cfg.ContainerPoolSize < 1 || cfg.ContainerPoolSize > 20 {
+		return nil, fmt.Errorf("CONTAINER_POOL_SIZE must be between 1 and 20, got: %d", cfg.ContainerPoolSize)
+	}
+
+	// Validate database pool settings
+	if cfg.DBMaxIdleConns < 1 {
+		return nil, fmt.Errorf("DB_MAX_IDLE_CONNS must be at least 1")
+	}
+	if cfg.DBMaxOpenConns < cfg.DBMaxIdleConns {
+		return nil, fmt.Errorf("DB_MAX_OPEN_CONNS (%d) must be >= DB_MAX_IDLE_CONNS (%d)", cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	}
+	if cfg.DBConnMaxLifetime < 1 {
+		return nil, fmt.Errorf("DB_CONN_MAX_LIFETIME_MINUTES must be at least 1")
 	}
 
 	return cfg, nil

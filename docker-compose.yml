@@ -75,6 +75,13 @@ services:
       - BACKEND_API_URL=http://backend:5000
       - DOCKER_IMAGE=code-grader-project-sandbox:latest
       - CONTAINER_POOL_SIZE=5
+      # Database connection pool settings
+      - DB_MAX_IDLE_CONNS=10
+      - DB_MAX_OPEN_CONNS=100
+      - DB_CONN_MAX_LIFETIME_MINUTES=60
+      # Logging configuration
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=text  # Use 'json' for production log aggregation
     depends_on:
       - postgres
       - rabbitmq

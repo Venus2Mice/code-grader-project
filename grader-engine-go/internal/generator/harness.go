@@ -80,6 +80,19 @@ func generatePythonHarness(problem *models.Problem, sig *parser.FunctionSignatur
 				i+1, len(sig.Parameters), len(inputs))
 		}
 
+		// FIX #4: Validate expected output can be parsed
+		var expectedOutput TestOutput
+		if err := json.Unmarshal(tc.ExpectedOutput, &expectedOutput); err != nil {
+			return "", fmt.Errorf("test case %d: failed to parse expected output: %w",
+				i+1, err)
+		}
+
+		// FIX #4: Validate expected output has required fields
+		if expectedOutput.Type == "" || expectedOutput.Value == nil {
+			return "", fmt.Errorf("test case %d: expected output has missing type or value",
+				i+1)
+		}
+
 		// Generate input variables
 		for j, input := range inputs {
 			paramName := sig.Parameters[j].Name
@@ -114,6 +127,8 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 	sb.WriteString("#include <string>\n")
 	sb.WriteString("#include <sstream>\n")
 	sb.WriteString("#include <iomanip>\n\n")
+	// JSON serialization for outputs
+	sb.WriteString("#include <nlohmann/json.hpp>\n\n")
 	sb.WriteString("using namespace std;\n\n")
 
 	// Convert signature to C++ syntax
@@ -151,7 +166,8 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 		// Generate input variables
 		for j, input := range inputs {
 			paramName := sig.Parameters[j].Name
-			paramType := sig.Parameters[j].Type
+			// Convert generic type (e.g., int[], string[]) to proper C++ type (e.g., vector<int>)
+			paramType := genericToCppType(sig.Parameters[j].Type)
 			value := formatCppValue(input.Value, input.Type)
 			sb.WriteString(fmt.Sprintf("        %s %s = %s;\n", paramType, paramName, value))
 		}
@@ -164,8 +180,9 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 		sb.WriteString(fmt.Sprintf("        auto result = %s(%s);\n",
 			sig.FunctionName, strings.Join(paramNames, ", ")))
 
-		// Output result - simple format
-		sb.WriteString("        cout << result << endl;\n")
+		// Output result as JSON using nlohmann::json
+		sb.WriteString("        nlohmann::json j = result;\n")
+		sb.WriteString("        cout << j.dump() << endl;\n")
 		sb.WriteString("    }\n\n")
 	}
 
@@ -173,6 +190,38 @@ func generateCppHarness(problem *models.Problem, sig *parser.FunctionSignature) 
 	sb.WriteString("}\n")
 
 	return sb.String(), nil
+}
+
+// genericToCppType converts a generic type string to a valid C++ type representation
+// Mirrors the mapping used by parser.genericTypeToCpp
+func genericToCppType(t string) string {
+	switch t {
+	case "int":
+		return "int"
+	case "long":
+		return "long long"
+	case "double":
+		return "double"
+	case "float":
+		return "float"
+	case "bool":
+		return "bool"
+	case "string":
+		return "string"
+	case "char":
+		return "char"
+	case "int[]":
+		return "vector<int>"
+	case "string[]":
+		return "vector<string>"
+	case "double[]":
+		return "vector<double>"
+	case "int[][]":
+		return "vector<vector<int>>"
+	default:
+		// Fallback: return as-is to avoid crashing generation; better than empty
+		return t
+	}
 }
 
 // generateJavaHarness generates Java test harness
@@ -235,7 +284,8 @@ func generateJavaHarness(problem *models.Problem, sig *parser.FunctionSignature)
 		// Generate input variables
 		for j, input := range inputs {
 			paramName := sig.Parameters[j].Name
-			paramType := sig.Parameters[j].Type
+			// Convert generic type to proper Java type
+			paramType := genericToJavaType(sig.Parameters[j].Type)
 			value := formatJavaValue(input.Value, input.Type)
 			sb.WriteString(fmt.Sprintf("            %s %s = %s;\n", paramType, paramName, value))
 		}
@@ -315,16 +365,37 @@ func formatCppValue(value interface{}, typ string) string {
 
 // formatJavaValue formats value for Java code
 func formatJavaValue(value interface{}, typ string) string {
+	// Handle array types recursively: int[], double[], String[], int[][], etc.
+	if isJavaArrayType(typ) {
+		dims := javaArrayDims(typ)
+		base := javaArrayBaseType(typ)
+		// Convert generic base type to Java type
+		javaBase := genericToJavaType(base)
+
+		// Expect value to be []interface{} for arrays
+		if arr, ok := value.([]interface{}); ok {
+			// Leaf dimension
+			if dims == 1 {
+				elems := make([]string, 0, len(arr))
+				for _, item := range arr {
+					elems = append(elems, formatJavaValue(item, base))
+				}
+				return fmt.Sprintf("new %s[]{%s}", javaBase, strings.Join(elems, ", "))
+			}
+
+			// Nested dimensions: build children with one-less dimension
+			childTyp := base + strings.Repeat("[]", dims-1)
+			children := make([]string, 0, len(arr))
+			for _, child := range arr {
+				children = append(children, formatJavaValue(child, childTyp))
+			}
+			return fmt.Sprintf("new %s%s{%s}", javaBase, strings.Repeat("[]", dims), strings.Join(children, ", "))
+		}
+		// Fallback: empty array of given type
+		return fmt.Sprintf("new %s%s{}", javaBase, strings.Repeat("[]", dims))
+	}
+
 	switch v := value.(type) {
-	case []interface{}:
-		items := []string{}
-		for _, item := range v {
-			items = append(items, formatJavaValue(item, ""))
-		}
-		if strings.Contains(typ, "int[]") {
-			return "new int[]{" + strings.Join(items, ", ") + "}"
-		}
-		return "{" + strings.Join(items, ", ") + "}"
 	case string:
 		return fmt.Sprintf("\"%s\"", v)
 	case float64:
@@ -337,7 +408,74 @@ func formatJavaValue(value interface{}, typ string) string {
 			return "true"
 		}
 		return "false"
+	case []interface{}:
+		// No type provided, emit simple array literal when possible
+		items := []string{}
+		for _, item := range v {
+			items = append(items, formatJavaValue(item, ""))
+		}
+		return "{" + strings.Join(items, ", ") + "}"
 	default:
 		return fmt.Sprintf("%v", v)
+	}
+}
+
+// Helpers for Java array types
+func isJavaArrayType(typ string) bool {
+	return strings.HasSuffix(typ, "[]")
+}
+
+func javaArrayDims(typ string) int {
+	count := 0
+	for strings.HasSuffix(typ, "[]") {
+		count++
+		typ = strings.TrimSuffix(typ, "[]")
+	}
+	return count
+}
+
+func javaArrayBaseType(typ string) string {
+	for strings.HasSuffix(typ, "[]") {
+		typ = strings.TrimSuffix(typ, "[]")
+	}
+	return typ
+}
+
+// genericToJavaType converts a generic type string to a valid Java type
+// Similar to parser.genericTypeToJava but kept local to avoid circular dependency
+func genericToJavaType(t string) string {
+	switch t {
+	case "int":
+		return "int"
+	case "long":
+		return "long"
+	case "double":
+		return "double"
+	case "float":
+		return "float"
+	case "bool":
+		return "boolean"
+	case "string":
+		return "String"
+	case "char":
+		return "char"
+	case "int[]":
+		return "int[]"
+	case "string[]":
+		return "String[]"
+	case "double[]":
+		return "double[]"
+	case "int[][]":
+		return "int[][]"
+	case "string[][]":
+		return "String[][]"
+	case "double[][]":
+		return "double[][]"
+	default:
+		// For unknown types, capitalize first letter if it looks like an object type
+		if len(t) > 0 && t[0] >= 'a' && t[0] <= 'z' && !strings.Contains(t, "[") {
+			return strings.ToUpper(t[:1]) + t[1:]
+		}
+		return t
 	}
 }

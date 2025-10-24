@@ -26,9 +26,11 @@ func main() {
 	log.Printf("   - Database: %s", cfg.DatabaseURL)
 	log.Printf("   - Backend API: %s", cfg.BackendAPIURL)
 	log.Printf("   - Pool Size: %d", cfg.ContainerPoolSize)
+	log.Printf("   - DB Pool: MaxIdle=%d, MaxOpen=%d, MaxLifetime=%dm",
+		cfg.DBMaxIdleConns, cfg.DBMaxOpenConns, cfg.DBConnMaxLifetime)
 
 	// Initialize database connection
-	db, err := database.Connect(cfg.DatabaseURL)
+	db, err := database.Connect(cfg)
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to database: %v", err)
 	}
