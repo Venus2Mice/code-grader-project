@@ -40,9 +40,13 @@ Thumbs.db
 
 # Project specific
 grader-temp/
+logs/
 *.log
 *.zip
 *.tar.gz
+
+# Python cache in migrations
+migrations/versions/__pycache__/
 
 # Database
 *.db
