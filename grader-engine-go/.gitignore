@@ -1,5 +1,4 @@
 # Binaries
-worker
 *.exe
 *.exe~
 *.dll
