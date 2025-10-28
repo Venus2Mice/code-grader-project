@@ -43,23 +43,108 @@ cp .env.example .env
 # Edit .env with your settings
 ```
 
-### 4. Build
+### 4. Build Sandbox Image (⚠️ One-time Setup)
+
+Build the Docker sandbox image that will be used by the container pool:
+
+```bash
+docker build -t code-grader-project-sandbox:latest -f Dockerfile.sandbox .
+```
+
+Verify the image was built:
+
+```bash
+docker images code-grader-project-sandbox
+```
+
+### 5. Build Worker
 
 ```bash
 go build -o worker .
 ```
 
-### 5. Run
+### 6. Run
 
 ```bash
 ./worker
 ```
 
+**Note**: Make sure the sandbox image is built (step 4) before starting the worker.
+
 ## 🐳 Docker Build
+
+### Build Worker Image
 
 ```bash
 docker build -t grader-worker-go:latest .
 ```
+
+### Build Sandbox Image (⚠️ Required Before Starting Worker)
+
+The sandbox image is used by the container pool to run student code in isolated environments. It **only needs to be built once** and is reused for all grading operations.
+
+**Option 1: Manual Build**
+
+```bash
+docker build -t code-grader-project-sandbox:latest -f Dockerfile.sandbox .
+```
+
+**Option 2: Build via Docker Compose (Recommended)**
+
+Create a simple build script:
+
+```bash
+# Build sandbox image using docker-compose
+docker-compose --profile build-only up sandbox-builder
+```
+
+Or add to your `docker-compose.yml`:
+
+```yaml
+services:
+  sandbox-builder:
+    build:
+      context: ./grader-engine-go
+      dockerfile: Dockerfile.sandbox
+    image: code-grader-project-sandbox:latest
+    command: echo "Sandbox image built successfully"
+    profiles:
+      - build-only
+```
+
+**Verify Sandbox Image**
+
+```bash
+docker images | grep code-grader-project-sandbox
+```
+
+Expected output:
+```
+code-grader-project-sandbox   latest    <image_id>   <date>   <size>
+```
+
+### Configuration
+
+The sandbox image name can be configured via environment variable:
+
+- **Environment Variable**: `DOCKER_IMAGE`
+- **Default Value**: `cpp-grader-env`
+- **Current Value** (in docker-compose): `code-grader-project-sandbox:latest`
+- **Config Location**: `internal/config/config.go` (line 45)
+
+To change the sandbox image name:
+
+1. Update `docker-compose.yml`:
+   ```yaml
+   environment:
+     - DOCKER_IMAGE=your-custom-sandbox-image:latest
+   ```
+
+2. Or set environment variable before running:
+   ```bash
+   export DOCKER_IMAGE=your-custom-sandbox-image:latest
+   ./worker
+   ```
 
 ## 📂 Project Structure
 

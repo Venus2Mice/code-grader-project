@@ -42,7 +42,7 @@ func Load() (*Config, error) {
 		RabbitMQQueue:      getEnv("RABBITMQ_QUEUE", "grading_queue"),
 		DatabaseURL:        getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/code_grader?sslmode=disable"),
 		BackendAPIURL:      getEnv("BACKEND_API_URL", "http://localhost:5000"),
-		DockerImage:        getEnv("DOCKER_IMAGE", "cpp-grader-env"),
+		DockerImage:        getEnv("DOCKER_IMAGE", "code-grader-project-sandbox:latest"),
 		ContainerPoolSize:  getEnvInt("CONTAINER_POOL_SIZE", 3),
 		DefaultTimeLimit:   getEnvInt("DEFAULT_TIME_LIMIT", 1000),
 		DefaultMemoryLimit: getEnvInt("DEFAULT_MEMORY_LIMIT", 256000),
