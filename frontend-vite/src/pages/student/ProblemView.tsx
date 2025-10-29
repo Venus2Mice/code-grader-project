@@ -164,6 +164,7 @@ export default function ProblemSolvePage() {
             onViewSubmission={handleViewSubmission}
             getStatusDisplay={getStatusDisplay}
             formatVietnameseDate={formatVietnameseDate}
+            selectedLanguage={language}
           />
         </div>
 

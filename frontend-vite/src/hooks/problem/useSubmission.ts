@@ -3,6 +3,7 @@ import { useState, useCallback } from "react"
 import { submissionAPI } from "@/services/api"
 import type { SubmissionResult, TestResult, Problem } from "@/types/problem"
 import { logger } from "@/lib/logger"
+import { extractImplementation } from "@/lib/codeExtractor"
 
 interface UseSubmissionProps {
   problemId: number
@@ -192,10 +193,13 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     setTestResults(null)
     
     try {
+      // Extract just the method body/implementation from the student code
+      const implementation = extractImplementation(code, language)
+      
       logger.debug('Testing code (not saved to history)', { problemId, language })
       const response = await submissionAPI.runCode({
         problem_id: problemId,
-        source_code: code,
+        source_code: implementation,
         language: language
       })
       
@@ -229,10 +233,13 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     setTestResults(null)
     
     try {
+      // Extract just the method body/implementation from the student code
+      const implementation = extractImplementation(code, language)
+      
       logger.info('Submitting code for grading', { problemId, language })
       const response = await submissionAPI.create({
         problem_id: problemId,
-        source_code: code,
+        source_code: implementation,
         language: language
       })
       

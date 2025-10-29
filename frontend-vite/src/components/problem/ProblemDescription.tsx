@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Problem } from "@/types/problem"
 import type { Submission } from "@/types/submission"
+import { convertSignatureToLanguage } from "@/lib/signatureConverter"
 
 // Helper function to format structured test case data for display
 function formatTestCaseData(data: any, isInput: boolean = false, functionSig?: string): string {
@@ -59,6 +60,7 @@ interface ProblemDescriptionProps {
   onViewSubmission: (submission: any) => void
   getStatusDisplay: (status: string | undefined) => any
   formatVietnameseDate: (dateString: string) => string
+  selectedLanguage?: string
 }
 
 export function ProblemDescription({
@@ -66,7 +68,8 @@ export function ProblemDescription({
   submissions,
   onViewSubmission,
   getStatusDisplay,
-  formatVietnameseDate
+  formatVietnameseDate,
+  selectedLanguage = 'python'
 }: ProblemDescriptionProps) {
   return (
     <div className="p-4 md:p-6">
@@ -101,7 +104,11 @@ export function ProblemDescription({
               <h3 className="mb-3 text-lg font-black uppercase text-foreground">FUNCTION SIGNATURE</h3>
               <div className="border-4 border-border bg-slate-800 dark:bg-accent p-3">
                 <pre className="font-mono text-sm text-slate-100 dark:text-accent-foreground overflow-x-auto">
-                  <code>{problem.function_signature}</code>
+                  <code>
+                    {selectedLanguage === 'python' 
+                      ? problem.function_signature 
+                      : convertSignatureToLanguage(problem.function_signature, selectedLanguage)}
+                  </code>
                 </pre>
               </div>
               <p className="mt-2 text-xs font-bold text-muted-foreground">
