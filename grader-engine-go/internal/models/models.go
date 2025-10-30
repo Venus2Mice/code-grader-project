@@ -33,6 +33,7 @@ type Problem struct {
 	ClassID           int             `gorm:"column:class_id;not null"`
 	Title             string          `gorm:"column:title;size:255;not null"`
 	Description       string          `gorm:"column:description;type:text"`
+	MarkdownContent   *string         `gorm:"column:markdown_content;type:text"` // NEW: Optional markdown content
 	Difficulty        string          `gorm:"column:difficulty;size:20;default:'medium'"`
 	FunctionSignature string          `gorm:"column:function_signature;type:text;not null"` // Required
 	FunctionName      string          `gorm:"column:function_name;size:100"`

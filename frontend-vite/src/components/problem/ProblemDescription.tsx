@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Problem } from "@/types/problem"
 import type { Submission } from "@/types/submission"
 import { convertSignatureToLanguage } from "@/lib/signatureConverter"
+import { MarkdownDisplay } from "./MarkdownDisplay"
 
 // Helper function to format structured test case data for display
 function formatTestCaseData(data: any, isInput: boolean = false, functionSig?: string): string {
@@ -86,9 +87,13 @@ export function ProblemDescription({
         <TabsContent value="description" className="mt-4 md:mt-6 space-y-4 md:space-y-6">
           <div>
             <h2 className="mb-3 text-xl font-black uppercase text-foreground">PROBLEM</h2>
-            <div className="prose max-w-none">
-              <p className="font-bold text-foreground leading-relaxed">{problem.description}</p>
-            </div>
+            {problem.markdown_content ? (
+              <MarkdownDisplay markdown={problem.markdown_content} />
+            ) : (
+              <div className="prose max-w-none">
+                <p className="font-bold text-foreground leading-relaxed">{problem.description}</p>
+              </div>
+            )}
           </div>
 
           <div>

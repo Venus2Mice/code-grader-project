@@ -128,6 +128,12 @@ class ProblemCreateSchema(Schema):
         validate=validate.Length(min=10),
         error_messages={'required': 'Problem description is required'}
     )
+    markdown_content = fields.Str(
+        required=False,
+        allow_none=True,
+        validate=validate.Length(max=1000000),  # Max 1MB markdown content
+        error_messages={'validator_failed': 'Markdown content too large (max 1MB)'}
+    )
     class_id = fields.Int(
         required=True,
         validate=validate.Range(min=1),

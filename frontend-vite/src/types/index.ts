@@ -116,6 +116,7 @@ export interface Problem {
   class_id: number
   title: string
   description: string
+  markdown_content?: string            // NEW: Optional markdown description
   difficulty: Difficulty
   language: Language                   // Required: target language for the problem
   function_signature: string           // Required: function signature
@@ -136,6 +137,7 @@ export interface Problem {
 export interface CreateProblemRequest {
   title: string
   description: string
+  markdown_content?: string            // NEW: Optional markdown description
   difficulty: Difficulty
   language: Language
   function_signature: string

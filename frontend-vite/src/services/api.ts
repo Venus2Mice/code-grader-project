@@ -187,6 +187,7 @@ export const problemAPI = {
     data: {
       title: string
       description: string
+      markdown_content?: string
       difficulty: 'easy' | 'medium' | 'hard'
       language: 'cpp' | 'python' | 'java'
       function_signature: string

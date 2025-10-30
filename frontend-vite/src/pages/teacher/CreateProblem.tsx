@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { MarkdownEditor } from "@/components/problem"
 import type { TestCaseInput, TestCaseOutput, Language, Difficulty } from "@/types"
 
 interface TestCaseForm {
@@ -33,6 +34,7 @@ export default function CreateProblemPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    markdown_content: "",
     difficulty: "medium" as Difficulty,
     language: "cpp" as Language,
     timeLimit: 1000,
@@ -185,6 +187,7 @@ export default function CreateProblemPage() {
       const problemData = {
         title: formData.title,
         description: formData.description,
+        markdown_content: formData.markdown_content || undefined,
         difficulty: formData.difficulty,
         language: formData.language,
         function_signature: formData.functionSignature,
@@ -269,6 +272,15 @@ export default function CreateProblemPage() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">Use clear formatting to explain the problem statement</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Problem Description (Markdown - Optional)</Label>
+                <MarkdownEditor
+                  value={formData.markdown_content}
+                  onChange={(value) => setFormData({ ...formData, markdown_content: value })}
+                  onFileUpload={(filename) => logger.info(`Markdown file uploaded: ${filename}`)}
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">

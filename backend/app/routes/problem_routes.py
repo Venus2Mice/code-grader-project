@@ -26,6 +26,7 @@ def create_problem_in_class(class_id):
     
     title = data.get('title')
     description = data.get('description')
+    markdown_content = data.get('markdown_content')  # NEW: Optional markdown content
     difficulty = data.get('difficulty', 'medium')
     function_signature = data.get('function_signature')
     time_limit_ms = data.get('time_limit_ms', 1000)
@@ -65,6 +66,7 @@ def create_problem_in_class(class_id):
     new_problem = Problem(
         title=title,
         description=description,
+        markdown_content=markdown_content,  # NEW: Store markdown content
         difficulty=difficulty,
         function_signature=function_signature,
         time_limit_ms=time_limit_ms,
@@ -108,6 +110,7 @@ def get_problems_in_class(class_id):
         "function_signature": p.function_signature,
         "time_limit_ms": p.time_limit_ms,
         "memory_limit_kb": p.memory_limit_kb,
+        "markdown_content": p.markdown_content,  # NEW: Include markdown content
         "created_at": p.created_at.isoformat() if p.created_at else None
     } for p in problems]
     return jsonify(problem_list)
@@ -135,6 +138,7 @@ def get_problem_details(problem_id):
         "class_id": problem.class_id,
         "title": problem.title,
         "description": problem.description,
+        "markdown_content": problem.markdown_content,  # NEW: Include markdown content
         "difficulty": problem.difficulty,
         "function_signature": problem.function_signature,
         "time_limit_ms": problem.time_limit_ms,
