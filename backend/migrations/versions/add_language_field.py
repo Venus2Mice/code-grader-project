@@ -1,15 +1,15 @@
 """add language field to problems table
 
-Revision ID: 20251030_add_lang
+Revision ID: add_language_field
 Revises: a1b2c3d4e5f6
-Create Date: 2025-10-30 21:07:25.000000
+Create Date: 2025-10-30 14:20:00.000000
 
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '20251030_add_lang'
+revision = 'add_language_field'
 down_revision = 'a1b2c3d4e5f6'
 branch_labels = None
 depends_on = None
