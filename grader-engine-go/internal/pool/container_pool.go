@@ -221,3 +221,13 @@ func (p *ContainerPool) GetCleanupStats() map[string]interface{} {
 		"cleanup_service": "not initialized",
 	}
 }
+
+// GetSize returns the total size of the pool
+func (p *ContainerPool) GetSize() int {
+	return p.size
+}
+
+// GetAvailableCount returns the number of available containers
+func (p *ContainerPool) GetAvailableCount() int {
+	return len(p.containers)
+}

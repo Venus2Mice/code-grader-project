@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"grader-engine-go/internal/api"
 	"grader-engine-go/internal/config"
 	"grader-engine-go/internal/database"
 	"grader-engine-go/internal/pool"
@@ -46,6 +47,18 @@ func main() {
 
 	// Create worker
 	w := worker.New(cfg, db, containerPool)
+
+	// Create API server for health checks
+	apiServer := api.NewServer(db, containerPool, cfg.APIPort)
+	w.SetAPIServer(apiServer)
+
+	// Start API server in goroutine
+	go func() {
+		log.Printf("🌐 Starting API server on port %s...", cfg.APIPort)
+		if err := apiServer.Start(); err != nil {
+			log.Printf("⚠️  API server error: %v", err)
+		}
+	}()
 
 	// Start worker in goroutine
 	errChan := make(chan error, 1)

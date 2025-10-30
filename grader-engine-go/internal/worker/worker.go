@@ -23,6 +23,7 @@ type Worker struct {
 	channel       *amqp.Channel
 	stopChan      chan bool
 	graderService *grader.Service
+	apiServer     interface{ IncrementTaskCounter() } // For tracking metrics
 }
 
 // TaskMessage represents the message structure from RabbitMQ
@@ -41,7 +42,13 @@ func New(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPool) *Wo
 		pool:          containerPool,
 		stopChan:      make(chan bool),
 		graderService: graderService,
+		apiServer:     nil, // Will be set via SetAPIServer
 	}
+}
+
+// SetAPIServer sets the API server for metrics tracking
+func (w *Worker) SetAPIServer(apiServer interface{ IncrementTaskCounter() }) {
+	w.apiServer = apiServer
 }
 
 // Start begins consuming messages from RabbitMQ
@@ -202,6 +209,11 @@ func (w *Worker) handleMessage(msg amqp.Delivery) {
 	}
 
 	log.Printf("✅ Graded submission #%d: %s (took %v)", task.SubmissionID, result.OverallStatus, duration)
+
+	// Increment task counter for metrics
+	if w.apiServer != nil {
+		w.apiServer.IncrementTaskCounter()
+	}
 
 	// Acknowledge message
 	msg.Ack(false)

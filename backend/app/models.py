@@ -77,11 +77,21 @@ class Class(Base):
 
 class Problem(Base):
     __tablename__ = 'problems'
+    __table_args__ = (
+        # Ensure language field only accepts valid programming languages
+        # This prevents invalid language values at the database level
+        db.CheckConstraint(
+            "language IN ('cpp', 'python', 'java')",
+            name='valid_language_check'
+        ),
+    )
+    
     id = Column(Integer, primary_key=True)
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
     difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
+    language = Column(String(50), nullable=False, default='cpp')  # Target language for this problem
     function_signature = Column(Text, nullable=False)  # Required for all problems
     function_name = Column(String(100), nullable=True)  # Extracted from signature
     parameter_types = Column(JSONB, nullable=True)  # NEW: ["int[]", "int"] - extracted from signature

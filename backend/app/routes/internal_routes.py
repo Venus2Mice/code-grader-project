@@ -1,5 +1,10 @@
 from flask import Blueprint, request, jsonify
 from ..models import db, Submission, SubmissionResult
+from ..constants import (
+    ERROR_STATUSES,
+    SUCCESS_STATUSES,
+    STATUS_SYSTEM_ERROR
+)
 
 internal_bp = Blueprint('internal', __name__, url_prefix='/internal')
 
@@ -14,7 +19,7 @@ def update_submission_result(submission_id):
         return jsonify({"msg": "Submission not found"}), 404
 
     # Cập nhật trạng thái tổng thể
-    overall_status = data.get('overall_status', 'System Error')
+    overall_status = data.get('overall_status', STATUS_SYSTEM_ERROR)
     submission.status = overall_status
     
     # Xóa các kết quả cũ (nếu có) để tránh trùng lặp
@@ -28,7 +33,8 @@ def update_submission_result(submission_id):
     # Check if this is an error that applies to all test cases (no test_case_id)
     has_global_error = any(res.get('test_case_id') is None for res in results_data)
     
-    if has_global_error or overall_status in ["Compile Error", "System Error", "Runtime Error", "Time Limit Exceeded", "Memory Limit Exceeded", "Output Limit Exceeded"]:
+    # Use ERROR_STATUSES from constants instead of hardcoded list
+    if has_global_error or overall_status in ERROR_STATUSES:
         # Lưu error vào SubmissionResult
         # Không có test_case_id cho compile error hoặc runtime error toàn cục
         for res_data in results_data:
@@ -68,11 +74,14 @@ def update_submission_result(submission_id):
         total_points = sum(tc.points for tc in problem.test_cases)
         
         if total_points > 0:
+            # OPTIMIZATION: Create lookup dict for O(1) access instead of O(n) linear search
+            test_case_dict = {tc.id: tc for tc in problem.test_cases}
+            
             earned_points = 0
-            # ✅ FIX: Loop through NEW results, not submission.results (which are old/deleted)
+            # Use SUCCESS_STATUSES from constants
             for result in new_results:
-                if result.status in ['Passed', 'Accepted']:
-                    test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
+                if result.status in SUCCESS_STATUSES:
+                    test_case = test_case_dict.get(result.test_case_id)
                     if test_case:
                         earned_points += test_case.points
             

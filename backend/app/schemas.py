@@ -5,6 +5,23 @@ Provides structured validation for API requests
 
 from marshmallow import Schema, fields, validate, ValidationError, validates, validates_schema
 import re
+from .constants import (
+    SUPPORTED_LANGUAGES, 
+    DEFAULT_LANGUAGE, 
+    ALL_DIFFICULTIES, 
+    DIFFICULTY_MEDIUM,
+    MIN_TIME_LIMIT_MS, 
+    MAX_TIME_LIMIT_MS,
+    MIN_MEMORY_LIMIT_KB, 
+    MAX_MEMORY_LIMIT_KB,
+    DEFAULT_TIME_LIMIT_MS,
+    DEFAULT_MEMORY_LIMIT_KB,
+    MIN_TEST_CASE_POINTS,
+    MAX_TEST_CASE_POINTS,
+    DEFAULT_TEST_CASE_POINTS,
+    MSG_INVALID_LANGUAGE,
+    MSG_INVALID_DIFFICULTY
+)
 
 
 class UserRegistrationSchema(Schema):
@@ -63,9 +80,9 @@ class SubmissionCreateSchema(Schema):
         error_messages={'required': 'Source code is required'}
     )
     language = fields.Str(
-        missing='cpp',
-        validate=validate.OneOf(['cpp', 'python', 'java', 'c']),
-        error_messages={'validator_failed': 'Invalid language'}
+        missing=DEFAULT_LANGUAGE,
+        validate=validate.OneOf(SUPPORTED_LANGUAGES),
+        error_messages={'validator_failed': MSG_INVALID_LANGUAGE}
     )
     is_test = fields.Bool(missing=False)
     
@@ -116,25 +133,30 @@ class ProblemCreateSchema(Schema):
         validate=validate.Range(min=1),
         error_messages={'required': 'Class ID is required'}
     )
+    language = fields.Str(
+        missing=DEFAULT_LANGUAGE,
+        validate=validate.OneOf(SUPPORTED_LANGUAGES),
+        error_messages={'validator_failed': MSG_INVALID_LANGUAGE}
+    )
     function_signature = fields.Str(
         required=True,
         validate=validate.Length(min=5),
         error_messages={'required': 'Function signature is required'}
     )
     difficulty = fields.Str(
-        missing='medium',
-        validate=validate.OneOf(['easy', 'medium', 'hard']),
-        error_messages={'validator_failed': 'Difficulty must be easy, medium, or hard'}
+        missing=DIFFICULTY_MEDIUM,
+        validate=validate.OneOf(ALL_DIFFICULTIES),
+        error_messages={'validator_failed': MSG_INVALID_DIFFICULTY}
     )
     time_limit_ms = fields.Int(
-        missing=1000,
-        validate=validate.Range(min=100, max=10000),
-        error_messages={'validator_failed': 'Time limit must be between 100ms and 10000ms'}
+        missing=DEFAULT_TIME_LIMIT_MS,
+        validate=validate.Range(min=MIN_TIME_LIMIT_MS, max=MAX_TIME_LIMIT_MS),
+        error_messages={'validator_failed': f'Time limit must be between {MIN_TIME_LIMIT_MS}ms and {MAX_TIME_LIMIT_MS}ms'}
     )
     memory_limit_kb = fields.Int(
-        missing=256000,
-        validate=validate.Range(min=1024, max=1048576),
-        error_messages={'validator_failed': 'Memory limit must be between 1MB and 1GB'}
+        missing=DEFAULT_MEMORY_LIMIT_KB,
+        validate=validate.Range(min=MIN_MEMORY_LIMIT_KB, max=MAX_MEMORY_LIMIT_KB),
+        error_messages={'validator_failed': f'Memory limit must be between {MIN_MEMORY_LIMIT_KB//1024}MB and {MAX_MEMORY_LIMIT_KB//1024}MB'}
     )
 
 
@@ -169,9 +191,9 @@ class TestCaseCreateSchema(Schema):
     )
     is_hidden = fields.Bool(missing=False)
     points = fields.Int(
-        missing=10,
-        validate=validate.Range(min=0, max=100),
-        error_messages={'validator_failed': 'Points must be between 0 and 100'}
+        missing=DEFAULT_TEST_CASE_POINTS,
+        validate=validate.Range(min=MIN_TEST_CASE_POINTS, max=MAX_TEST_CASE_POINTS),
+        error_messages={'validator_failed': f'Points must be between {MIN_TEST_CASE_POINTS} and {MAX_TEST_CASE_POINTS}'}
     )
 
 

@@ -2,7 +2,12 @@ from flask import Blueprint, request, jsonify
 from ..models import db, Submission, Problem, User, Class
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
-from .. import rabbitmq_producer # Sẽ tạo file này ngay sau đây
+from .. import rabbitmq_producer
+from ..constants import (
+    STATUS_PENDING,
+    SUCCESS_STATUSES,
+    DEFAULT_LANGUAGE
+)
 
 submission_bp = Blueprint('submissions', __name__, url_prefix='/api/submissions')
 
@@ -14,7 +19,7 @@ def create_submission():
     data = request.get_json()
     problem_id = data.get('problem_id')
     source_code = data.get('source_code')
-    language = data.get('language', 'cpp')
+    language = data.get('language', DEFAULT_LANGUAGE)
     
     if not problem_id or not source_code:
         return jsonify({"msg": "problem_id and source_code are required"}), 400
@@ -39,7 +44,7 @@ def create_submission():
         student_id=student_id,
         source_code=source_code,
         language=language,
-        status='Pending'
+        status=STATUS_PENDING
     )
     db.session.add(new_submission)
     db.session.commit()
@@ -155,13 +160,13 @@ def get_my_submissions():
             total_points = sum(tc.points for tc in submission.problem.test_cases)
             earned_points = 0
             for result in submission.results:
-                if result.status in ['Passed', 'Accepted']:
+                if result.status in SUCCESS_STATUSES:
                     test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
                     if test_case:
                         earned_points += test_case.points
             score = round((earned_points / total_points * 100)) if total_points > 0 else 0
-        
-        passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
+    
+        passed_tests = len([r for r in submission.results if r.status in SUCCESS_STATUSES])
         
         submissions_data.append({
             "id": submission.id,
@@ -238,7 +243,7 @@ def run_code():
         student_id=student_id,
         source_code=source_code,
         language=language,
-        status='Pending',
+        status=STATUS_PENDING,
         is_test=True  # Đánh dấu đây là test run
     )
     db.session.add(test_submission)
@@ -254,7 +259,7 @@ def run_code():
         return jsonify({
             "msg": "Code is being tested",
             "submission_id": test_submission.id,
-            "status": "Pending"
+            "status": STATUS_PENDING
         }), 202
     except Exception as e:
         # Nếu gửi task thất bại, xóa submission

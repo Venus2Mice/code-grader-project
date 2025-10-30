@@ -31,6 +31,9 @@ type Config struct {
 	DBMaxOpenConns    int // Maximum open connections
 	DBConnMaxLifetime int // Connection max lifetime in minutes
 
+	// API server settings
+	APIPort string // HTTP API server port for health checks
+
 	// Temp directory
 	TempDir string
 }
@@ -49,6 +52,7 @@ func Load() (*Config, error) {
 		DBMaxIdleConns:     getEnvInt("DB_MAX_IDLE_CONNS", 10),
 		DBMaxOpenConns:     getEnvInt("DB_MAX_OPEN_CONNS", 100),
 		DBConnMaxLifetime:  getEnvInt("DB_CONN_MAX_LIFETIME_MINUTES", 60),
+		APIPort:            getEnv("API_PORT", "8080"),
 		TempDir:            getEnv("TEMP_DIR", "/tmp/grader"),
 	}
 
