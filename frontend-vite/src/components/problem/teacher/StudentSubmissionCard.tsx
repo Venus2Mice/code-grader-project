@@ -48,8 +48,8 @@ export function StudentSubmissionCard({
               </div>
               <div className="text-sm">
                 <span className="text-muted-foreground">Best Score: </span>
-                <span className={`font-black ${submission.score >= 80 ? 'text-green-600' : submission.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {submission.score || 0}/100
+                <span className={`font-black ${(submission.score ?? submission.cached_score ?? 0) >= 80 ? 'text-green-600' : (submission.score ?? submission.cached_score ?? 0) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {submission.score ?? submission.cached_score ?? 0}/100
                 </span>
               </div>
               <div className="text-sm">

@@ -1,35 +1,19 @@
-export interface User {
-  id: number
-  full_name: string
-  email: string
-  username?: string
-}
+/**
+ * DEPRECATED: Use types from @/types/index.ts instead
+ * This file is kept for backward compatibility only
+ */
 
-export interface Submission {
-  id: number
-  problem_id: number
-  user_id: number
-  user?: User
-  source_code?: string
-  code?: string
-  language: string
-  status: string
-  score: number
-  passedTests?: number
-  passed_tests?: number
-  totalTests?: number
-  total_tests?: number
-  submittedAt?: string
-  submitted_at?: string
-  results?: any[]
-}
+// Re-export from centralized types
+export type {
+  User,
+  Submission,
+  SubmissionStats,
+  TestResult,
+  SubmissionStatus
+} from './index'
 
-export interface SubmissionStats {
-  totalStudents: number
-  acceptedCount: number
-  acceptanceRate: string
-  averageScore: string
-}
+// Legacy type alias
+import type { Submission } from './index'
 
 export interface StudentSubmission extends Submission {
   allSubmissions?: Submission[]

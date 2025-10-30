@@ -72,17 +72,18 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     }
 
     const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) 
-      ? 'accepted' 
-      : (submissionData.status === 'Compile Error' ? 'compile_error' : 'error')
+      ? 'Accepted' 
+      : (submissionData.status === 'Compile Error' ? 'Compile Error' : 'error')
 
     return {
       status: finalStatus as any,
       message: submissionData.status,
       isTest: false,
       score: scoreComputed,
-      passedTests: passedTestsComputed,
-      totalTests: totalTestsComputed,
-      results: resultsArr
+      passed_tests: passedTestsComputed,
+      total_tests: totalTestsComputed,
+      test_results: resultsArr,
+      results: resultsArr  // Alias
     }
   }, [problem?.id])
 
@@ -207,7 +208,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       logger.debug('Test submission created', { submissionId })
       
       setTestResults({
-        status: "running",
+        status: "Running",
         message: "Testing your code...",
         isTest: true
       })
@@ -247,7 +248,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       logger.info('Submission created', { submissionId })
       
       setTestResults({
-        status: "pending",
+        status: "Pending",
         message: "Submission queued for grading...",
         isTest: false
       })

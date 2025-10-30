@@ -1,9 +1,8 @@
-
 import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,12 +13,13 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import type { TestCaseInput, TestCaseOutput, Language, Difficulty } from "@/types"
 
-interface TestCase {
+interface TestCaseForm {
   id: string
-  input: string
-  expectedOutput: string
-  isHidden: boolean
+  inputs: TestCaseInput[]
+  expected_output: TestCaseOutput
+  is_hidden: boolean
   points: number
 }
 
@@ -33,15 +33,21 @@ export default function CreateProblemPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    difficulty: "medium",
+    difficulty: "medium" as Difficulty,
+    language: "cpp" as Language,
     timeLimit: 1000,
     memoryLimit: 256,
-    gradingMode: "stdio",
     functionSignature: "",
   })
 
-  const [testCases, setTestCases] = useState<TestCase[]>([
-    { id: "1", input: "", expectedOutput: "", isHidden: false, points: 10 },
+  const [testCases, setTestCases] = useState<TestCaseForm[]>([
+    { 
+      id: "1", 
+      inputs: [{ type: "int", value: 0 }], 
+      expected_output: { type: "int", value: 0 },
+      is_hidden: false, 
+      points: 10 
+    },
   ])
 
   // State for validation modal
@@ -72,9 +78,9 @@ export default function CreateProblemPage() {
       ...testCases,
       {
         id: String(testCases.length + 1),
-        input: "",
-        expectedOutput: "",
-        isHidden: false,
+        inputs: [{ type: "int", value: 0 }],
+        expected_output: { type: "int", value: 0 },
+        is_hidden: false,
         points: 10,
       },
     ])
@@ -86,7 +92,7 @@ export default function CreateProblemPage() {
     }
   }
 
-  const updateTestCase = (id: string, field: keyof TestCase, value: any) => {
+  const updateTestCase = (id: string, field: keyof TestCaseForm, value: any) => {
     // Validate points: must be non-negative
     if (field === 'points') {
       const points = Number(value)
@@ -118,6 +124,22 @@ export default function CreateProblemPage() {
     }
     
     setTestCases(testCases.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc)))
+  }
+
+  // Helper to update test case inputs/output with JSON parsing
+  const updateTestCaseJSON = (id: string, field: 'inputs' | 'expected_output', jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString)
+      updateTestCase(id, field, parsed)
+    } catch (err) {
+      // Invalid JSON - show error
+      setValidationModal({
+        isOpen: true,
+        title: "Invalid JSON",
+        message: `Please enter valid JSON for ${field}. Example: ${field === 'inputs' ? '[{"type":"int","value":5}]' : '{"type":"int","value":10}'}`,
+        type: "error"
+      })
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,19 +181,19 @@ export default function CreateProblemPage() {
     }
     
     try {
-      // Create problem with test cases
+      // Create problem with test cases matching backend schema
       const problemData = {
         title: formData.title,
         description: formData.description,
-        difficulty: formData.difficulty as 'easy' | 'medium' | 'hard',
+        difficulty: formData.difficulty,
+        language: formData.language,
+        function_signature: formData.functionSignature,
         time_limit_ms: formData.timeLimit,
         memory_limit_kb: formData.memoryLimit * 1024, // Convert MB to KB
-        grading_mode: formData.gradingMode as 'stdio' | 'function',
-        function_signature: formData.gradingMode === 'function' ? formData.functionSignature : undefined,
         test_cases: testCases.map(tc => ({
-          input: tc.input,
-          output: tc.expectedOutput,
-          is_hidden: tc.isHidden,
+          inputs: tc.inputs,
+          expected_output: tc.expected_output,
+          is_hidden: tc.is_hidden,
           points: tc.points
         }))
       }
@@ -254,7 +276,7 @@ export default function CreateProblemPage() {
                   <Label htmlFor="difficulty">Difficulty</Label>
                   <Select
                     value={formData.difficulty}
-                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+                    onValueChange={(value) => setFormData({ ...formData, difficulty: value as Difficulty })}
                   >
                     <SelectTrigger id="difficulty">
                       <SelectValue />
@@ -263,6 +285,23 @@ export default function CreateProblemPage() {
                       <SelectItem value="easy">Easy</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select
+                    value={formData.language}
+                    onValueChange={(value) => setFormData({ ...formData, language: value as Language })}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cpp">C++</SelectItem>
+                      <SelectItem value="python">Python</SelectItem>
+                      <SelectItem value="java">Java</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -277,61 +316,53 @@ export default function CreateProblemPage() {
                     required
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
-                  <Input
-                    id="memoryLimit"
-                    type="number"
-                    value={formData.memoryLimit}
-                    onChange={(e) => setFormData({ ...formData, memoryLimit: Number(e.target.value) })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
+                <Input
+                  id="memoryLimit"
+                  type="number"
+                  value={formData.memoryLimit}
+                  onChange={(e) => setFormData({ ...formData, memoryLimit: Number(e.target.value) })}
+                  required
+                />
               </div>
             </div>
           </Card>
 
           <Card className="border-4 border-border bg-card p-8">
             <h2 className="mb-6 border-l-8 border-secondary pl-4 text-2xl font-black uppercase text-foreground">
-              GRADING CONFIGURATION
+              FUNCTION CONFIGURATION
             </h2>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="gradingMode">Grading Mode</Label>
-                <Select
-                  value={formData.gradingMode}
-                  onValueChange={(value) => setFormData({ ...formData, gradingMode: value })}
-                >
-                  <SelectTrigger id="gradingMode">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="stdio">Standard I/O</SelectItem>
-                    <SelectItem value="function">Function-based</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {formData.gradingMode === "stdio"
-                    ? "Students submit a complete program that reads from stdin and writes to stdout"
-                    : "Students implement a specific function signature"}
-                </p>
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4 border-l-4 border-blue-500">
+                <div className="flex gap-2">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-blue-900 dark:text-blue-100">Function-Based Grading</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      Students implement the specified function. The system automatically generates test harness code.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {formData.gradingMode === "function" && (
-                <div className="space-y-2">
-                  <Label htmlFor="functionSignature">Function Signature</Label>
-                  <Input
-                    id="functionSignature"
-                    placeholder="e.g., vector<int> twoSum(vector<int>& nums, int target)"
-                    value={formData.functionSignature}
-                    onChange={(e) => setFormData({ ...formData, functionSignature: e.target.value })}
-                    className="font-mono text-sm"
-                    required={formData.gradingMode === "function"}
-                  />
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="functionSignature">Function Signature *</Label>
+                <Input
+                  id="functionSignature"
+                  placeholder="e.g., vector<int> twoSum(vector<int>& nums, int target)"
+                  value={formData.functionSignature}
+                  onChange={(e) => setFormData({ ...formData, functionSignature: e.target.value })}
+                  className="font-mono text-sm"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Function that students must implement. Must include return type, name, and parameters.
+                </p>
+              </div>
             </div>
           </Card>
 
@@ -354,11 +385,11 @@ export default function CreateProblemPage() {
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-3 border-2 border-border bg-background px-3 py-1.5 rounded">
                         <Switch
-                          checked={testCase.isHidden}
-                          onCheckedChange={(checked) => updateTestCase(testCase.id, "isHidden", checked)}
+                          checked={testCase.is_hidden}
+                          onCheckedChange={(checked) => updateTestCase(testCase.id, "is_hidden", checked)}
                         />
                         <Label className="text-sm font-bold cursor-pointer">
-                          {testCase.isHidden ? (
+                          {testCase.is_hidden ? (
                             <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
                               <EyeOff className="h-4 w-4" />
                               Hidden
@@ -381,27 +412,33 @@ export default function CreateProblemPage() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Input</Label>
+                      <Label>Inputs (JSON Array)</Label>
                       <Textarea
-                        placeholder="Test input..."
-                        value={testCase.input}
-                        onChange={(e) => updateTestCase(testCase.id, "input", e.target.value)}
+                        placeholder='[{"type":"int","value":5},{"type":"int","value":10}]'
+                        value={JSON.stringify(testCase.inputs)}
+                        onChange={(e) => updateTestCaseJSON(testCase.id, "inputs", e.target.value)}
                         rows={4}
                         className="font-mono text-sm"
                         required
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Array of objects with "type" and "value" fields
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Expected Output</Label>
+                      <Label>Expected Output (JSON Object)</Label>
                       <Textarea
-                        placeholder="Expected output..."
-                        value={testCase.expectedOutput}
-                        onChange={(e) => updateTestCase(testCase.id, "expectedOutput", e.target.value)}
+                        placeholder='{"type":"int","value":15}'
+                        value={JSON.stringify(testCase.expected_output)}
+                        onChange={(e) => updateTestCaseJSON(testCase.id, "expected_output", e.target.value)}
                         rows={4}
                         className="font-mono text-sm"
                         required
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Object with "type" and "value" fields
+                      </p>
                     </div>
                   </div>
 

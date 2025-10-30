@@ -20,18 +20,18 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
         </h3>
         <div
           className={`flex items-center gap-2 font-black uppercase ${
-            testResults.status === "accepted" 
+            testResults.status === "Accepted" 
               ? "text-green-600 dark:text-green-400" 
-              : testResults.status === "running" || testResults.status === "pending"
+              : testResults.status === "Running" || testResults.status === "Pending"
                 ? "text-blue-600 dark:text-blue-400"
                 : testResults.status === "info"
                   ? "text-yellow-600 dark:text-yellow-400"
                   : "text-red-600 dark:text-red-400"
           }`}
         >
-          {testResults.status === "accepted" ? (
+          {testResults.status === "Accepted" ? (
             <CheckCircle className="h-6 w-6" />
-          ) : testResults.status === "running" || testResults.status === "pending" ? (
+          ) : testResults.status === "Running" || testResults.status === "Pending" ? (
             <Clock className="h-6 w-6 animate-spin" />
           ) : testResults.status === "info" ? (
             <AlertCircle className="h-6 w-6" />
@@ -39,8 +39,8 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
             <XCircle className="h-6 w-6" />
           )}
           <span>
-            {testResults.passedTests !== undefined && testResults.totalTests !== undefined
-              ? `${testResults.passedTests}/${testResults.totalTests} PASSED - ${testResults.score || 0}/100`
+            {(testResults.passed_tests !== undefined && testResults.total_tests !== undefined)
+              ? `${testResults.passed_tests}/${testResults.total_tests} PASSED - ${testResults.score || 0}/100`
               : testResults.message || testResults.status.toUpperCase()
             }
           </span>
@@ -48,8 +48,8 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
       </div>
 
       <div className="space-y-2">
-        {testResults.results && Array.isArray(testResults.results) && testResults.results.length > 0 ? (
-          testResults.results
+        {((testResults.test_results || testResults.results) && Array.isArray(testResults.test_results || testResults.results) && (testResults.test_results || testResults.results)!.length > 0) ? (
+          (testResults.test_results || testResults.results)!
             .filter((result: any) => {
               if (result.test_case_id === null || result.test_case_id === undefined) return true
               return result.is_hidden === false
@@ -180,7 +180,7 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
                 </Card>
               )
             })
-        ) : testResults.status === "running" || testResults.status === "pending" ? (
+        ) : testResults.status === "Running" || testResults.status === "Pending" ? (
           <div className="text-center py-4 text-sm text-muted-foreground">
             <Clock className="mx-auto mb-2 h-8 w-8 animate-spin text-blue-600" />
             <p className="font-bold">{testResults.message}</p>

@@ -74,9 +74,10 @@ export function StatisticsTab({
                 { label: 'Failed (0)', min: 0, max: 0, color: 'bg-red-500' },
               ].map((range) => {
                 const count = groupedSubmissions.filter(
-                  (s) => (s.score || 0) >= range.min && (s.score || 0) <= range.max
+                  (s) => ((s.score ?? s.cached_score) || 0) >= range.min && ((s.score ?? s.cached_score) || 0) <= range.max
                 ).length
-                const percentage = stats.totalStudents > 0 ? (count / stats.totalStudents) * 100 : 0
+                const totalStudents = stats.totalStudents ?? stats.total_students ?? 0
+                const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0
                 return (
                   <div key={range.label} className="flex items-center gap-3">
                     <div className="w-32 text-xs text-muted-foreground">{range.label}</div>

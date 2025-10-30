@@ -12,8 +12,11 @@ export function useSubmissionStats(submissions: Submission[]) {
       if (!studentId) return
       
       const existing = studentMap.get(studentId)
-      if (!existing || submission.score > existing.score || 
-          (submission.score === existing.score && 
+      const submissionScore = submission.score ?? submission.cached_score ?? 0
+      const existingScore = existing ? (existing.score ?? existing.cached_score ?? 0) : 0
+      
+      if (!existing || submissionScore > existingScore || 
+          (submissionScore === existingScore && 
            new Date(submission.submittedAt || submission.submitted_at || '') > 
            new Date(existing.submittedAt || existing.submitted_at || ''))) {
         studentMap.set(studentId, {
@@ -30,9 +33,14 @@ export function useSubmissionStats(submissions: Submission[]) {
   const stats: SubmissionStats = useMemo(() => {
     const total = groupedSubmissions.length
     const accepted = groupedSubmissions.filter(s => s.status?.toLowerCase() === 'accepted').length
-    const avgScore = groupedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / (total || 1)
+    const avgScore = groupedSubmissions.reduce((sum, s) => sum + (s.score || s.cached_score || 0), 0) / (total || 1)
     
     return {
+      total_students: total,
+      accepted_count: accepted,
+      acceptance_rate: total > 0 ? ((accepted / total) * 100).toFixed(1) : '0',
+      average_score: avgScore.toFixed(1),
+      // Convenience aliases
       totalStudents: total,
       acceptedCount: accepted,
       acceptanceRate: total > 0 ? ((accepted / total) * 100).toFixed(1) : '0',

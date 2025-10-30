@@ -25,14 +25,14 @@ export function useCodeAnalysis() {
     const nonMainFunctions = functionMatches.filter(match => !match.includes('main'))
     const hasFunctions = nonMainFunctions.length > 0
     
-    // Generate analysis message
+    // Generate analysis message (function-based grading only)
     let analysis = ""
     if (hasMain && hasFunctions) {
-      analysis = `✅ Complete program detected:\n• Has main() function\n• Has ${nonMainFunctions.length} other function(s)\n• Ready for STDIO grading mode`
+      analysis = `✅ Complete program detected:\n• Has main() function\n• Has ${nonMainFunctions.length} other function(s)\n\n⚠️ Note: Function-based grading requires ONLY the function implementation (no main)`
     } else if (hasMain && !hasFunctions) {
-      analysis = `✅ Complete program detected:\n• Has main() function\n• No other functions\n• Ready for STDIO grading mode`
+      analysis = `⚠️ Only main() detected:\n• Has main() function\n• No other functions\n\n⚠️ For function-based grading, remove main() and implement the required function`
     } else if (!hasMain && hasFunctions) {
-      analysis = `⚠️ Function-only code detected:\n• No main() function\n• Has ${nonMainFunctions.length} function(s)\n• Suitable for FUNCTION grading mode only\n\n⚠️ Note: If problem uses STDIO mode, this will fail!`
+      analysis = `✅ Function-only code detected:\n• No main() function\n• Has ${nonMainFunctions.length} function(s)\n• Perfect for FUNCTION-BASED grading`
     } else {
       analysis = `❌ No valid code structure detected:\n• No main() function\n• No function definitions\n• Please check your code`
     }

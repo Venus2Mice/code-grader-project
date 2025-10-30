@@ -188,13 +188,13 @@ export const problemAPI = {
       title: string
       description: string
       difficulty: 'easy' | 'medium' | 'hard'
-      grading_mode: 'stdio' | 'function'
-      function_signature?: string
+      language: 'cpp' | 'python' | 'java'
+      function_signature: string
       time_limit_ms?: number
       memory_limit_kb?: number
       test_cases: Array<{
-        input: string
-        output: string
+        inputs: Array<{ type: string; value: any }>
+        expected_output: { type: string; value: any }
         is_hidden: boolean
         points: number
       }>

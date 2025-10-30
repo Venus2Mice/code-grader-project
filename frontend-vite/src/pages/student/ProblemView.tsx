@@ -65,8 +65,7 @@ export default function ProblemSolvePage() {
     onError: (title, message) => {
       openError(title, message)
     },
-    analyzeCppCode,
-    gradingMode: problem?.grading_mode
+    analyzeCppCode
   })
 
   // Wrapper for error handling that matches useSubmission callback signature
@@ -153,7 +152,7 @@ export default function ProblemSolvePage() {
         isRunning={isRunning}
         isSubmitting={isSubmitting}
         submissionsCount={submissions.length}
-        hasResetTemplate={!!originalTemplate && problem.grading_mode === 'function'}
+        hasResetTemplate={!!originalTemplate} // Function-based grading always has template
       />
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">

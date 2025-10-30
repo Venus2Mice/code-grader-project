@@ -6,14 +6,12 @@ interface UseFileUploadProps {
   onCodeLoaded: (code: string, fileName: string) => void
   onError: (title: string, message: string) => void
   analyzeCppCode: (code: string) => CodeAnalysis
-  gradingMode?: string
 }
 
 export function useFileUpload({ 
   onCodeLoaded, 
   onError, 
-  analyzeCppCode,
-  gradingMode 
+  analyzeCppCode
 }: UseFileUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
@@ -39,18 +37,14 @@ export function useFileUpload({
       if (fileExtension === 'cpp') {
         const analysis = analyzeCppCode(content)
         
-        // Show analysis result
+        // Show analysis result (function-based grading only)
         const analysisMessage = `File: ${file.name}\n\n${analysis.analysis}\n\n` +
-                 `${gradingMode === 'function' 
-                   ? '📌 Current problem uses FUNCTION grading mode\n' +
-                     (analysis.hasMain 
-                       ? '⚠️ Your code has main() - it may not work correctly!' 
-                       : '✅ Your code structure matches the grading mode')
-                   : '📌 Current problem uses STDIO grading mode\n' +
-                     (analysis.hasMain 
-                       ? '✅ Your code has main() - good to go!' 
-                       : '⚠️ Your code lacks main() - it will fail!')
-                 }\n\nCode loaded into editor. You can review and edit before submitting.`
+                 `📌 This system uses FUNCTION-BASED grading\n` +
+                 (analysis.hasMain 
+                   ? '⚠️ Your code has main() - it may not work correctly!\n' +
+                     '💡 Tip: Remove main() and only implement the required function'
+                   : '✅ Your code structure looks good for function-based grading') +
+                 `\n\nCode loaded into editor. You can review and edit before submitting.`
         
         onError("📊 Code Analysis Result", analysisMessage)
       }
