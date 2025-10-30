@@ -121,7 +121,7 @@ class SubmissionResult(Base):
     __tablename__ = 'submission_results'
     id = Column(Integer, primary_key=True)
     submission_id = Column(Integer, ForeignKey('submissions.id'), nullable=False)
-    test_case_id = Column(Integer, ForeignKey('test_cases.id'), nullable=False)
+    test_case_id = Column(Integer, ForeignKey('test_cases.id'), nullable=True)  # ✅ Allow NULL for compile errors
     status = Column(String(50), nullable=False)
     execution_time_ms = Column(Integer) # Đã sửa typo
     memory_used_kb = Column(Integer)    # Đã sửa tên

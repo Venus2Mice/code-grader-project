@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from ..models import db, Submission, Problem, User, Class
+from ..models import db, Submission, Problem, User, Class, normalize_status
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from .. import rabbitmq_producer # Sẽ tạo file này ngay sau đây
@@ -79,13 +79,14 @@ def get_submission_result(submission_id):
         total_points = sum(tc.points for tc in submission.problem.test_cases)
         earned_points = 0
         for result in submission.results:
-            if result.status in ['Passed', 'Accepted']:
+            # ✅ Use normalized status for comparison
+            if normalize_status(result.status) in ['Accepted']:
                 test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
                 if test_case:
                     earned_points += test_case.points
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
     
-    passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
+    passed_tests = len([r for r in submission.results if normalize_status(r.status) in ['Accepted']])
     total_tests = len(submission.problem.test_cases)
     
     # Build results with test case info

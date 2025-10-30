@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from ..models import db, Submission, SubmissionResult
+from ..models import db, Submission, SubmissionResult, normalize_status
 
 internal_bp = Blueprint('internal', __name__, url_prefix='/internal')
 
@@ -27,10 +27,11 @@ def update_submission_result(submission_id):
         # Lưu compile error hoặc system error vào SubmissionResult
         # Không có test_case_id cho compile error
         for res_data in results_data:
+            status = normalize_status(res_data.get('status', overall_status))
             new_result = SubmissionResult(
                 submission_id=submission_id,
                 test_case_id=res_data.get('test_case_id'),  # Will be None for compile errors
-                status=res_data.get('status', overall_status),
+                status=status,  # ✅ Use normalized status
                 execution_time_ms=res_data.get('execution_time_ms', 0),
                 memory_used_kb=res_data.get('memory_used_kb', 0),
                 output_received=res_data.get('output_received', ''),
@@ -38,17 +39,18 @@ def update_submission_result(submission_id):
             )
             db.session.add(new_result)
         submission.cached_score = 0  # Cache score for compile error
-        print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
+        print(f"[INFO] Submission {submission_id} failed with status {overall_status}. Error saved to results.")
     else:
         # Thêm kết quả chi tiết của từng test case
         for res_data in results_data:
             if res_data.get('test_case_id') is None:
                 continue
 
+            status = normalize_status(res_data.get('status'))  # ✅ Use normalized status
             new_result = SubmissionResult(
                 submission_id=submission_id,
                 test_case_id=res_data.get('test_case_id'),
-                status=res_data.get('status'),
+                status=status,
                 execution_time_ms=res_data.get('execution_time_ms'),
                 memory_used_kb=res_data.get('memory_used_kb'),
                 output_received=res_data.get('output_received'),
@@ -63,7 +65,7 @@ def update_submission_result(submission_id):
         if total_points > 0:
             earned_points = 0
             for result in submission.results:
-                if result.status in ['Passed', 'Accepted']:
+                if result.status in ['Accepted', 'Passed']:  # ✅ Check against canonical status
                     test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
                     if test_case:
                         earned_points += test_case.points
@@ -73,5 +75,12 @@ def update_submission_result(submission_id):
         
     db.session.commit()
     
-    print(f"Updated result for submission {submission_id}, cached_score={submission.cached_score}")
+    # ✅ NEW: Validation and debug logging
+    passed_count = sum(1 for r in submission.results if r.status in ['Accepted', 'Passed'] and r.test_case_id)
+    failed_count = sum(1 for r in submission.results if r.status not in ['Accepted', 'Passed'] and r.test_case_id)
+    
+    print(f"[SUCCESS] Submission {submission_id}: {passed_count} passed, {failed_count} failed, score={submission.cached_score}")
+    if passed_count + failed_count != len([tc for tc in submission.problem.test_cases]):
+        print(f"[WARNING] Result count mismatch! Results={passed_count + failed_count}, TestCases={len(submission.problem.test_cases)}")
+    
     return jsonify({"msg": "Result updated successfully"}), 200

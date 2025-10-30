@@ -13,6 +13,15 @@ interface TestResultsPanelProps {
 export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResultsPanelProps) {
   if (!testResults) return null
 
+  // ✅ Debug logging for status values
+  if (testResults.results && Array.isArray(testResults.results)) {
+    testResults.results.forEach((result: any, idx: number) => {
+      if (!result.status) {
+        console.warn(`[TestResultsPanel] Result #${idx} has NO status field`, result)
+      }
+    })
+  }
+
   return (
     <div className="border-t-4 border-border bg-card p-2 md:p-4 max-h-48 md:max-h-64 overflow-y-auto">
       <div className="mb-3 flex items-center justify-between">
@@ -56,8 +65,14 @@ export function TestResultsPanel({ testResults, onViewErrorDetails }: TestResult
               return result.is_hidden === false
             })
             .map((result: any, index: number) => {
-              const rawStatus = String(result.status || '')
-              const statusNorm = rawStatus.toLowerCase()
+              const rawStatus = String(result.status || '').toLowerCase().trim()
+              
+              // ✅ Debug empty status
+              if (!rawStatus) {
+                console.warn(`[TestResultsPanel] Test case #${result.test_case_id} has EMPTY status:`, result)
+              }
+              
+              const statusNorm = rawStatus
               const isPassed = ['passed', 'accepted', 'ok', 'success'].includes(statusNorm)
               const isCompileError = statusNorm.includes('compile') || result.test_case_id === null || result.test_case_id === undefined
 

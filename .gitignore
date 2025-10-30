@@ -51,3 +51,4 @@ grader-temp/
 
 # Docker
 docker-compose.override.yml
+backend/logs/audit.log.2025-10-23

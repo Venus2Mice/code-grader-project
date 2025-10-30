@@ -6,6 +6,74 @@
 from datetime import datetime
 import uuid
 
+# ============================================================================
+# STATUS CONSTANTS - Single Source of Truth
+# ============================================================================
+SUBMISSION_STATUS = {
+    'PENDING': 'Pending',
+    'RUNNING': 'Running',
+    'ACCEPTED': 'Accepted',
+    'PASSED': 'Accepted',  # Alias for backward compatibility
+    'WRONG_ANSWER': 'Wrong Answer',
+    'TIME_LIMIT': 'Time Limit Exceeded',
+    'MEMORY_LIMIT': 'Memory Limit Exceeded',
+    'RUNTIME_ERROR': 'Runtime Error',
+    'COMPILE_ERROR': 'Compile Error',
+    'SYSTEM_ERROR': 'System Error',
+    'OUTPUT_LIMIT': 'Output Limit Exceeded'
+}
+
+def normalize_status(status_str):
+    """
+    Convert any incoming status string to canonical form.
+    Handles variations like 'passed', 'PASSED', 'Accepted', 'accepted', etc.
+    
+    Args:
+        status_str: Any status string from grader engine
+        
+    Returns:
+        Canonical status string guaranteed to be in SUBMISSION_STATUS values
+    """
+    if not status_str:
+        return 'System Error'
+    
+    # Normalize to uppercase with underscores
+    normalized = str(status_str).upper().strip()
+    
+    # Map various forms to canonical names
+    status_map = {
+        'ACCEPTED': 'Accepted',
+        'PASSED': 'Accepted',
+        'OK': 'Accepted',
+        'SUCCESS': 'Accepted',
+        'WRONG_ANSWER': 'Wrong Answer',
+        'WA': 'Wrong Answer',
+        'TIME_LIMIT_EXCEEDED': 'Time Limit Exceeded',
+        'TLE': 'Time Limit Exceeded',
+        'MEMORY_LIMIT_EXCEEDED': 'Memory Limit Exceeded',
+        'MLE': 'Memory Limit Exceeded',
+        'RUNTIME_ERROR': 'Runtime Error',
+        'RE': 'Runtime Error',
+        'COMPILE_ERROR': 'Compile Error',
+        'CE': 'Compile Error',
+        'SYSTEM_ERROR': 'System Error',
+        'OUTPUT_LIMIT_EXCEEDED': 'Output Limit Exceeded',
+        'PENDING': 'Pending',
+        'RUNNING': 'Running',
+    }
+    
+    # Handle space-separated versions (e.g., "Time Limit Exceeded" -> "TIME_LIMIT_EXCEEDED")
+    normalized_key = normalized.replace(' ', '_')
+    
+    if normalized_key in status_map:
+        return status_map[normalized_key]
+    elif normalized in status_map:
+        return status_map[normalized]
+    else:
+        # If not recognized, return as-is but log warning
+        print(f"[WARNING] Unknown status: '{status_str}' - returning as-is")
+        return status_str
+
 # ----- Phần dành cho Backend (Flask-SQLAlchemy) -----
 try:
     from . import db
