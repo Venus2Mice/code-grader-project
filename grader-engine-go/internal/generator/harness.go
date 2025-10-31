@@ -22,26 +22,44 @@ type TestOutput struct {
 }
 
 // GenerateTestHarness creates test harness code based on language
+// NEW: Uses type inference from test cases instead of parsing signature
 func GenerateTestHarness(problem *models.Problem, language string) (string, error) {
-	// Parse function signature - ALWAYS parse as Python first since DB stores Python syntax
-	sig, err := parser.ParseSignature(problem.FunctionSignature, "python")
+	// Infer signature from test cases
+	functionName, paramTypes, returnType, err := InferSignatureFromTestCases(problem)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse signature: %w", err)
+		return "", fmt.Errorf("failed to infer signature: %w", err)
 	}
-
-	// Update signature language to target language for proper type handling
-	sig.Language = language
 
 	switch language {
 	case "python":
-		return generatePythonHarness(problem, sig)
+		return generatePythonHarnessV2(problem, functionName, paramTypes, returnType)
 	case "cpp":
-		return generateCppHarness(problem, sig)
+		return generateCppHarnessV2(problem, functionName, paramTypes, returnType)
 	case "java":
-		return generateJavaHarness(problem, sig)
+		return generateJavaHarnessV2(problem, functionName, paramTypes, returnType)
 	default:
 		return "", fmt.Errorf("unsupported language: %s", language)
 	}
+} // detectSignatureLanguage detects the language format of a function signature
+func detectSignatureLanguage(signature string) string {
+	signature = strings.TrimSpace(signature)
+
+	// Python: starts with "def " and has "->"
+	if strings.HasPrefix(signature, "def ") {
+		return "python"
+	}
+
+	// Java: contains "public", "private", or "protected"
+	if strings.Contains(signature, "public ") ||
+		strings.Contains(signature, "private ") ||
+		strings.Contains(signature, "protected ") {
+		return "java"
+	}
+
+	// C++: return type before function name, ends with ; or has no access modifiers
+	// Examples: "bool isPalindrome(int x);", "vector<int> twoSum(vector<int>& nums, int target)"
+	// Heuristic: if it doesn't start with def/public/private/protected, assume C++
+	return "cpp"
 }
 
 // generatePythonHarness generates Python test harness

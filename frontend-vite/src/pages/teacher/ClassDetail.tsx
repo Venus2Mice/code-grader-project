@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { ExpandableDescription } from "@/components/problem"
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -141,42 +142,64 @@ export default function ClassDetailPage() {
 
             <div className="grid gap-4">
               {problems.map((problem) => (
-                <Card key={problem.id} className="p-4 md:p-6">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                        <h3 className="text-base md:text-xl font-black uppercase text-foreground">{problem.title}</h3>
-                        <span
-                          className={`border-4 border-black px-2 md:px-3 py-1 text-xs font-black uppercase ${
-                            problem.difficulty === "easy"
-                              ? "bg-green-400"
-                              : problem.difficulty === "medium"
-                                ? "bg-yellow-400"
-                                : "bg-red-400"
-                          }`}
-                        >
-                          {problem.difficulty}
-                        </span>
-                        <span className="border-4 border-black bg-background px-2 md:px-3 py-1 text-xs font-black uppercase text-foreground">
-                          {problem.grading_mode}
-                        </span>
+                <Card key={problem.id} className="border-4 border-border bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[4px] hover:translate-y-[4px] transition-all p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      {/* Title and badges */}
+                      <div className="flex items-start gap-3 flex-wrap">
+                        <h3 className="text-lg md:text-xl font-black uppercase text-foreground tracking-tight">{problem.title}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`border-4 border-black px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
+                              problem.difficulty === "easy"
+                                ? "bg-green-400"
+                                : problem.difficulty === "medium"
+                                  ? "bg-yellow-400"
+                                  : "bg-red-400"
+                            }`}
+                          >
+                            {problem.difficulty}
+                          </span>
+                          <span className="border-4 border-black bg-blue-400 px-3 py-1 text-xs font-black uppercase text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            {problem.grading_mode || 'FUNCTION'}
+                          </span>
+                        </div>
                       </div>
-                      <p className="mt-3 text-xs md:text-sm font-bold text-foreground line-clamp-2">
-                        {problem.description}
-                      </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 md:gap-4 text-xs font-bold text-muted-foreground">
-                        <span>TIME: {problem.time_limit_ms || problem.time_limit || 0}MS</span>
-                        <span>MEM: {Math.round((problem.memory_limit_kb || problem.memory_limit || 0) / 1024)}MB</span>
-                        <span className="hidden sm:inline">CREATED: {problem.created_at ? new Date(problem.created_at).toLocaleDateString() : 'N/A'}</span>
+
+                      {/* Description with expand/collapse */}
+                      <ExpandableDescription
+                        description={problem.description}
+                        markdownContent={problem.markdown_content}
+                        maxLines={2}
+                      />
+
+                      {/* Metadata tags */}
+                      <div className="flex flex-wrap items-center gap-3 pt-2">
+                        <div className="border-4 border-border bg-background px-3 py-1.5">
+                          <span className="text-xs font-black uppercase text-foreground">
+                            ⏱️ TIME: {problem.time_limit_ms || problem.time_limit || 0}MS
+                          </span>
+                        </div>
+                        <div className="border-4 border-border bg-background px-3 py-1.5">
+                          <span className="text-xs font-black uppercase text-foreground">
+                            💾 MEM: {Math.round((problem.memory_limit_kb || problem.memory_limit || 0) / 1024)}MB
+                          </span>
+                        </div>
+                        <div className="hidden sm:block border-4 border-border bg-background px-3 py-1.5">
+                          <span className="text-xs font-black uppercase text-muted-foreground">
+                            📅 {problem.created_at ? new Date(problem.created_at).toLocaleDateString() : 'N/A'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <Link to={`/teacher/problem/${problem.id}`}>
+
+                    {/* View button */}
+                    <Link to={`/teacher/problem/${problem.id}`} className="lg:self-start">
                       <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-black uppercase bg-transparent text-xs md:text-sm w-full md:w-auto"
+                        size="lg"
+                        className="font-black uppercase text-sm w-full lg:w-auto border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                       >
-                        VIEW
+                        VIEW DETAILS →
                       </Button>
                     </Link>
                   </div>
@@ -184,14 +207,16 @@ export default function ClassDetailPage() {
               ))}
 
               {problems.length === 0 && (
-                <div className="flex flex-col items-center justify-center border-4 border-dashed border-black bg-background py-16">
-                  <BookOpen className="mb-4 h-16 w-16 text-foreground" />
-                  <h3 className="mb-2 text-xl font-black uppercase text-foreground">NO ASSIGNMENTS</h3>
-                  <p className="mb-4 text-sm font-bold text-muted-foreground">CREATE YOUR FIRST ASSIGNMENT</p>
+                <div className="flex flex-col items-center justify-center border-4 border-dashed border-border bg-muted py-20 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.3)]">
+                  <div className="border-4 border-border bg-background p-6 mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)]">
+                    <BookOpen className="h-20 w-20 text-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-2xl font-black uppercase text-foreground">NO ASSIGNMENTS YET</h3>
+                  <p className="mb-6 text-sm font-bold text-muted-foreground uppercase">CREATE YOUR FIRST ASSIGNMENT TO GET STARTED</p>
                   <Link to={`/teacher/class/${classId}/create-problem`}>
-                    <Button className="gap-2 font-black uppercase">
+                    <Button className="gap-2 font-black uppercase border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]">
                       <Plus className="h-5 w-5" />
-                      CREATE
+                      CREATE ASSIGNMENT
                     </Button>
                   </Link>
                 </div>

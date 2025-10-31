@@ -448,6 +448,7 @@ func genericTypeToPython(t string) string {
 		"string[]": "List[str]",
 		"double[]": "List[float]",
 		"int[][]":  "List[List[int]]",
+		"Any":      "int", // FIX: Map Any to int (common fallback)
 	}
 	if pythonType, ok := typeMap[t]; ok {
 		return pythonType
@@ -469,6 +470,7 @@ func genericTypeToJava(t string) string {
 		"string[]": "String[]",
 		"double[]": "double[]",
 		"int[][]":  "int[][]",
+		"Any":      "int", // FIX: Map Any to int (common fallback)
 	}
 	if javaType, ok := typeMap[t]; ok {
 		return javaType
@@ -490,6 +492,7 @@ func genericTypeToCpp(t string) string {
 		"string[]": "vector<string>",
 		"double[]": "vector<double>",
 		"int[][]":  "vector<vector<int>>",
+		"Any":      "int", // FIX: Map Any to int (common fallback)
 	}
 	if cppType, ok := typeMap[t]; ok {
 		return cppType

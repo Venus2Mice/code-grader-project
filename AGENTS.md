@@ -36,7 +36,64 @@
 
 ## Design Principles
 
-### SOLID Principles
+### 1. Neo Brutalism Design
+**MUST** follow Neo Brutalism Design principles for all UI implementations:
+
+- **Bold and Raw Aesthetics**
+  - Use thick, prominent borders (typically 3-5px solid black)
+  - High contrast color schemes
+  - Flat, non-gradient backgrounds
+  - Sharp corners and geometric shapes
+
+- **Typography**
+  - Bold, sans-serif fonts
+  - Large, clear text hierarchy
+  - Black text on bright backgrounds or vice versa
+
+- **Layout**
+  - Grid-based layouts with clear separation
+  - Generous spacing and padding
+  - Overlapping elements with solid shadows
+  - Asymmetric compositions when appropriate
+
+- **Interaction**
+  - Clear, immediate feedback on user actions
+  - Prominent buttons with bold styling
+  - Visible state changes (hover, active, disabled)
+
+- **Color Palette**
+  - Primary: Bright, saturated colors (yellow, cyan, pink, lime)
+  - Contrast: Black and white
+  - Accents: Use sparingly for emphasis
+  - Avoid gradients and subtle transitions
+
+### 2. Code Review Requirement
+**MUST** review code after completing any feature or making changes:
+
+- **After Every Feature Implementation**
+  - Review code structure and architecture
+  - Check SOLID principles adherence
+  - Verify error handling and edge cases
+  - Ensure proper logging and monitoring
+  - Test integration with existing features
+
+- **After Code Changes**
+  - Review impact on existing functionality
+  - Check for breaking changes
+  - Verify backward compatibility
+  - Update tests if necessary
+  - Document significant changes in code comments
+
+- **Review Checklist**
+  - [ ] Code follows project conventions
+  - [ ] No code duplication
+  - [ ] Proper error handling
+  - [ ] Security considerations addressed
+  - [ ] Performance implications considered
+  - [ ] Tests updated/added
+  - [ ] Documentation updated if needed
+
+### 3. SOLID Principles
 **MUST** follow SOLID principles in all code implementations:
 
 #### 1. Single Responsibility Principle (SRP)
@@ -97,6 +154,59 @@
   - Backend parses one line per test case
   - Files modified: `grader-engine-go/internal/grader/function.go`
   - Benefits: Efficient, clean, extensible, maintainable
+
+---
+
+## Architecture Decisions
+
+### Function Signature Elimination (Oct 31, 2025)
+
+**Decision**: Removed function signature parsing and replaced with type inference from test cases.
+
+**Rationale**:
+- Mixed signature formats in database (Python/C++/Java) caused parsing errors
+- Signature parsing added unnecessary complexity
+- Test cases already contain all type information needed
+
+**New Approach**:
+1. **Teacher Input**: Only function name (e.g., "twoSum")
+2. **Type Inference**: Automatically detect:
+   - Parameter count and types from test case `inputs`
+   - Return type from test case `expected_output`
+3. **Code Injection**: Simple placeholder replacement (`# STUDENT_CODE_HERE`)
+
+**Example**:
+```json
+{
+  "function_name": "twoSum",
+  "test_cases": [{
+    "inputs": [
+      {"type": "int[]", "value": [2,7,11,15]},
+      {"type": "int", "value": 9}
+    ],
+    "expected_output": {"type": "int[]", "value": [0,1]}
+  }]
+}
+```
+
+**Generated Signature** (auto):
+- Python: `def twoSum(param0: List[int], param1: int) -> List[int]:`
+- C++: `vector<int> twoSum(const vector<int>& param0, int param1)`
+- Java: `public int[] twoSum(int[] param0, int param1)`
+
+**Benefits**:
+- ✅ No signature parsing errors
+- ✅ Consistent behavior across languages
+- ✅ Simpler teacher workflow (only set function name)
+- ✅ Type safety guaranteed by test cases
+
+**Files Modified**:
+- `grader-engine-go/internal/generator/type_inference.go` (NEW)
+- `grader-engine-go/internal/generator/harness_python_v2.go` (NEW)
+- `grader-engine-go/internal/generator/harness_cpp_v2.go` (NEW)
+- `grader-engine-go/internal/generator/harness_java_v2.go` (NEW)
+- `grader-engine-go/internal/generator/inject.go` (SIMPLIFIED)
+- `grader-engine-go/internal/generator/harness.go` (REFACTORED)
 
 ---
 

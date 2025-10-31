@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { MarkdownDisplay } from "@/components/problem/MarkdownDisplay"
 
 // Hooks
 import { 
@@ -108,21 +109,27 @@ export default function TeacherProblemDetailPage() {
           </Link>
 
           <div className="mt-4">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-foreground">{problem.title}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-black uppercase text-foreground">{problem.title}</h1>
               <span
-                className={`rounded-full px-3 py-1 text-sm font-medium ${
+                className={`border-4 border-black px-3 py-1 text-sm font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
                   problem.difficulty === "easy"
-                    ? "bg-green-500/10 text-green-500"
+                    ? "bg-green-400 text-black"
                     : problem.difficulty === "medium"
-                      ? "bg-yellow-500/10 text-yellow-500"
-                      : "bg-red-500/10 text-red-500"
+                      ? "bg-yellow-400 text-black"
+                      : "bg-red-400 text-black"
                 }`}
               >
                 {problem.difficulty}
               </span>
             </div>
-            <p className="mt-2 text-muted-foreground">{problem.description}</p>
+            <div className="mt-4">
+              {problem.markdown_content ? (
+                <MarkdownDisplay markdown={problem.markdown_content} className="border-4" />
+              ) : (
+                <p className="font-bold text-muted-foreground leading-relaxed">{problem.description}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

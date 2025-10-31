@@ -3,6 +3,7 @@ from ..models import db, Submission, Problem, User, Class
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from .. import rabbitmq_producer
+from ..rabbitmq_pool import publish_task_with_pool
 from ..constants import (
     STATUS_PENDING,
     SUCCESS_STATUSES,
@@ -50,9 +51,14 @@ def create_submission():
     db.session.commit()
     db.session.refresh(new_submission)  # Ensure all fields are loaded
     
-    # 2. Gửi task chấm điểm tới RabbitMQ
+    # 2. Gửi task chấm điểm tới RabbitMQ với connection pool
     task_data = {'submission_id': new_submission.id}
-    rabbitmq_producer.publish_task(task_data)
+    
+    # Try using connection pool first, fallback to old method if needed
+    success = publish_task_with_pool(task_data)
+    if not success:
+        # Fallback to original method if pool fails
+        rabbitmq_producer.publish_task(task_data)
     
     return jsonify({
         "id": new_submission.id,
@@ -253,7 +259,10 @@ def run_code():
     task_data = {'submission_id': test_submission.id}
     
     try:
-        rabbitmq_producer.publish_task(task_data)
+        # Try using connection pool first, fallback to old method if needed
+        success = publish_task_with_pool(task_data)
+        if not success:
+            rabbitmq_producer.publish_task(task_data)
         
         # Trả về submission_id để client có thể poll kết quả
         return jsonify({

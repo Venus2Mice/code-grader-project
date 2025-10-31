@@ -4,37 +4,59 @@ import (
 	"strings"
 )
 
-// InjectUserCode replaces placeholder with actual user code
+// InjectUserCode replaces STUDENT_CODE_HERE placeholder with actual user code
+// SIMPLIFIED: No longer detects complete functions vs bodies
+// Replaces the entire line containing the placeholder with student code
 func InjectUserCode(harness string, userCode string, language string) string {
-	startMarker := ""
-	endMarker := ""
+	placeholder := ""
 
 	switch language {
 	case "python":
-		startMarker = "# USER_CODE_START"
-		endMarker = "# USER_CODE_END"
-	case "cpp":
-		startMarker = "// USER_CODE_START"
-		endMarker = "// USER_CODE_END"
-	case "java":
-		startMarker = "// USER_CODE_START"
-		endMarker = "// USER_CODE_END"
+		placeholder = "# STUDENT_CODE_HERE"
+	case "cpp", "java":
+		placeholder = "// STUDENT_CODE_HERE"
 	default:
 		return harness
 	}
 
-	// Find markers
-	startIdx := strings.Index(harness, startMarker)
-	endIdx := strings.Index(harness, endMarker)
+	// Find and replace the placeholder line
+	lines := strings.Split(harness, "\n")
+	for i, line := range lines {
+		if strings.Contains(line, placeholder) {
+			// Get indentation from placeholder line
+			indent := getIndentation(line)
 
-	if startIdx == -1 || endIdx == -1 {
-		return harness
+			// Indent user code to match
+			indentedCode := indentCode(strings.TrimSpace(userCode), indent)
+
+			// Replace entire placeholder line with indented user code
+			lines[i] = indentedCode
+			break
+		}
 	}
 
-	// Extract parts
-	before := harness[:startIdx+len(startMarker)]
-	after := harness[endIdx:]
+	return strings.Join(lines, "\n")
+}
 
-	// Build result
-	return before + "\n" + userCode + "\n" + after
+// getIndentation extracts leading whitespace from a line
+func getIndentation(line string) string {
+	for i, char := range line {
+		if char != ' ' && char != '\t' {
+			return line[:i]
+		}
+	}
+	return ""
+}
+
+// indentCode adds indentation to each line of code
+func indentCode(code string, indent string) string {
+	lines := strings.Split(code, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			lines[i] = indent + line
+		} else {
+			lines[i] = "" // Keep empty lines empty
+		}
+	}
+	return strings.Join(lines, "\n")
 }

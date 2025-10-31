@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { studentAPI, classAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { ExpandableDescription } from "@/components/problem"
 
 export default function StudentClassPage() {
   const { id } = useParams<{ id: string }>()
@@ -105,6 +106,7 @@ export default function StudentClassPage() {
               id: problemData.problem_id,
               title: problemData.title,
               description: problemData.description || '',
+              markdown_content: problemData.markdown_content,
               difficulty: problemData.difficulty,
               grading_mode: problemData.grading_mode,
               time_limit: problemData.time_limit || 1000,
@@ -127,64 +129,95 @@ export default function StudentClassPage() {
 
             return (
               <Link key={problem.id} to={`/student/problem/${problem.id}?classId=${classId}`}>
-                <Card className="group cursor-pointer border-4 border-border bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[300px]">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-xl font-black uppercase text-foreground group-hover:text-primary">
+                <Card className="group cursor-pointer border-4 border-border bg-card shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,0.3)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all p-6">
+                  <div className="flex items-start justify-between gap-6 flex-wrap lg:flex-nowrap">
+                    <div className="flex-1 min-w-[300px] space-y-3">
+                      {/* Title and badges */}
+                      <div className="flex items-start gap-3 flex-wrap">
+                        <h3 className="text-xl font-black uppercase text-foreground group-hover:text-primary transition-colors">
                           {problem.title}
                         </h3>
-                        <span
-                          className={`border-2 border-black px-3 py-1 text-xs font-bold uppercase ${
-                            problem.difficulty === "easy"
-                              ? "bg-green-400 text-black"
-                              : problem.difficulty === "medium"
-                                ? "bg-yellow-400 text-black"
-                                : "bg-red-400 text-black"
-                          }`}
-                        >
-                          {problem.difficulty}
-                        </span>
-                        <span className="border-2 border-black bg-muted px-3 py-1 text-xs font-bold uppercase text-foreground">
-                          {problem.grading_mode}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`border-4 border-black px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
+                              problem.difficulty === "easy"
+                                ? "bg-green-400 text-black"
+                                : problem.difficulty === "medium"
+                                  ? "bg-yellow-400 text-black"
+                                  : "bg-red-400 text-black"
+                            }`}
+                          >
+                            {problem.difficulty}
+                          </span>
+                          <span className="border-4 border-border bg-blue-400 px-3 py-1 text-xs font-black uppercase text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            {problem.grading_mode || 'FUNCTION'}
+                          </span>
+                        </div>
                       </div>
 
-                      <p className="mt-3 font-medium text-foreground line-clamp-2">{problem.description}</p>
+                      {/* Description with expand/collapse */}
+                      <ExpandableDescription
+                        description={problem.description}
+                        markdownContent={problem.markdown_content}
+                        maxLines={2}
+                      />
 
-                      <div className="mt-4 flex items-center gap-6 text-sm font-bold uppercase text-muted-foreground">
-                        <span>TIME: {problem.time_limit}MS</span>
-                        <span>MEMORY: {problem.memory_limit}MB</span>
-                        {attempts > 0 && <span>ATTEMPTS: {attempts}</span>}
+                      {/* Metadata */}
+                      <div className="flex items-center gap-3 pt-2 flex-wrap">
+                        <div className="border-4 border-border bg-background px-3 py-1.5">
+                          <span className="text-xs font-black uppercase text-foreground">
+                            ⏱️ {problem.time_limit}MS
+                          </span>
+                        </div>
+                        <div className="border-4 border-border bg-background px-3 py-1.5">
+                          <span className="text-xs font-black uppercase text-foreground">
+                            💾 {problem.memory_limit}MB
+                          </span>
+                        </div>
+                        {attempts > 0 && (
+                          <div className="border-4 border-border bg-orange-100 dark:bg-orange-950 px-3 py-1.5">
+                            <span className="text-xs font-black uppercase text-orange-700 dark:text-orange-300">
+                              🔄 {attempts} ATTEMPTS
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-3">
+                    {/* Status badge and button */}
+                    <div className="flex flex-col items-end gap-3 min-w-[180px]">
                       {submission?.status === "accepted" ? (
                         <>
-                          <div className="flex items-center gap-2 border-4 border-green-600 bg-green-400 px-4 py-2 text-white">
-                            <CheckCircle className="h-5 w-5" />
-                            <span className="font-black uppercase">FINISHED</span>
+                          <div className="flex items-center gap-2 border-4 border-black bg-green-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <CheckCircle className="h-5 w-5 text-black" />
+                            <span className="font-black uppercase text-black">✓ FINISHED</span>
                           </div>
-                          <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
+                          <div className="border-4 border-border bg-background px-4 py-2">
+                            <span className="font-black text-foreground uppercase text-sm">SCORE: {submission.score || 0}/100</span>
+                          </div>
                         </>
                       ) : !submission ? (
-                        <div className="flex items-center gap-2 border-4 border-cyan-600 bg-cyan-400 px-4 py-2 text-white">
-                          <Code className="h-5 w-5" />
-                          <span className="font-black uppercase">LET'S SOLVE</span>
+                        <div className="flex items-center gap-2 border-4 border-black bg-cyan-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                          <Code className="h-5 w-5 text-black" />
+                          <span className="font-black uppercase text-black">🚀 START</span>
                         </div>
                       ) : (
                         <>
-                          <div className="flex items-center gap-2 border-4 border-orange-600 bg-orange-400 px-4 py-2 text-white">
-                            <XCircle className="h-5 w-5" />
-                            <span className="font-black uppercase">TRY AGAIN</span>
+                          <div className="flex items-center gap-2 border-4 border-black bg-orange-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <XCircle className="h-5 w-5 text-black" />
+                            <span className="font-black uppercase text-black">↻ RETRY</span>
                           </div>
-                          <span className="font-bold text-foreground">SCORE: {submission.score || 0}/100</span>
+                          <div className="border-4 border-border bg-background px-4 py-2">
+                            <span className="font-black text-foreground uppercase text-sm">SCORE: {submission.score || 0}/100</span>
+                          </div>
                         </>
                       )}
-                      <Button variant="outline" size="sm" className="mt-2 gap-2 bg-transparent">
+                      <Button 
+                        size="lg"
+                        className="mt-2 gap-2 font-black uppercase border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full"
+                      >
                         <Code className="h-4 w-4" />
-                        {!submission ? 'SOLVE' : submission?.status === "accepted" ? 'REVIEW' : 'RETRY'}
+                        {!submission ? 'SOLVE NOW' : submission?.status === "accepted" ? 'REVIEW' : 'TRY AGAIN'}
                       </Button>
                     </div>
                   </div>

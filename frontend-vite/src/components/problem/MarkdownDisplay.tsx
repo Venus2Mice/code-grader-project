@@ -64,6 +64,22 @@ export function MarkdownDisplay({ markdown, className = "" }: MarkdownDisplayPro
 
   const htmlContent = renderMarkdown(markdown)
 
+  // Check if className includes border-0 to determine if it's used inline
+  const isInline = className.includes('border-0')
+
+  if (isInline) {
+    // Inline rendering (no card wrapper)
+    return (
+      <div className={className}>
+        <div
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+          className="text-foreground"
+        />
+      </div>
+    )
+  }
+
+  // Default card rendering
   return (
     <Card className={`border-2 border-border p-6 bg-card ${className}`}>
       <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed">

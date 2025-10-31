@@ -285,13 +285,17 @@ func (s *Service) runTestHarness(ctx context.Context, cli *client.Client, contai
 	adjustedTimeLimit := float64(baseTimeMs) * multipliers.TimeMultiplier / 1000.0
 	execCmd := handler.GetExecutableCommand()
 
-	// Simplified wrapper script (fixed from previous issue)
+	// FIX: Add output size limit to prevent disk fill (10MB limit)
+	// This prevents malicious or buggy programs from filling disk with output
+	maxOutputBytes := 10 * 1024 * 1024 // 10MB
+
+	// Enhanced wrapper script with output size limit
 	wrapperScript := fmt.Sprintf(`#!/bin/bash
-{ time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s > /sandbox/output.txt 2> /sandbox/program_stderr.txt; } 2> /sandbox/bash_time.txt
-PROGRAM_EXIT=$?
+{ time /usr/bin/time -v -o /sandbox/time_output.txt timeout %.2f %s 2> /sandbox/program_stderr.txt | head -c %d > /sandbox/output.txt; } 2> /sandbox/bash_time.txt
+PROGRAM_EXIT=${PIPESTATUS[1]}
 echo $PROGRAM_EXIT > /sandbox/exitcode.txt
 exit $PROGRAM_EXIT
-`, adjustedTimeLimit, execCmd)
+`, adjustedTimeLimit, execCmd, maxOutputBytes)
 
 	if err := s.copyFileToContainer(ctx, cli, containerID, "run_wrapper.sh", wrapperScript); err != nil {
 		return "", 0, 0, fmt.Errorf("failed to create wrapper script: %w", err)
@@ -323,6 +327,11 @@ exit $PROGRAM_EXIT
 
 	if execTime == 0 {
 		execTime = int(actualTime.Milliseconds())
+	}
+
+	// FIX: Check if output was truncated due to size limit
+	if len(output) >= maxOutputBytes {
+		return "", execTime, memoryUsed, fmt.Errorf("RUNTIME_ERROR:Output Limit Exceeded|Program produced more than 10MB of output|Optimize your output or reduce the number of print statements")
 	}
 
 	// FIX #5: Improve timeout detection logic
