@@ -3,8 +3,10 @@
 ## Core Principles
 
 ### 1. Documentation Policy
+- **FORBIDDEN**: Do NOT create any markdown files (`.md`) for summaries or reports
 - **DO NOT** create reports or markdown documentation files unless explicitly requested by the user
 - Focus on code implementation rather than excessive documentation
+- Stop creating summary markdown files - they waste time and are not needed
 
 ### 2. Task Management
 - **ALWAYS** create a todo list after identifying tasks that need to be completed
