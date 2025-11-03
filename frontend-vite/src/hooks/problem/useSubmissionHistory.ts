@@ -4,14 +4,14 @@ import { submissionAPI } from "@/services/api"
 import type { Submission } from "@/types/submission"
 import { logger } from "@/lib/logger"
 
-export function useSubmissionHistory(problemId: number) {
+export function useSubmissionHistory(problemToken: string) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const fetchSubmissions = async () => {
     try {
-      logger.debug('Fetching submissions for problem', { problemId })
-      const subsResponse = await submissionAPI.getMySubmissions(problemId)
+      logger.debug('Fetching submissions for problem', { problemToken })
+      const subsResponse = await submissionAPI.getMySubmissions(problemToken)
       
       // Handle both old format (array) and new format (object with data + pagination)
       const submissionsArray = Array.isArray(subsResponse.data) 
@@ -28,10 +28,10 @@ export function useSubmissionHistory(problemId: number) {
   }
 
   useEffect(() => {
-    if (problemId) {
+    if (problemToken) {
       fetchSubmissions()
     }
-  }, [problemId])
+  }, [problemToken])
 
   const refreshSubmissions = () => {
     fetchSubmissions()

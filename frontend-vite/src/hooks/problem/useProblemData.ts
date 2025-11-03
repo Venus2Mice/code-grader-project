@@ -4,56 +4,56 @@ import { problemAPI } from "@/services/api"
 import type { Problem } from "@/types/problem"
 import { logger } from "@/lib/logger"
 
-export function useProblemData(problemId: number) {
+export function useProblemData(problemToken: string) {
   const [problem, setProblem] = useState<Problem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [classId, setClassId] = useState<string | null>(null)
+  const [classToken, setClassToken] = useState<string | null>(null)
 
   useEffect(() => {
-    // Get classId from URL or localStorage
+    // Get classToken from URL or localStorage
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
-      const classIdFromUrl = urlParams.get('classId')
+      const classTokenFromUrl = urlParams.get('classToken')
       
-      if (classIdFromUrl) {
-        setClassId(classIdFromUrl)
-        localStorage.setItem(`problem_${problemId}_classId`, classIdFromUrl)
+      if (classTokenFromUrl) {
+        setClassToken(classTokenFromUrl)
+        localStorage.setItem(`problem_${problemToken}_classToken`, classTokenFromUrl)
       } else {
-        const savedClassId = localStorage.getItem(`problem_${problemId}_classId`)
-        if (savedClassId) {
-          setClassId(savedClassId)
+        const savedClassToken = localStorage.getItem(`problem_${problemToken}_classToken`)
+        if (savedClassToken) {
+          setClassToken(savedClassToken)
         }
       }
     }
-  }, [problemId])
+  }, [problemToken])
 
   useEffect(() => {
     const fetchProblemData = async () => {
       try {
         setIsLoading(true)
-        const response = await problemAPI.getById(problemId)
+        const response = await problemAPI.getByToken(problemToken)
         const problemData = response.data
         setProblem(problemData)
         
-        if (problemData.class_id) {
-          setClassId(String(problemData.class_id))
-          localStorage.setItem(`problem_${problemId}_classId`, String(problemData.class_id))
+        if (problemData.class_token) {
+          setClassToken(String(problemData.class_token))
+          localStorage.setItem(`problem_${problemToken}_classToken`, String(problemData.class_token))
         }
       } catch (err) {
-        logger.error('Error fetching problem', err, { problemId })
+        logger.error('Error fetching problem', err, { problemToken })
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (problemId) {
+    if (problemToken) {
       fetchProblemData()
     }
-  }, [problemId])
+  }, [problemToken])
 
   return {
     problem,
     isLoading,
-    classId
+    classToken
   }
 }

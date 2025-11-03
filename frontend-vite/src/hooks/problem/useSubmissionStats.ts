@@ -12,8 +12,9 @@ export function useSubmissionStats(submissions: Submission[]) {
       if (!studentId) return
       
       const existing = studentMap.get(studentId)
-      const submissionScore = submission.score ?? submission.cached_score ?? 0
-      const existingScore = existing ? (existing.score ?? existing.cached_score ?? 0) : 0
+      // Priority: manual_score > cached_score > score
+      const submissionScore = submission.manual_score ?? submission.cached_score ?? submission.score ?? 0
+      const existingScore = existing ? (existing.manual_score ?? existing.cached_score ?? existing.score ?? 0) : 0
       
       if (!existing || submissionScore > existingScore || 
           (submissionScore === existingScore && 
@@ -33,7 +34,8 @@ export function useSubmissionStats(submissions: Submission[]) {
   const stats: SubmissionStats = useMemo(() => {
     const total = groupedSubmissions.length
     const accepted = groupedSubmissions.filter(s => s.status?.toLowerCase() === 'accepted').length
-    const avgScore = groupedSubmissions.reduce((sum, s) => sum + (s.score || s.cached_score || 0), 0) / (total || 1)
+    // Priority: manual_score > cached_score > score
+    const avgScore = groupedSubmissions.reduce((sum, s) => sum + (s.manual_score ?? s.cached_score ?? s.score ?? 0), 0) / (total || 1)
     
     return {
       total_students: total,

@@ -6,12 +6,12 @@ import { logger } from "@/lib/logger"
 import { extractImplementation } from "@/lib/codeExtractor"
 
 interface UseSubmissionProps {
-  problemId: number
+  problemToken: string
   problem: Problem | null
   onSubmissionComplete?: () => void
 }
 
-export function useSubmission({ problemId, problem, onSubmissionComplete }: UseSubmissionProps) {
+export function useSubmission({ problemToken, problem, onSubmissionComplete }: UseSubmissionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
   const [testResults, setTestResults] = useState<SubmissionResult | null>(null)
@@ -22,6 +22,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       status: submissionData.status,
       results: submissionData.results,
       resultsLength: submissionData.results?.length,
+      manualScore: submissionData.manual_score,
       cachedScore: submissionData.cached_score
     })
     
@@ -46,11 +47,14 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       resultsStatuses: resultsArr.map(r => r.status)
     })
 
-    // ✅ FIX: Trust backend's cached_score instead of recalculating
-    // Backend calculates score using unified logic with constants
-    const scoreComputed = submissionData.cached_score !== undefined && submissionData.cached_score !== null
-      ? submissionData.cached_score
-      : (submissionData.score || 0)
+    // ✅ PRIORITY: manual_score > cached_score
+    // If teacher has manually graded, use manual_score
+    // Otherwise, use cached_score (will be NULL if not graded by teacher)
+    const scoreComputed = submissionData.manual_score !== undefined && submissionData.manual_score !== null
+      ? submissionData.manual_score
+      : (submissionData.cached_score !== undefined && submissionData.cached_score !== null
+        ? submissionData.cached_score
+        : (submissionData.score || 0))
 
     const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) 
       ? 'Accepted' 
@@ -178,6 +182,11 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       // Extract just the method body/implementation from the student code
       const implementation = extractImplementation(code, language)
       
+      const problemId = problem?.id
+      if (!problemId) {
+        throw new Error('Problem ID not available')
+      }
+      
       logger.debug('Testing code (not saved to history)', { problemId, language })
       const response = await submissionAPI.runCode({
         problem_id: problemId,
@@ -204,7 +213,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       })
       setIsRunning(false)
     }
-  }, [problemId, pollSubmission])
+  }, [problem, pollSubmission])
 
   const submitCode = useCallback(async (
     code: string, 
@@ -217,6 +226,11 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     try {
       // Extract just the method body/implementation from the student code
       const implementation = extractImplementation(code, language)
+      
+      const problemId = problem?.id
+      if (!problemId) {
+        throw new Error('Problem ID not available')
+      }
       
       logger.info('Submitting code for grading', { problemId, language })
       const response = await submissionAPI.create({
@@ -249,7 +263,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       })
       setIsSubmitting(false)
     }
-  }, [problemId, pollSubmission, onSubmissionComplete])
+  }, [problem, pollSubmission, onSubmissionComplete])
 
   return {
     isSubmitting,

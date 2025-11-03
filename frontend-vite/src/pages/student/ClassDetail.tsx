@@ -9,8 +9,8 @@ import { studentAPI, classAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
 
 export default function StudentClassPage() {
-  const { id } = useParams<{ id: string }>()
-  const classId = id as string
+  const { token } = useParams<{ token: string }>()
+  const classToken = token as string
   const [classData, setClassData] = useState<any>(null)
   const [problems, setProblems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -18,20 +18,20 @@ export default function StudentClassPage() {
 
   useEffect(() => {
     fetchClassData()
-  }, [classId])
+  }, [classToken])
 
   const fetchClassData = async () => {
     try {
       setIsLoading(true)
       // Fetch class details and problem status in parallel
       const [classResponse, problemsResponse] = await Promise.all([
-        classAPI.getById(Number(classId)),
-        studentAPI.getProblemsStatus(Number(classId))
+        classAPI.getByToken(classToken),
+        studentAPI.getProblemsStatus(classToken)
       ])
       setClassData(classResponse.data)
       setProblems(problemsResponse.data)
     } catch (err: any) {
-      logger.error('Error fetching class data', err, { classId })
+      logger.error('Error fetching class data', err, { classToken })
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -127,7 +127,7 @@ export default function StudentClassPage() {
             }
 
             return (
-              <Link key={problem.id} to={`/student/problem/${problem.id}/detail?classId=${classId}`}>
+              <Link key={problem.id} to={`/student/problem/${problem.token}/detail?classToken=${classToken}`}>
                 <Card className="group cursor-pointer border-4 border-border bg-card shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,0.3)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all p-6">
                   <div className="flex items-start justify-between gap-6 flex-wrap lg:flex-nowrap">
                     <div className="flex-1 min-w-[300px] space-y-3">

@@ -69,8 +69,8 @@ export function SubmissionTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className={`font-black text-lg ${(submission.score ?? submission.cached_score ?? 0) >= 80 ? 'text-green-600' : (submission.score ?? submission.cached_score ?? 0) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {submission.score ?? submission.cached_score ?? 0}
+                  <span className={`font-black text-lg ${((submission.manual_score ?? submission.cached_score ?? submission.score ?? 0)) >= 80 ? 'text-green-600' : ((submission.manual_score ?? submission.cached_score ?? submission.score ?? 0)) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {submission.manual_score ?? submission.cached_score ?? submission.score ?? 0}
                   </span>
                   <span className="text-muted-foreground">/100</span>
                 </TableCell>

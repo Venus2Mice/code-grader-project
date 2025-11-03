@@ -44,6 +44,8 @@ class Role(Base):
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))  # Public identifier
+    public_token = Column(String(255), unique=True, nullable=True)  # Opaque token for API access
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -52,7 +54,8 @@ class User(Base):
     
     role = relationship('Role', back_populates='users')
     classes_taught = relationship('Class', back_populates='teacher', foreign_keys='Class.teacher_id')
-    submissions = relationship('Submission', back_populates='student')
+    submissions = relationship('Submission', back_populates='student', foreign_keys='Submission.student_id')
+    graded_submissions = relationship('Submission', back_populates='graded_by_teacher', foreign_keys='Submission.graded_by_teacher_id')
     classes_joined = relationship('Class', secondary=class_members, back_populates='students')
 
     def set_password(self, password):
@@ -64,6 +67,8 @@ class User(Base):
 class Class(Base):
     __tablename__ = 'classes'
     id = Column(Integer, primary_key=True)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))  # Public identifier
+    public_token = Column(String(255), unique=True, nullable=True)  # Opaque token for API access
     name = Column(String(255), nullable=False)
     course_code = Column(String(50), nullable=True)
     description = Column(Text, nullable=True)  # NEW: Class description
@@ -87,6 +92,8 @@ class Problem(Base):
     )
     
     id = Column(Integer, primary_key=True)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))  # Public identifier
+    public_token = Column(String(255), unique=True, nullable=True)  # Opaque token for API access
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text)
@@ -132,6 +139,8 @@ class TestCase(Base):
 class Submission(Base):
     __tablename__ = 'submissions'
     id = Column(Integer, primary_key=True)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))  # Public identifier
+    public_token = Column(String(255), unique=True, nullable=True)  # Opaque token for API access
     problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     source_code = Column(Text, nullable=False)
@@ -139,11 +148,18 @@ class Submission(Base):
     status = Column(String(50), default='Pending')
     is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
     submitted_at = Column(DateTime, default=datetime.utcnow)
-    cached_score = Column(Integer, nullable=True, default=0)  # NEW: Cache score to avoid recalculation
+    cached_score = Column(Integer, nullable=True, default=0)  # DEPRECATED: Auto-calculated score (kept for backward compatibility)
+    
+    # Manual grading fields (teacher has full control)
+    manual_score = Column(Integer, nullable=True)  # Teacher-assigned score (overrides cached_score)
+    graded_by_teacher_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Teacher who graded
+    graded_at = Column(DateTime, nullable=True)  # When teacher graded
+    teacher_comment = Column(Text, nullable=True)  # Teacher's feedback comment
     
     problem = relationship('Problem', back_populates='submissions')
-    student = relationship('User', back_populates='submissions')
+    student = relationship('User', back_populates='submissions', foreign_keys=[student_id])
     results = relationship('SubmissionResult', back_populates='submission', cascade="all, delete-orphan")
+    graded_by_teacher = relationship('User', back_populates='graded_submissions', foreign_keys=[graded_by_teacher_id])
 
 class SubmissionResult(Base):
     __tablename__ = 'submission_results'

@@ -120,7 +120,7 @@ export default function StudentDashboard() {
           <>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {enrolledClasses.map((classItem) => (
-                <Link key={classItem.id} to={`/student/class/${classItem.id}`}>
+                <Link key={classItem.id} to={`/student/class/${classItem.token}`}>
                   <Card className="group cursor-pointer p-6 transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.5)] dark:hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.3)] border-4 border-border bg-white dark:bg-gray-900">
                     <div className="mb-6 flex items-start justify-between">
                       <div className="flex h-14 w-14 items-center justify-center border-4 border-border bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">

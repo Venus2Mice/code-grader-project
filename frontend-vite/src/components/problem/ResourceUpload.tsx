@@ -6,7 +6,7 @@ import { resourceAPI } from '@/services/api'
 import { logger } from '@/lib/logger'
 
 interface ResourceUploadProps {
-  problemId: number
+  problemId: string
   onUploadSuccess?: (resource: any) => void
   onError?: (title: string, message: string) => void
 }

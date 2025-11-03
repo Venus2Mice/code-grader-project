@@ -27,7 +27,7 @@ interface TestCaseForm {
 export default function CreateProblemPage() {
   const params = useParams()
   const navigate = useNavigate()
-  const classId = params.id as string
+  const classToken = params.token as string
   const [classData, setClassData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -62,14 +62,14 @@ export default function CreateProblemPage() {
 
   useEffect(() => {
     fetchClassData()
-  }, [classId])
+  }, [classToken])
 
   const fetchClassData = async () => {
     try {
-      const response = await classAPI.getById(Number(classId))
+      const response = await classAPI.getByToken(classToken)
       setClassData(response.data)
     } catch (err) {
-      logger.error('Error fetching class', err, { classId })
+      logger.error('Error fetching class', err, { classToken })
     } finally {
       setIsLoading(false)
     }
@@ -201,10 +201,10 @@ export default function CreateProblemPage() {
         }))
       }
 
-      await problemAPI.create(Number(classId), problemData)
-      navigate(`/teacher/class/${classId}`)
+      await problemAPI.create(classToken, problemData)
+      navigate(`/teacher/class/${classToken}`)
     } catch (err: any) {
-      logger.error('Error creating problem', err, { classId })
+      logger.error('Error creating problem', err, { classToken })
       alert(err.response?.data?.msg || 'Failed to create problem')
     }
   }
@@ -228,7 +228,7 @@ export default function CreateProblemPage() {
 
         <div className="relative mx-auto max-w-5xl px-6 py-8">
           <Link
-            to={`/teacher/class/${classId}`}
+            to={`/teacher/class/${classToken}`}
             className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-muted px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
           >
             <ArrowLeft className="h-5 w-5" />

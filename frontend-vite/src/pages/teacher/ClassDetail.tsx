@@ -10,7 +10,7 @@ import { logger } from "@/lib/logger"
 
 export default function ClassDetailPage() {
   const params = useParams()
-  const classId = params.id as string
+  const classToken = params.token as string
   const [classData, setClassData] = useState<any>(null)
   const [problems, setProblems] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
@@ -21,15 +21,15 @@ export default function ClassDetailPage() {
 
   useEffect(() => {
     fetchData()
-  }, [classId])
+  }, [classToken])
 
   const fetchData = async () => {
     try {
       setIsLoading(true)
       // Fetch class details, problems, and students in parallel
       const [classResponse, studentsResponse] = await Promise.all([
-        classAPI.getById(Number(classId)),
-        classAPI.getStudents(Number(classId))
+        classAPI.getByToken(classToken),
+        classAPI.getStudents(classToken)
       ])
       
       setClassData(classResponse.data)
@@ -38,7 +38,7 @@ export default function ClassDetailPage() {
       // Problems are nested in class data
       setProblems(classResponse.data.problems || [])
     } catch (err: any) {
-      logger.error('Error fetching class data', err, { classId })
+      logger.error('Error fetching class data', err, { classToken })
       setError('Failed to load class data')
     } finally {
       setIsLoading(false)
@@ -131,7 +131,7 @@ export default function ClassDetailPage() {
           <TabsContent value="assignments" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <h2 className="text-xl md:text-2xl font-black uppercase">ASSIGNMENTS</h2>
-              <Link to={`/teacher/class/${classId}/create-problem`}>
+              <Link to={`/teacher/class/${classToken}/create-problem`}>
                 <Button className="gap-2 font-black uppercase text-xs md:text-sm w-full sm:w-auto">
                   <Plus className="h-4 w-4 md:h-5 md:w-5" />
                   CREATE
@@ -160,7 +160,7 @@ export default function ClassDetailPage() {
                     </div>
 
                     {/* View button */}
-                    <Link to={`/teacher/problem/${problem.id}`} className="lg:self-start">
+                    <Link to={`/teacher/problem/${problem.token}`} className="lg:self-start">
                       <Button
                         size="lg"
                         className="font-black uppercase text-sm w-full lg:w-auto border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
@@ -179,7 +179,7 @@ export default function ClassDetailPage() {
                   </div>
                   <h3 className="mb-2 text-2xl font-black uppercase text-foreground">NO ASSIGNMENTS YET</h3>
                   <p className="mb-6 text-sm font-bold text-muted-foreground uppercase">CREATE YOUR FIRST ASSIGNMENT TO GET STARTED</p>
-                  <Link to={`/teacher/class/${classId}/create-problem`}>
+                  <Link to={`/teacher/class/${classToken}/create-problem`}>
                     <Button className="gap-2 font-black uppercase border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]">
                       <Plus className="h-5 w-5" />
                       CREATE ASSIGNMENT

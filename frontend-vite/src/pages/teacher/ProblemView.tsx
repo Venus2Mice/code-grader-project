@@ -30,11 +30,11 @@ import {
 } from "@/components/problem/teacher"
 
 export default function TeacherProblemDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const problemId = Number(id)
+  const { token } = useParams<{ token: string }>()
+  const problemToken = token as string
 
   // Fetch problem data
-  const { problem, isLoading: problemLoading } = useProblemData(problemId)
+  const { problem, isLoading: problemLoading, classToken } = useProblemData(problemToken)
 
   // Fetch submissions
   const {
@@ -44,7 +44,7 @@ export default function TeacherProblemDetailPage() {
     totalPages,
     isLoadingMore,
     loadMoreSubmissions
-  } = useTeacherSubmissions(problemId)
+  } = useTeacherSubmissions(problemToken)
 
   // Calculate statistics
   const { groupedSubmissions, stats } = useSubmissionStats(submissions)
@@ -98,11 +98,11 @@ export default function TeacherProblemDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b-4 border-border bg-card">
+      <div className="border-b-4 border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-100 via-white to-amber-100 dark:from-gray-900 dark:via-gray-800 dark:to-orange-950">
         <div className="mx-auto max-w-7xl px-6 py-6">
           <Link
-            to={`/teacher/class/${problem.class_id}`}
-            className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-muted px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+            to={`/teacher/class/${classToken || ''}`}
+            className="mb-6 inline-flex items-center gap-2 border-3 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100 transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)]"
           >
             <ArrowLeft className="h-5 w-5" />
             BACK
@@ -110,25 +110,18 @@ export default function TeacherProblemDetailPage() {
 
           <div className="mt-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-black uppercase text-foreground">{problem.title}</h1>
+              <h1 className="text-3xl font-black uppercase text-gray-900 dark:text-white">{problem.title}</h1>
               <span
-                className={`border-4 border-black px-3 py-1 text-sm font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
+                className={`border-3 px-3 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${
                   problem.difficulty === "easy"
-                    ? "bg-green-400 text-black"
+                    ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700"
                     : problem.difficulty === "medium"
-                      ? "bg-yellow-400 text-black"
-                      : "bg-red-400 text-black"
+                      ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100 border-amber-300 dark:border-amber-700"
+                      : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 border-red-300 dark:border-red-700"
                 }`}
               >
                 {problem.difficulty}
               </span>
-            </div>
-            <div className="mt-4">
-              {problem.markdown_content ? (
-                <MarkdownDisplay markdown={problem.markdown_content} className="border-4" />
-              ) : (
-                <p className="font-bold text-muted-foreground leading-relaxed">{problem.description}</p>
-              )}
             </div>
           </div>
         </div>
@@ -162,7 +155,7 @@ export default function TeacherProblemDetailPage() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px] font-bold">
+              <SelectTrigger className="w-[200px] font-bold border-3 border-gray-700 dark:border-gray-400 bg-white dark:bg-gray-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)]">
                 <SelectValue placeholder="Filter Status" />
               </SelectTrigger>
               <SelectContent>
@@ -177,7 +170,7 @@ export default function TeacherProblemDetailPage() {
             </Select>
 
             <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-              <SelectTrigger className="w-[180px] font-bold">
+              <SelectTrigger className="w-[200px] font-bold border-3 border-gray-700 dark:border-gray-400 bg-white dark:bg-gray-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)]">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>

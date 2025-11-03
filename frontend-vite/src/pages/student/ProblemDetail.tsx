@@ -16,10 +16,10 @@ import { logger } from '@/lib/logger'
 import type { Problem, Resource } from '@/types'
 
 export default function StudentProblemDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
-  const classId = searchParams.get('classId')
-  const problemId = Number(id)
+  const classToken = searchParams.get('classToken')
+  const problemToken = token as string
 
   // State
   const [problem, setProblem] = useState<Problem | null>(null)
@@ -31,17 +31,17 @@ export default function StudentProblemDetailPage() {
 
   useEffect(() => {
     fetchProblemData()
-  }, [problemId])
+  }, [problemToken])
 
   const fetchProblemData = async () => {
     try {
       setIsLoading(true)
-      const problemResponse = await problemAPI.getById(problemId)
+      const problemResponse = await problemAPI.getByToken(problemToken)
       setProblem(problemResponse.data.data || problemResponse.data)
       
       // Try to fetch resources, but don't fail if endpoint doesn't exist
       try {
-        const resourcesResponse = await resourceAPI.getByProblem(problemId)
+        const resourcesResponse = await resourceAPI.getByProblem(problemToken)
         setResources(resourcesResponse.data.data || [])
       } catch (resourceErr: any) {
         // If resources endpoint returns 404, just set empty array
@@ -106,7 +106,7 @@ export default function StudentProblemDetailPage() {
     )
   }
 
-  const backLink = classId ? `/student/class/${classId}` : '/student/dashboard'
+  const backLink = classToken ? `/student/class/${classToken}` : '/student/dashboard'
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,7 +208,7 @@ export default function StudentProblemDetailPage() {
             {/* Upload Resources */}
             {showUpload && (
               <ResourceUpload
-                problemId={problemId}
+                problemId={problemToken}
                 onUploadSuccess={handleResourceUploaded}
                 onError={openErrorModal}
               />
@@ -235,7 +235,7 @@ export default function StudentProblemDetailPage() {
               </div>
 
               <Link
-                to={`/student/problem/${problemId}?classId=${classId}`}
+                to={`/student/problem/${problemToken}?classToken=${classToken}`}
                 className="flex items-center justify-center gap-3 border-4 border-current bg-background text-foreground px-6 py-4 font-bold uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all w-full"
               >
                 <Code2 className="h-5 w-5" />

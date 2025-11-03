@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from ..models import db, Class, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
+from ..token_utils import find_class_by_token_or_404
 
 class_bp = Blueprint('classes', __name__, url_prefix='/api/classes')
 
@@ -32,6 +33,7 @@ def create_class():
     
     return jsonify({
         "id": new_class.id,
+        "token": new_class.public_token,  # Return token for frontend routing
         "name": new_class.name,
         "course_code": new_class.course_code,
         "description": new_class.description,  # NEW: Return description
@@ -59,13 +61,15 @@ def get_my_classes():
     class_list = []
     for c in classes:
         class_data = {
-            "id": c.id, 
+            "id": c.id,
+            "token": c.public_token,  # Add token for frontend routing
             "name": c.name, 
             "code": c.course_code or c.invite_code,
             "course_code": c.course_code,
             "description": c.description,
             "teacher_name": c.teacher.full_name,
-            "student_count": len(c.students)
+            "student_count": len(c.students),
+            "created_at": c.created_at.isoformat() if c.created_at else None
         }
         
         # For students, add problem statistics (use cached_score to avoid recalculation)
@@ -122,11 +126,11 @@ def join_class():
 
 # NEW ENDPOINTS for Frontend Integration
 
-@class_bp.route('/<int:class_id>', methods=['GET'])
+@class_bp.route('/<string:class_token>', methods=['GET'])
 @jwt_required()
-def get_class_details(class_id):
-    """Lấy chi tiết đầy đủ của một class."""
-    target_class = Class.query.get_or_404(class_id)
+def get_class_details(class_token):
+    """Lấy chi tiết đầy đủ của một class bằng public_token."""
+    target_class = find_class_by_token_or_404(class_token)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -142,6 +146,7 @@ def get_class_details(class_id):
     for problem in target_class.problems:
         problems_data.append({
             "id": problem.id,
+            "token": problem.public_token,  # Add token for frontend routing
             "title": problem.title,
             "description": problem.description,
             "difficulty": problem.difficulty,
@@ -153,6 +158,7 @@ def get_class_details(class_id):
     
     return jsonify({
         "id": target_class.id,
+        "token": target_class.public_token,  # Add token
         "name": target_class.name,
         "course_code": target_class.course_code,
         "description": target_class.description,
@@ -168,11 +174,11 @@ def get_class_details(class_id):
     }), 200
 
 
-@class_bp.route('/<int:class_id>/students', methods=['GET'])
+@class_bp.route('/<string:class_token>/students', methods=['GET'])
 @jwt_required()
-def get_class_students(class_id):
+def get_class_students(class_token):
     """Lấy danh sách students trong class (chỉ teacher hoặc students của class)."""
-    target_class = Class.query.get_or_404(class_id)
+    target_class = find_class_by_token_or_404(class_token)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -190,6 +196,7 @@ def get_class_students(class_id):
         # Try to get enrollment date (would need to query class_members table)
         students_data.append({
             "id": student.id,
+            "token": student.public_token,  # Add token
             "full_name": student.full_name,  # Use full_name for consistency
             "email": student.email,
             "enrolled_at": student.created_at.isoformat() if student.created_at else None
@@ -198,12 +205,12 @@ def get_class_students(class_id):
     return jsonify(students_data), 200
 
 
-@class_bp.route('/<int:class_id>', methods=['PUT'])
+@class_bp.route('/<string:class_token>', methods=['PUT'])
 @jwt_required()
 @role_required('teacher')
-def update_class(class_id):
-    """Cập nhật thông tin class (chỉ teacher)."""
-    target_class = Class.query.get_or_404(class_id)
+def update_class(class_token):
+    """Cập nhật thông tin class."""
+    target_class = find_class_by_token_or_404(class_token)
     teacher_id = get_jwt_identity()
     
     if str(target_class.teacher_id) != teacher_id:
@@ -229,12 +236,12 @@ def update_class(class_id):
     }), 200
 
 
-@class_bp.route('/<int:class_id>', methods=['DELETE'])
+@class_bp.route('/<string:class_token>', methods=['DELETE'])
 @jwt_required()
 @role_required('teacher')
-def delete_class(class_id):
+def delete_class(class_token):
     """Xóa class (chỉ teacher)."""
-    target_class = Class.query.get_or_404(class_id)
+    target_class = find_class_by_token_or_404(class_token)
     teacher_id = get_jwt_identity()
     
     if str(target_class.teacher_id) != teacher_id:

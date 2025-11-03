@@ -9,6 +9,7 @@ from ..constants import (
     SUCCESS_STATUSES,
     DEFAULT_LANGUAGE
 )
+from datetime import datetime
 
 submission_bp = Blueprint('submissions', __name__, url_prefix='/api/submissions')
 
@@ -83,15 +84,14 @@ def get_submission_result(submission_id):
     if str(submission.student_id) != user_id and str(submission.problem.class_obj.teacher_id) != user_id:
         return jsonify({"msg": "Forbidden"}), 403
     
-    # Calculate score based on test case points
-    total_points = sum(tc.points for tc in submission.problem.test_cases)
-    earned_points = 0
-    passed_tests = 0
-    total_tests = len(submission.problem.test_cases)
-    # Calculate score based on cached_score if available
-    if submission.cached_score is not None:
+    # Score priority: manual_score > cached_score
+    # If teacher has graded manually, use manual_score. Otherwise, use cached_score (test results)
+    if submission.manual_score is not None:
+        score = submission.manual_score
+    elif submission.cached_score is not None:
         score = submission.cached_score
     else:
+        # Fallback: Calculate from test results (should not happen normally)
         total_points = sum(tc.points for tc in submission.problem.test_cases)
         earned_points = 0
         for result in submission.results:
@@ -131,6 +131,11 @@ def get_submission_result(submission_id):
         "student_id": submission.student_id,
         "status": submission.status,
         "score": score,
+        "manual_score": submission.manual_score,  # Include manual_score
+        "cached_score": submission.cached_score,  # Include cached_score for reference
+        "graded_by_teacher_id": submission.graded_by_teacher_id,
+        "graded_at": submission.graded_at.isoformat() if submission.graded_at else None,
+        "teacher_comment": submission.teacher_comment,
         "passedTests": passed_tests,  # Changed to camelCase
         "totalTests": total_tests,    # Changed to camelCase
         "language": submission.language,
@@ -164,10 +169,13 @@ def get_my_submissions():
     
     submissions_data = []
     for submission in paginated.items:
-        # Calculate score (use cached_score if available for performance)
-        if submission.cached_score is not None:
+        # Score priority: manual_score > cached_score
+        if submission.manual_score is not None:
+            score = submission.manual_score
+        elif submission.cached_score is not None:
             score = submission.cached_score
         else:
+            # Fallback: Calculate from test results
             total_points = sum(tc.points for tc in submission.problem.test_cases)
             earned_points = 0
             for result in submission.results:
@@ -185,6 +193,8 @@ def get_my_submissions():
             "problem_title": submission.problem.title,
             "status": submission.status,
             "score": score,
+            "manual_score": submission.manual_score,
+            "cached_score": submission.cached_score,
             "passedTests": passed_tests,
             "totalTests": len(submission.problem.test_cases),
             "language": submission.language,
@@ -284,3 +294,52 @@ def run_code():
         db.session.delete(test_submission)
         db.session.commit()
         return jsonify({"msg": f"Error running code: {str(e)}"}), 500
+
+
+@submission_bp.route('/<int:submission_id>/manual-grade', methods=['POST'])
+@jwt_required()
+@role_required('teacher')
+def manual_grade_submission(submission_id):
+    """
+    Teacher manually assigns a grade to a submission.
+    This replaces auto-calculated score with manual teacher score.
+    """
+    data = request.get_json()
+    manual_score = data.get('manual_score')
+    teacher_comment = data.get('teacher_comment', '')
+    
+    # Validate manual_score
+    if manual_score is None:
+        return jsonify({"msg": "manual_score is required"}), 400
+    
+    try:
+        manual_score = int(manual_score)
+        if manual_score < 0 or manual_score > 100:
+            return jsonify({"msg": "manual_score must be between 0 and 100"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"msg": "manual_score must be an integer"}), 400
+    
+    # Get submission
+    submission = Submission.query.get_or_404(submission_id)
+    
+    # Verify teacher owns the class
+    teacher_id = get_jwt_identity()
+    if str(submission.problem.class_obj.teacher_id) != teacher_id:
+        return jsonify({"msg": "You do not have permission to grade this submission"}), 403
+    
+    # Update manual grading fields
+    submission.manual_score = manual_score
+    submission.teacher_comment = teacher_comment
+    submission.graded_by_teacher_id = int(teacher_id)
+    submission.graded_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Submission graded successfully",
+        "submission_id": submission_id,
+        "manual_score": manual_score,
+        "graded_by": teacher_id,
+        "graded_at": submission.graded_at.isoformat(),
+        "teacher_comment": teacher_comment
+    }), 200

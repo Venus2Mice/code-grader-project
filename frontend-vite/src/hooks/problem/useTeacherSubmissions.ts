@@ -4,7 +4,7 @@ import { problemAPI } from "@/services/api"
 import type { Submission } from "@/types/submission"
 import { logger } from "@/lib/logger"
 
-export function useTeacherSubmissions(problemId: number) {
+export function useTeacherSubmissions(problemToken: string) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -14,7 +14,7 @@ export function useTeacherSubmissions(problemId: number) {
   const fetchSubmissions = async () => {
     try {
       setIsLoading(true)
-      const response = await problemAPI.getSubmissions(problemId, 1, 20)
+      const response = await problemAPI.getSubmissions(problemToken, 1, 20)
       
       const submissionsData = Array.isArray(response.data)
         ? response.data
@@ -24,7 +24,7 @@ export function useTeacherSubmissions(problemId: number) {
       setSubmissions(submissionsData)
       setTotalPages(pagesCount)
     } catch (err) {
-      logger.error('Error fetching submissions', err, { problemId })
+      logger.error('Error fetching submissions', err, { problemToken })
     } finally {
       setIsLoading(false)
     }
@@ -37,7 +37,7 @@ export function useTeacherSubmissions(problemId: number) {
     
     try {
       setIsLoadingMore(true)
-      const response = await problemAPI.getSubmissions(problemId, newPage, 20)
+      const response = await problemAPI.getSubmissions(problemToken, newPage, 20)
       
       const newSubmissions = Array.isArray(response.data)
         ? response.data
@@ -46,17 +46,17 @@ export function useTeacherSubmissions(problemId: number) {
       setSubmissions([...submissions, ...newSubmissions])
       setPage(newPage)
     } catch (err) {
-      logger.error('Error loading more submissions', err, { problemId, page: newPage })
+      logger.error('Error loading more submissions', err, { problemToken, page: newPage })
     } finally {
       setIsLoadingMore(false)
     }
   }
 
   useEffect(() => {
-    if (problemId) {
+    if (problemToken) {
       fetchSubmissions()
     }
-  }, [problemId])
+  }, [problemToken])
 
   return {
     submissions,

@@ -27,15 +27,15 @@ function App() {
         
         {/* Student routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/class/:id" element={<StudentClassDetail />} />
-        <Route path="/student/problem/:id/detail" element={<StudentProblemDetail />} />
-        <Route path="/student/problem/:id" element={<StudentProblemView />} />
+        <Route path="/student/class/:token" element={<StudentClassDetail />} />
+        <Route path="/student/problem/:token/detail" element={<StudentProblemDetail />} />
+        <Route path="/student/problem/:token" element={<StudentProblemView />} />
         
         {/* Teacher routes */}
         <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-        <Route path="/teacher/class/:id" element={<TeacherClassDetail />} />
-        <Route path="/teacher/class/:id/create-problem" element={<TeacherCreateProblem />} />
-        <Route path="/teacher/problem/:id" element={<TeacherProblemView />} />
+        <Route path="/teacher/class/:token" element={<TeacherClassDetail />} />
+        <Route path="/teacher/class/:token/create-problem" element={<TeacherCreateProblem />} />
+        <Route path="/teacher/problem/:token" element={<TeacherProblemView />} />
       </Routes>
     </ErrorBoundary>
   )

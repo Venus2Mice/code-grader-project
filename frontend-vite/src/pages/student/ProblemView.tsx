@@ -26,19 +26,19 @@ import { getStatusDisplay, formatVietnameseDate } from "@/lib/problemUtils"
 import { logger } from "@/lib/logger"
 
 export default function ProblemSolvePage() {
-  const { id } = useParams<{ id: string }>()
-  const problemId = Number(id)
+  const { token } = useParams<{ token: string }>()
+  const problemToken = token as string
 
   // Fetch problem data
-  const { problem, isLoading, classId } = useProblemData(problemId)
+  const { problem, isLoading, classToken } = useProblemData(problemToken)
 
   // Code editor state
   const { code, setCode, language, setLanguage, originalTemplate, resetCode, loadCode } = useCodeEditor({ problem })
 
   // Submission handling
-  const { submissions, refreshSubmissions } = useSubmissionHistory(problemId)
+  const { submissions, refreshSubmissions } = useSubmissionHistory(problemToken)
   const { isSubmitting, isRunning, testResults, setTestResults, runCode, submitCode } = useSubmission({
-    problemId,
+    problemToken,
     problem,
     onSubmissionComplete: refreshSubmissions
   })
@@ -141,7 +141,7 @@ export default function ProblemSolvePage() {
     <div className="flex h-screen flex-col bg-background">
       <ProblemHeader
         problem={problem}
-        classId={classId}
+        classId={classToken}
         language={language}
         onLanguageChange={setLanguage}
         onReset={() => setIsResetModalOpen(true)}

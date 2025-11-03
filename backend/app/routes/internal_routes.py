@@ -69,27 +69,33 @@ def update_submission_result(submission_id):
             db.session.add(new_result)
             new_results.append(new_result)  # ✅ FIX: Track new result
         
-        # ✅ FIX: Calculate and cache score using NEW results (not old submission.results)
-        problem = submission.problem
-        total_points = sum(tc.points for tc in problem.test_cases)
+        # ⚠️ MANUAL GRADING: Auto-scoring disabled - teacher assigns grades manually
+        # Worker only saves test execution results, does NOT calculate score
+        # Score will be set to NULL (ungraded) until teacher manually grades
+        submission.cached_score = None  # Keep NULL until teacher grades
         
-        if total_points > 0:
-            # OPTIMIZATION: Create lookup dict for O(1) access instead of O(n) linear search
-            test_case_dict = {tc.id: tc for tc in problem.test_cases}
-            
-            earned_points = 0
-            # Use SUCCESS_STATUSES from constants
-            for result in new_results:
-                if result.status in SUCCESS_STATUSES:
-                    test_case = test_case_dict.get(result.test_case_id)
-                    if test_case:
-                        earned_points += test_case.points
-            
-            cached_score = round((earned_points / total_points * 100))
-            submission.cached_score = cached_score
-            print(f"Submission {submission_id}: earned {earned_points}/{total_points} points = {cached_score}% score")
-        else:
-            submission.cached_score = 0
+        # DEPRECATED: Old auto-scoring logic (commented out for reference)
+        # ✅ FIX: Calculate and cache score using NEW results (not old submission.results)
+        # problem = submission.problem
+        # total_points = sum(tc.points for tc in problem.test_cases)
+        # 
+        # if total_points > 0:
+        #     # OPTIMIZATION: Create lookup dict for O(1) access instead of O(n) linear search
+        #     test_case_dict = {tc.id: tc for tc in problem.test_cases}
+        #     
+        #     earned_points = 0
+        #     # Use SUCCESS_STATUSES from constants
+        #     for result in new_results:
+        #         if result.status in SUCCESS_STATUSES:
+        #             test_case = test_case_dict.get(result.test_case_id)
+        #             if test_case:
+        #                 earned_points += test_case.points
+        #     
+        #     cached_score = round((earned_points / total_points * 100))
+        #     submission.cached_score = cached_score
+        #     print(f"Submission {submission_id}: earned {earned_points}/{total_points} points = {cached_score}% score")
+        # else:
+        #     submission.cached_score = 0
         
     db.session.commit()
     

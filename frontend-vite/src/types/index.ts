@@ -176,12 +176,16 @@ export interface Submission {
   code?: string  // Alias for compatibility
   language: Language
   status: SubmissionStatus
-  cached_score?: number
+  cached_score?: number  // Auto-calculated score (deprecated)
+  manual_score?: number  // Teacher-assigned score (takes priority)
+  graded_by_teacher_id?: number
+  graded_at?: string
+  teacher_comment?: string
   is_test?: boolean
   submitted_at: string
   results?: TestResult[]
   // Computed/convenience fields
-  score?: number
+  score?: number  // Final score (manual_score > cached_score)
   total_tests?: number
   passed_tests?: number
   totalTests?: number  // Alias for convenience

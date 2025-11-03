@@ -158,20 +158,20 @@ export const classAPI = {
     return api.get('/api/classes')
   },
 
-  getById: async (id: number) => {
-    return api.get(`/api/classes/${id}`)
+  getByToken: async (token: string) => {
+    return api.get(`/api/classes/${token}`)
   },
 
-  update: async (id: number, data: { name?: string; course_code?: string; description?: string }) => {
-    return api.put(`/api/classes/${id}`, data)
+  update: async (token: string, data: { name?: string; course_code?: string; description?: string }) => {
+    return api.put(`/api/classes/${token}`, data)
   },
 
-  delete: async (id: number) => {
-    return api.delete(`/api/classes/${id}`)
+  delete: async (token: string) => {
+    return api.delete(`/api/classes/${token}`)
   },
 
-  getStudents: async (id: number) => {
-    return api.get(`/api/classes/${id}/students`)
+  getStudents: async (token: string) => {
+    return api.get(`/api/classes/${token}/students`)
   },
 
   join: async (inviteCode: string) => {
@@ -183,7 +183,7 @@ export const classAPI = {
 
 export const problemAPI = {
   create: async (
-    classId: number,
+    classToken: string,
     data: {
       title: string
       description: string
@@ -201,19 +201,19 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.post(`/api/classes/${classId}/problems`, data)
+    return api.post(`/api/classes/${classToken}/problems`, data)
   },
 
-  getByClass: async (classId: number) => {
-    return api.get(`/api/classes/${classId}/problems`)
+  getByClass: async (classToken: string) => {
+    return api.get(`/api/classes/${classToken}/problems`)
   },
 
-  getById: async (id: number) => {
-    return api.get(`/api/problems/${id}`)
+  getByToken: async (token: string) => {
+    return api.get(`/api/problems/${token}`)
   },
 
-  getSubmissions: async (id: number, page: number = 1, perPage: number = 20) => {
-    return api.get(`/api/problems/${id}/submissions`, {
+  getSubmissions: async (token: string, page: number = 1, perPage: number = 20) => {
+    return api.get(`/api/problems/${token}/submissions`, {
       params: { page, per_page: perPage }
     })
   },
@@ -230,8 +230,8 @@ export const submissionAPI = {
     return api.get(`/api/submissions/${id}`)
   },
 
-  getMySubmissions: async (problemId?: number) => {
-    const params = problemId ? { problem_id: problemId } : {}
+  getMySubmissions: async (problemToken?: string) => {
+    const params = problemToken ? { problem_token: problemToken } : {}
     return api.get('/api/submissions/me', { params })
   },
 
@@ -243,13 +243,18 @@ export const submissionAPI = {
   runCode: async (data: { problem_id: number; source_code: string; language?: string }) => {
     return api.post('/api/submissions/run', data)
   },
+
+  // NEW: Manual grading by teacher
+  manualGrade: async (id: number, data: { manual_score: number; teacher_comment?: string }) => {
+    return api.post(`/api/submissions/${id}/manual-grade`, data)
+  },
 }
 
 // ==================== STUDENT APIs ====================
 
 export const studentAPI = {
-  getProblemsStatus: async (classId: number) => {
-    return api.get(`/api/students/me/classes/${classId}/problems-status`)
+  getProblemsStatus: async (classToken: string) => {
+    return api.get(`/api/students/me/classes/${classToken}/problems-status`)
   },
 
   getMyProgress: async () => {
@@ -260,24 +265,24 @@ export const studentAPI = {
 // ==================== RESOURCE APIs ====================
 
 export const resourceAPI = {
-  getByProblem: async (problemId: number) => {
-    return api.get(`/api/problems/${problemId}/resources`)
+  getByProblem: async (problemToken: string) => {
+    return api.get(`/api/problems/${problemToken}/resources`)
   },
 
-  upload: async (problemId: number, formData: FormData) => {
-    return api.post(`/api/problems/${problemId}/resources/upload`, formData, {
+  upload: async (problemToken: string, formData: FormData) => {
+    return api.post(`/api/problems/${problemToken}/resources/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
   },
 
-  addDriveLink: async (problemId: number, data: { drive_link: string; description?: string }) => {
-    return api.post(`/api/problems/${problemId}/resources/drive-link`, data)
+  addDriveLink: async (problemToken: string, data: { drive_link: string; description?: string }) => {
+    return api.post(`/api/problems/${problemToken}/resources/drive-link`, data)
   },
 
-  addExternalLink: async (problemId: number, data: { file_url: string; file_name: string; description?: string }) => {
-    return api.post(`/api/problems/${problemId}/resources/external-link`, data)
+  addExternalLink: async (problemToken: string, data: { file_url: string; file_name: string; description?: string }) => {
+    return api.post(`/api/problems/${problemToken}/resources/external-link`, data)
   },
 
   delete: async (resourceId: number) => {
