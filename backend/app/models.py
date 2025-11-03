@@ -158,3 +158,21 @@ class SubmissionResult(Base):
     
     submission = relationship('Submission', back_populates='results')
     test_case = relationship('TestCase', back_populates='results')
+
+class Resource(Base):
+    """Resources attached to problems (files, links, drive links)"""
+    __tablename__ = 'resources'
+    id = Column(Integer, primary_key=True)
+    problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False, index=True)
+    file_name = Column(String(255), nullable=False)
+    file_url = Column(String(1000), nullable=False)  # URL or file path
+    file_size = Column(Integer, nullable=True)  # Size in bytes
+    file_type = Column(String(100), nullable=True)  # MIME type
+    resource_type = Column(String(50), nullable=False)  # 'file', 'drive_link', 'external_link'
+    drive_link = Column(String(1000), nullable=True)  # Google Drive link if applicable
+    description = Column(Text, nullable=True)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    
+    problem = relationship('Problem', backref=backref('resources', cascade='all, delete-orphan'))
+    uploader = relationship('User', backref='uploaded_resources')

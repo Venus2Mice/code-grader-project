@@ -1,13 +1,12 @@
 import { useParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeft, CheckCircle, Clock, XCircle, Code } from "lucide-react"
+import { ArrowLeft, BookOpen } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { studentAPI, classAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
-import { ExpandableDescription } from "@/components/problem"
 
 export default function StudentClassPage() {
   const { id } = useParams<{ id: string }>()
@@ -132,92 +131,26 @@ export default function StudentClassPage() {
                 <Card className="group cursor-pointer border-4 border-border bg-card shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,0.3)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all p-6">
                   <div className="flex items-start justify-between gap-6 flex-wrap lg:flex-nowrap">
                     <div className="flex-1 min-w-[300px] space-y-3">
-                      {/* Title and badges */}
-                      <div className="flex items-start gap-3 flex-wrap">
-                        <h3 className="text-xl font-black uppercase text-foreground group-hover:text-primary transition-colors">
-                          {problem.title}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className={`border-4 border-black px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
-                              problem.difficulty === "easy"
-                                ? "bg-green-400 text-black"
-                                : problem.difficulty === "medium"
-                                  ? "bg-yellow-400 text-black"
-                                  : "bg-red-400 text-black"
-                            }`}
-                          >
-                            {problem.difficulty}
-                          </span>
-                          <span className="border-4 border-border bg-blue-400 px-3 py-1 text-xs font-black uppercase text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                            {problem.grading_mode || 'FUNCTION'}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Title only */}
+                      <h3 className="text-xl font-black uppercase text-foreground group-hover:text-primary transition-colors">
+                        {problem.title}
+                      </h3>
 
-                      {/* Description with expand/collapse */}
-                      <ExpandableDescription
-                        description={problem.description}
-                        markdownContent={problem.markdown_content}
-                        maxLines={2}
-                      />
-
-                      {/* Metadata */}
-                      <div className="flex items-center gap-3 pt-2 flex-wrap">
-                        <div className="border-4 border-border bg-background px-3 py-1.5">
-                          <span className="text-xs font-black uppercase text-foreground">
-                            ⏱️ {problem.time_limit}MS
-                          </span>
-                        </div>
-                        <div className="border-4 border-border bg-background px-3 py-1.5">
-                          <span className="text-xs font-black uppercase text-foreground">
-                            💾 {problem.memory_limit}MB
-                          </span>
-                        </div>
-                        {attempts > 0 && (
-                          <div className="border-4 border-border bg-orange-100 dark:bg-orange-950 px-3 py-1.5">
-                            <span className="text-xs font-black uppercase text-orange-700 dark:text-orange-300">
-                              🔄 {attempts} ATTEMPTS
-                            </span>
-                          </div>
-                        )}
+                      {/* Created date */}
+                      <div className="border-4 border-border bg-background px-3 py-1.5 inline-block">
+                        <span className="text-xs font-black uppercase text-muted-foreground">
+                          📅 {problemData.created_at ? new Date(problemData.created_at).toLocaleDateString() : 'N/A'}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Status badge and button */}
-                    <div className="flex flex-col items-end gap-3 min-w-[180px]">
-                      {submission?.status === "accepted" ? (
-                        <>
-                          <div className="flex items-center gap-2 border-4 border-black bg-green-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                            <CheckCircle className="h-5 w-5 text-black" />
-                            <span className="font-black uppercase text-black">✓ FINISHED</span>
-                          </div>
-                          <div className="border-4 border-border bg-background px-4 py-2">
-                            <span className="font-black text-foreground uppercase text-sm">SCORE: {submission.score || 0}/100</span>
-                          </div>
-                        </>
-                      ) : !submission ? (
-                        <div className="flex items-center gap-2 border-4 border-black bg-cyan-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                          <Code className="h-5 w-5 text-black" />
-                          <span className="font-black uppercase text-black">🚀 START</span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2 border-4 border-black bg-orange-400 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                            <XCircle className="h-5 w-5 text-black" />
-                            <span className="font-black uppercase text-black">↻ RETRY</span>
-                          </div>
-                          <div className="border-4 border-border bg-background px-4 py-2">
-                            <span className="font-black text-foreground uppercase text-sm">SCORE: {submission.score || 0}/100</span>
-                          </div>
-                        </>
-                      )}
+                    {/* View button only */}
+                    <div className="flex items-start gap-3">
                       <Button 
                         size="lg"
-                        className="mt-2 gap-2 font-black uppercase border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full"
+                        className="gap-2 font-black uppercase border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                       >
-                        <Code className="h-4 w-4" />
-                        {!submission ? 'SOLVE NOW' : submission?.status === "accepted" ? 'REVIEW' : 'TRY AGAIN'}
+                        VIEW
                       </Button>
                     </div>
                   </div>
@@ -229,7 +162,7 @@ export default function StudentClassPage() {
 
         {problems.length === 0 && (
           <div className="flex flex-col items-center justify-center border-4 border-dashed border-border bg-muted py-20">
-            <Code className="mb-6 h-16 w-16 text-muted-foreground" />
+            <BookOpen className="mb-6 h-16 w-16 text-muted-foreground" />
             <h3 className="mb-3 text-2xl font-black uppercase text-foreground">NO ASSIGNMENTS YET</h3>
             <p className="font-bold uppercase text-muted-foreground">YOUR TEACHER WILL ADD ASSIGNMENTS SOON</p>
           </div>

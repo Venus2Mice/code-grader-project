@@ -26,8 +26,11 @@ def create_app():
     # Enable compression for faster response
     compress.init_app(app)
     
-    # Khởi tạo các extension
-    CORS(app)
+    # Khởi tạo các extension với CORS configuration
+    CORS(app, 
+         resources={r"/api/*": {"origins": "*"}},
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
@@ -46,7 +49,8 @@ def create_app():
             submission_bp,
             internal_bp,
             student_bp,
-            health_bp
+            health_bp,
+            resource_bp
         )
         from .routes.config_routes import config_bp
         
@@ -58,6 +62,7 @@ def create_app():
         app.register_blueprint(internal_bp)
         app.register_blueprint(student_bp)
         app.register_blueprint(health_bp)
+        app.register_blueprint(resource_bp)
         app.register_blueprint(config_bp)
 
         # Import models để migrate có thể "thấy" chúng

@@ -36,12 +36,22 @@ export default function StudentProblemDetailPage() {
   const fetchProblemData = async () => {
     try {
       setIsLoading(true)
-      const [problemResponse, resourcesResponse] = await Promise.all([
-        problemAPI.getById(problemId),
-        resourceAPI.getByProblem(problemId),
-      ])
+      const problemResponse = await problemAPI.getById(problemId)
       setProblem(problemResponse.data.data || problemResponse.data)
-      setResources(resourcesResponse.data.data || [])
+      
+      // Try to fetch resources, but don't fail if endpoint doesn't exist
+      try {
+        const resourcesResponse = await resourceAPI.getByProblem(problemId)
+        setResources(resourcesResponse.data.data || [])
+      } catch (resourceErr: any) {
+        // If resources endpoint returns 404, just set empty array
+        if (resourceErr.response?.status === 404) {
+          logger.warn('Resources endpoint not implemented yet')
+          setResources([])
+        } else {
+          throw resourceErr
+        }
+      }
     } catch (err: any) {
       logger.error('Failed to fetch problem data', err)
       setError('Failed to load problem details')

@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { classAPI, problemAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
-import { ExpandableDescription } from "@/components/problem"
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -145,47 +144,14 @@ export default function ClassDetailPage() {
                 <Card key={problem.id} className="border-4 border-border bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[4px] hover:translate-y-[4px] transition-all p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1 space-y-3">
-                      {/* Title and badges */}
+                      {/* Title only */}
                       <div className="flex items-start gap-3 flex-wrap">
                         <h3 className="text-lg md:text-xl font-black uppercase text-foreground tracking-tight">{problem.title}</h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className={`border-4 border-black px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
-                              problem.difficulty === "easy"
-                                ? "bg-green-400"
-                                : problem.difficulty === "medium"
-                                  ? "bg-yellow-400"
-                                  : "bg-red-400"
-                            }`}
-                          >
-                            {problem.difficulty}
-                          </span>
-                          <span className="border-4 border-black bg-blue-400 px-3 py-1 text-xs font-black uppercase text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                            {problem.grading_mode || 'FUNCTION'}
-                          </span>
-                        </div>
                       </div>
 
-                      {/* Description with expand/collapse */}
-                      <ExpandableDescription
-                        description={problem.description}
-                        markdownContent={problem.markdown_content}
-                        maxLines={2}
-                      />
-
-                      {/* Metadata tags */}
-                      <div className="flex flex-wrap items-center gap-3 pt-2">
-                        <div className="border-4 border-border bg-background px-3 py-1.5">
-                          <span className="text-xs font-black uppercase text-foreground">
-                            ⏱️ TIME: {problem.time_limit_ms || problem.time_limit || 0}MS
-                          </span>
-                        </div>
-                        <div className="border-4 border-border bg-background px-3 py-1.5">
-                          <span className="text-xs font-black uppercase text-foreground">
-                            💾 MEM: {Math.round((problem.memory_limit_kb || problem.memory_limit || 0) / 1024)}MB
-                          </span>
-                        </div>
-                        <div className="hidden sm:block border-4 border-border bg-background px-3 py-1.5">
+                      {/* Created date only */}
+                      <div className="pt-2">
+                        <div className="border-4 border-border bg-background px-3 py-1.5 inline-block">
                           <span className="text-xs font-black uppercase text-muted-foreground">
                             📅 {problem.created_at ? new Date(problem.created_at).toLocaleDateString() : 'N/A'}
                           </span>
@@ -199,7 +165,7 @@ export default function ClassDetailPage() {
                         size="lg"
                         className="font-black uppercase text-sm w-full lg:w-auto border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                       >
-                        VIEW DETAILS →
+                        VIEW
                       </Button>
                     </Link>
                   </div>
