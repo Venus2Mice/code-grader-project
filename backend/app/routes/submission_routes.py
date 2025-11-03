@@ -45,14 +45,19 @@ def create_submission():
         student_id=student_id,
         source_code=source_code,
         language=language,
-        status=STATUS_PENDING
+        status=STATUS_PENDING,
+        is_test=False  # Actual submission, not a test run
     )
     db.session.add(new_submission)
     db.session.commit()
     db.session.refresh(new_submission)  # Ensure all fields are loaded
     
     # 2. Gửi task chấm điểm tới RabbitMQ với connection pool
-    task_data = {'submission_id': new_submission.id}
+    task_data = {
+        'submission_id': new_submission.id,
+        'retry_count': 0,
+        'is_test': False
+    }
     
     # Try using connection pool first, fallback to old method if needed
     success = publish_task_with_pool(task_data)
@@ -255,8 +260,12 @@ def run_code():
     db.session.add(test_submission)
     db.session.commit()
     
-    # Gửi task chấm điểm tới RabbitMQ (giống như submit bình thường)
-    task_data = {'submission_id': test_submission.id}
+    # Gửi task chấm điểm tới RabbitMQ với is_test flag
+    task_data = {
+        'submission_id': test_submission.id,
+        'retry_count': 0,
+        'is_test': True  # Mark as test run
+    }
     
     try:
         # Try using connection pool first, fallback to old method if needed

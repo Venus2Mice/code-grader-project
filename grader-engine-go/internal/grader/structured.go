@@ -56,10 +56,10 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 	if !success {
 		log.Printf("[%d] Compile error:\n%s", submissionID, errorMsg)
 		return &models.GradingResult{
-			OverallStatus: "Compile Error",
+			OverallStatus: models.StatusCompileError,
 			Results: []models.TestCaseResult{
 				{
-					Status:       "Compile Error",
+					Status:       models.StatusCompileError,
 					ErrorMessage: errorMsg,
 				},
 			},
@@ -74,7 +74,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 	}
 
 	// Step 6: Execute and collect results
-	overallStatus := "Accepted"
+	overallStatus := models.StatusAccepted
 	results := []models.TestCaseResult{}
 
 	// Get custom limits for this language
@@ -136,7 +136,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 
 		// Parse runtime error details
 		errMsg := execErr.Error()
-		errorType := "Runtime Error"
+		errorType := models.StatusRuntimeError
 		errorDesc := errMsg
 
 		if strings.HasPrefix(errMsg, "RUNTIME_ERROR:") {
@@ -197,12 +197,12 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 			log.Printf("[%d] WARNING: Test case %d has no output (program may have crashed)", submissionID, i+1)
 			results = append(results, models.TestCaseResult{
 				TestCaseID:      &tc.ID,
-				Status:          "System Error",
+				Status:          models.StatusSystemError,
 				ErrorMessage:    "No output received for this test case - program may have terminated early",
 				ExecutionTimeMs: execTime,
 				MemoryUsedKb:    memUsed,
 			})
-			overallStatus = "System Error"
+			overallStatus = models.StatusSystemError
 			continue
 		}
 
@@ -212,7 +212,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 			log.Printf("[%d] Failed to parse expected output for test case %d: %v", submissionID, i+1, err)
 			results = append(results, models.TestCaseResult{
 				TestCaseID:   &tc.ID,
-				Status:       "System Error",
+				Status:       models.StatusSystemError,
 				ErrorMessage: "Failed to parse expected output",
 			})
 			continue
@@ -223,12 +223,12 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 			log.Printf("[%d] WARNING: Test case %d received empty output", submissionID, i+1)
 			results = append(results, models.TestCaseResult{
 				TestCaseID:      &tc.ID,
-				Status:          "System Error",
+				Status:          models.StatusSystemError,
 				ErrorMessage:    "Empty output received - program may have encountered an error",
 				ExecutionTimeMs: execTime,
 				MemoryUsedKb:    memUsed,
 			})
-			overallStatus = "System Error"
+			overallStatus = models.StatusSystemError
 			continue
 		}
 
@@ -238,12 +238,12 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 			if errMsg, hasError := outputObj["error"]; hasError {
 				results = append(results, models.TestCaseResult{
 					TestCaseID:      &tc.ID,
-					Status:          "Runtime Error",
+					Status:          models.StatusRuntimeError,
 					ExecutionTimeMs: execTime,
 					MemoryUsedKb:    memUsed,
 					ErrorMessage:    fmt.Sprintf("%v", errMsg),
 				})
-				overallStatus = "Runtime Error"
+				overallStatus = models.StatusRuntimeError
 				continue
 			}
 		}
@@ -252,9 +252,9 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 		// FIX #10: Pass submission ID and test case number for detailed logging
 		match := compareOutputsWithLogging(outputStr, expectedOutput, submissionID, i+1)
 
-		status := "Accepted"
+		status := models.StatusAccepted
 		if !match {
-			status = "Wrong Answer"
+			status = models.StatusWrongAnswer
 		}
 
 		result := models.TestCaseResult{
@@ -267,7 +267,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 
 		results = append(results, result)
 
-		if status != "Accepted" && overallStatus == "Accepted" {
+		if status != models.StatusAccepted && overallStatus == models.StatusAccepted {
 			overallStatus = status
 		}
 	}

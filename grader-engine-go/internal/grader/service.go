@@ -64,9 +64,9 @@ func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, erro
 
 	log.Printf("[%d] Got container: %s", submissionID, containerID[:12])
 
-	// Initialize result
+	// Initialize result with system error status (will be updated if successful)
 	result := &models.GradingResult{
-		OverallStatus: "System Error",
+		OverallStatus: models.StatusSystemError,
 		Results:       []models.TestCaseResult{},
 	}
 
@@ -76,10 +76,10 @@ func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, erro
 	if err != nil {
 		log.Printf("[%d] Grading error: %v", submissionID, err)
 		result = &models.GradingResult{
-			OverallStatus: "System Error",
+			OverallStatus: models.StatusSystemError,
 			Results: []models.TestCaseResult{
 				{
-					Status:       "System Error",
+					Status:       models.StatusSystemError,
 					ErrorMessage: err.Error(),
 				},
 			},

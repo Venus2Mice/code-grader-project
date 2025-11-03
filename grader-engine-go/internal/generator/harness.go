@@ -22,21 +22,32 @@ type TestOutput struct {
 }
 
 // GenerateTestHarness creates test harness code based on language
-// NEW: Uses type inference from test cases instead of parsing signature
+// NEW: Uses explicit problem definition when available, falls back to type inference from test cases
 func GenerateTestHarness(problem *models.Problem, language string) (string, error) {
-	// Infer signature from test cases
-	functionName, paramTypes, returnType, err := InferSignatureFromTestCases(problem)
+	// Try to use explicit definition first (NEW)
+	functionName, paramTypes, returnType, paramNames, err := GetSignatureFromProblemDefinition(problem)
+
 	if err != nil {
-		return "", fmt.Errorf("failed to infer signature: %w", err)
+		// Fallback: infer from test cases
+		var inferErr error
+		functionName, paramTypes, returnType, inferErr = InferSignatureFromTestCases(problem)
+		if inferErr != nil {
+			return "", fmt.Errorf("failed to determine function signature: %w", inferErr)
+		}
+		// Generate default parameter names
+		paramNames = make([]string, len(paramTypes))
+		for i := range paramNames {
+			paramNames[i] = fmt.Sprintf("param%d", i)
+		}
 	}
 
 	switch language {
 	case "python":
-		return generatePythonHarnessV2(problem, functionName, paramTypes, returnType)
+		return generatePythonHarnessV2(problem, functionName, paramTypes, returnType, paramNames)
 	case "cpp":
-		return generateCppHarnessV2(problem, functionName, paramTypes, returnType)
+		return generateCppHarnessV2(problem, functionName, paramTypes, returnType, paramNames)
 	case "java":
-		return generateJavaHarnessV2(problem, functionName, paramTypes, returnType)
+		return generateJavaHarnessV2(problem, functionName, paramTypes, returnType, paramNames)
 	default:
 		return "", fmt.Errorf("unsupported language: %s", language)
 	}

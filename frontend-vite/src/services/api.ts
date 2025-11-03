@@ -257,6 +257,34 @@ export const studentAPI = {
   },
 }
 
+// ==================== RESOURCE APIs ====================
+
+export const resourceAPI = {
+  getByProblem: async (problemId: number) => {
+    return api.get(`/api/problems/${problemId}/resources`)
+  },
+
+  upload: async (problemId: number, formData: FormData) => {
+    return api.post(`/api/problems/${problemId}/resources/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  addDriveLink: async (problemId: number, data: { drive_link: string; description?: string }) => {
+    return api.post(`/api/problems/${problemId}/resources/drive-link`, data)
+  },
+
+  addExternalLink: async (problemId: number, data: { file_url: string; file_name: string; description?: string }) => {
+    return api.post(`/api/problems/${problemId}/resources/external-link`, data)
+  },
+
+  delete: async (resourceId: number) => {
+    return api.delete(`/api/resources/${resourceId}`)
+  },
+}
+
 // ==================== HELPER FUNCTIONS ====================
 
 export const isAuthenticated = (): boolean => {

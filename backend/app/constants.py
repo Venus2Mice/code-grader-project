@@ -82,7 +82,8 @@ ERROR_STATUSES = [
 ]
 
 # Statuses that indicate success (for scoring)
-SUCCESS_STATUSES = [STATUS_ACCEPTED, 'Passed']  # Worker may send 'Passed' too
+# IMPORTANT: Keep synchronized with worker's status constants
+SUCCESS_STATUSES = [STATUS_ACCEPTED]
 
 
 # ============================================

@@ -93,9 +93,11 @@ class Problem(Base):
     markdown_content = Column(Text, nullable=True)  # NEW: Markdown description (optional)
     difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
     language = Column(String(50), nullable=False, default='cpp')  # Target language for this problem
-    function_signature = Column(Text, nullable=False)  # Required for all problems
-    function_name = Column(String(100), nullable=True)  # Extracted from signature
-    parameter_types = Column(JSONB, nullable=True)  # NEW: ["int[]", "int"] - extracted from signature
+    function_signature = Column(Text, nullable=True)  # Optional - kept for backward compatibility
+    function_name = Column(String(100), nullable=False)  # Teacher-defined function name
+    return_type = Column(String(100), nullable=False, default='int')  # NEW: Return type (e.g., "int", "int[]", "string")
+    parameters = Column(JSONB, nullable=False, default=list)  # NEW: [{"name": "param1", "type": "int[]"}, {...}]
+    parameter_types = Column(JSONB, nullable=True)  # DEPRECATED: kept for backward compatibility
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     language_limits = Column(JSONB, nullable=True)  # Language-specific limits {"cpp": {"timeMs": 1000, "memoryKb": 65536}}

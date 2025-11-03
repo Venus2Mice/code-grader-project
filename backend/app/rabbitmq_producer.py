@@ -13,6 +13,12 @@ def publish_task(task_data):
         
         channel.queue_declare(queue='grading_queue', durable=True)
         
+        # Ensure all required fields are present
+        if 'retry_count' not in task_data:
+            task_data['retry_count'] = 0
+        if 'is_test' not in task_data:
+            task_data['is_test'] = False
+        
         message_body = json.dumps(task_data)
         
         channel.basic_publish(

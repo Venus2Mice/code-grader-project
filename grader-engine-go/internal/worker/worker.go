@@ -28,8 +28,9 @@ type Worker struct {
 
 // TaskMessage represents the message structure from RabbitMQ
 type TaskMessage struct {
-	SubmissionID int `json:"submission_id"`
-	RetryCount   int `json:"retry_count,omitempty"` // Track retry attempts
+	SubmissionID int  `json:"submission_id"`
+	RetryCount   int  `json:"retry_count"` // Track retry attempts
+	IsTest       bool `json:"is_test"`     // Differentiate test runs from actual submissions
 }
 
 // New creates a new worker instance

@@ -250,3 +250,21 @@ export interface APIError {
   status: number
   details?: any
 }
+
+// ============================================
+// Resource Types (for attachments/links)
+// ============================================
+
+export interface Resource {
+  id: number
+  problem_id: number
+  file_name: string
+  file_url: string
+  file_size?: number
+  file_type?: string
+  resource_type: 'file' | 'drive_link' | 'external_link'
+  drive_link?: string
+  description?: string
+  uploaded_at?: string
+  uploaded_by?: number
+}

@@ -9,7 +9,7 @@ import (
 )
 
 // generateCppHarnessV2 generates simplified C++ harness with type inference
-func generateCppHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string) (string, error) {
+func generateCppHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string, paramNames []string) (string, error) {
 	var sb strings.Builder
 
 	// Includes
@@ -21,10 +21,12 @@ func generateCppHarnessV2(problem *models.Problem, functionName string, paramTyp
 	sb.WriteString("#include <nlohmann/json.hpp>\n\n")
 	sb.WriteString("using namespace std;\n\n")
 
-	// Generate parameter names
-	paramNames := make([]string, len(paramTypes))
-	for i := range paramTypes {
-		paramNames[i] = fmt.Sprintf("param%d", i)
+	// Use provided parameter names, or generate defaults
+	if len(paramNames) == 0 {
+		paramNames = make([]string, len(paramTypes))
+		for i := range paramTypes {
+			paramNames[i] = fmt.Sprintf("param%d", i)
+		}
 	}
 
 	// Convert types to C++ syntax

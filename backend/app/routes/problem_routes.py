@@ -10,12 +10,12 @@ import json
 problem_bp = Blueprint('problems', __name__, url_prefix='/api/problems')
 
 # Lưu ý: Endpoint này được lồng trong class_bp đã được import
-# POST /api/classes/<int:class_id>/problems
+# POST /api/classes/<int:class_id>/problems (LEGACY - sử dụng function_signature)
 @class_bp.route('/<int:class_id>/problems', methods=['POST'])
 @jwt_required()
 @role_required('teacher')
 def create_problem_in_class(class_id):
-    """Create new problem in a class with LeetCode-style format."""
+    """Create new problem in a class with LeetCode-style format (LEGACY)."""
     target_class = Class.query.get_or_404(class_id)
     teacher_id = get_jwt_identity()
 
@@ -24,9 +24,15 @@ def create_problem_in_class(class_id):
 
     data = request.get_json()
     
+    # Check if this is the new ProblemDefineSchema format
+    if 'function_name' in data and 'return_type' in data and 'parameters' in data:
+        # Use new endpoint: POST /api/classes/<class_id>/problems/define
+        return create_problem_with_definition(class_id)
+    
+    # Legacy flow
     title = data.get('title')
     description = data.get('description')
-    markdown_content = data.get('markdown_content')  # NEW: Optional markdown content
+    markdown_content = data.get('markdown_content')
     difficulty = data.get('difficulty', 'medium')
     function_signature = data.get('function_signature')
     time_limit_ms = data.get('time_limit_ms', 1000)
@@ -66,7 +72,7 @@ def create_problem_in_class(class_id):
     new_problem = Problem(
         title=title,
         description=description,
-        markdown_content=markdown_content,  # NEW: Store markdown content
+        markdown_content=markdown_content,
         difficulty=difficulty,
         function_signature=function_signature,
         time_limit_ms=time_limit_ms,
@@ -76,7 +82,6 @@ def create_problem_in_class(class_id):
 
     # Add test cases with structured inputs/outputs
     for tc_data in test_cases:
-        # JSONB columns accept Python dict/list directly, no need for json.dumps()
         new_tc = TestCase(
             inputs=tc_data.get('inputs'),
             expected_output=tc_data.get('expected_output'),
@@ -96,6 +101,147 @@ def create_problem_in_class(class_id):
     }), 201
 
 
+# NEW ENDPOINT: POST /api/classes/<class_id>/problems/define
+# Tạo problem với định nghĩa hàm rõ ràng
+@class_bp.route('/<int:class_id>/problems/define', methods=['POST'])
+@jwt_required()
+@role_required('teacher')
+def create_problem_with_definition(class_id):
+    """
+    Create new problem with explicit function definition (NEW).
+    
+    Request body:
+    {
+        "title": "Two Sum",
+        "description": "Find two numbers that add up to target",
+        "markdown_content": "...",
+        "language": "python",
+        "function_name": "twoSum",
+        "return_type": "int[]",
+        "parameters": [
+            {"name": "nums", "type": "int[]"},
+            {"name": "target", "type": "int"}
+        ],
+        "difficulty": "medium",
+        "time_limit_ms": 1000,
+        "memory_limit_kb": 256000,
+        "test_cases": [
+            {
+                "inputs": [
+                    {"type": "int[]", "value": [2, 7, 11, 15]},
+                    {"type": "int", "value": 9}
+                ],
+                "expected_output": {"type": "int[]", "value": [0, 1]},
+                "is_hidden": false,
+                "points": 10
+            }
+        ]
+    }
+    """
+    target_class = Class.query.get_or_404(class_id)
+    teacher_id = get_jwt_identity()
+
+    if str(target_class.teacher_id) != teacher_id:
+        return jsonify({"msg": "Forbidden"}), 403
+
+    data = request.get_json()
+    
+    # Validate required fields
+    title = data.get('title')
+    description = data.get('description')
+    function_name = data.get('function_name')
+    return_type = data.get('return_type')
+    parameters = data.get('parameters', [])
+    test_cases = data.get('test_cases', [])
+
+    if not title:
+        return jsonify({"msg": "Problem title is required"}), 400
+    
+    if not description:
+        return jsonify({"msg": "Problem description is required"}), 400
+    
+    if not function_name:
+        return jsonify({"msg": "Function name is required"}), 400
+    
+    if not return_type:
+        return jsonify({"msg": "Return type is required"}), 400
+    
+    if not isinstance(parameters, list):
+        return jsonify({"msg": "Parameters must be an array"}), 400
+    
+    # Validate each parameter
+    for param in parameters:
+        if not isinstance(param, dict) or 'name' not in param or 'type' not in param:
+            return jsonify({"msg": "Each parameter must have 'name' and 'type' fields"}), 400
+    
+    if not test_cases or len(test_cases) == 0:
+        return jsonify({"msg": "At least one test case is required"}), 400
+    
+    # Validate test cases
+    total_points = 0
+    for tc_data in test_cases:
+        if 'inputs' not in tc_data or 'expected_output' not in tc_data:
+            return jsonify({"msg": "Each test case must have 'inputs' and 'expected_output'"}), 400
+        
+        points = tc_data.get('points', 10)
+        if points < 0:
+            return jsonify({"msg": "Test case points cannot be negative"}), 400
+        
+        total_points += points
+    
+    if total_points == 0:
+        return jsonify({"msg": "Total points must be greater than 0"}), 400
+    
+    if total_points > 100:
+        return jsonify({"msg": f"Total points ({total_points}) cannot exceed 100"}), 400
+
+    difficulty = data.get('difficulty', 'medium')
+    if difficulty not in ['easy', 'medium', 'hard']:
+        return jsonify({"msg": "Invalid difficulty"}), 400
+    
+    language = data.get('language', 'cpp')
+    if language not in ['cpp', 'python', 'java']:
+        return jsonify({"msg": "Invalid language"}), 400
+
+    # Create new problem
+    new_problem = Problem(
+        title=title,
+        description=description,
+        markdown_content=data.get('markdown_content'),
+        difficulty=difficulty,
+        language=language,
+        function_name=function_name,
+        return_type=return_type,
+        parameters=parameters,  # Store as list, SQLAlchemy JSONB will handle it
+        function_signature=None,  # Not required for new flow
+        time_limit_ms=data.get('time_limit_ms', 1000),
+        memory_limit_kb=data.get('memory_limit_kb', 256000),
+        class_id=class_id
+    )
+
+    # Add test cases
+    for tc_data in test_cases:
+        new_tc = TestCase(
+            inputs=tc_data.get('inputs'),
+            expected_output=tc_data.get('expected_output'),
+            is_hidden=tc_data.get('is_hidden', False),
+            points=tc_data.get('points', 10)
+        )
+        new_problem.test_cases.append(new_tc)
+
+    db.session.add(new_problem)
+    db.session.commit()
+
+    return jsonify({
+        "id": new_problem.id,
+        "title": new_problem.title,
+        "difficulty": new_problem.difficulty,
+        "function_name": new_problem.function_name,
+        "return_type": new_problem.return_type,
+        "parameters": new_problem.parameters
+    }), 201
+
+
 # GET /api/classes/<int:class_id>/problems
 # Tương tự, route này cũng được đính vào class_bp
 @class_bp.route('/<int:class_id>/problems', methods=['GET'])
@@ -107,10 +253,13 @@ def get_problems_in_class(class_id):
         "id": p.id, 
         "title": p.title,
         "difficulty": p.difficulty,
+        "function_name": p.function_name,
+        "return_type": p.return_type,
+        "parameters": p.parameters,
         "function_signature": p.function_signature,
         "time_limit_ms": p.time_limit_ms,
         "memory_limit_kb": p.memory_limit_kb,
-        "markdown_content": p.markdown_content,  # NEW: Include markdown content
+        "markdown_content": p.markdown_content,
         "created_at": p.created_at.isoformat() if p.created_at else None
     } for p in problems]
     return jsonify(problem_list)
@@ -124,7 +273,6 @@ def get_problem_details(problem_id):
     problem = Problem.query.get_or_404(problem_id)
     
     # Include test cases with structured inputs/outputs
-    # Note: JSONB fields are already deserialized by SQLAlchemy, no need for json.loads()
     test_cases_data = [{
         "id": tc.id,
         "inputs": tc.inputs if tc.inputs else [],
@@ -138,8 +286,11 @@ def get_problem_details(problem_id):
         "class_id": problem.class_id,
         "title": problem.title,
         "description": problem.description,
-        "markdown_content": problem.markdown_content,  # NEW: Include markdown content
+        "markdown_content": problem.markdown_content,
         "difficulty": problem.difficulty,
+        "function_name": problem.function_name,
+        "return_type": problem.return_type,
+        "parameters": problem.parameters,
         "function_signature": problem.function_signature,
         "time_limit_ms": problem.time_limit_ms,
         "memory_limit_kb": problem.memory_limit_kb,

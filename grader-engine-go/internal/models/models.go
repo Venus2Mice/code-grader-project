@@ -35,9 +35,11 @@ type Problem struct {
 	Description       string          `gorm:"column:description;type:text"`
 	MarkdownContent   *string         `gorm:"column:markdown_content;type:text"` // NEW: Optional markdown content
 	Difficulty        string          `gorm:"column:difficulty;size:20;default:'medium'"`
-	FunctionSignature string          `gorm:"column:function_signature;type:text;not null"` // Required
-	FunctionName      string          `gorm:"column:function_name;size:100"`
-	ParameterTypes    json.RawMessage `gorm:"column:parameter_types;type:jsonb"` // ["int[]", "int"]
+	FunctionSignature *string         `gorm:"column:function_signature;type:text"`       // DEPRECATED: Optional for backward compatibility
+	FunctionName      string          `gorm:"column:function_name;size:100;not null"`    // NEW: Teacher-defined function name
+	ReturnType        string          `gorm:"column:return_type;size:100;default:'int'"` // NEW: Return type (e.g., "int", "int[]", "string")
+	Parameters        json.RawMessage `gorm:"column:parameters;type:jsonb;default:'[]'"` // NEW: [{"name": "param1", "type": "int[]"}, {...}]
+	ParameterTypes    json.RawMessage `gorm:"column:parameter_types;type:jsonb"`         // DEPRECATED: kept for backward compatibility
 	TimeLimitMs       int             `gorm:"column:time_limit_ms;default:1000"`
 	MemoryLimitKb     int             `gorm:"column:memory_limit_kb;default:256000"`
 	LanguageLimits    LanguageLimits  `gorm:"column:language_limits;type:jsonb"` // Language-specific limits

@@ -21,7 +21,8 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
     console.log('🔍 VITE COMPUTE RESULTS INPUT:', {
       status: submissionData.status,
       results: submissionData.results,
-      resultsLength: submissionData.results?.length
+      resultsLength: submissionData.results?.length,
+      cachedScore: submissionData.cached_score
     })
     
     const resultsArr: TestResult[] = submissionData.results && Array.isArray(submissionData.results) 
@@ -45,31 +46,11 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       resultsStatuses: resultsArr.map(r => r.status)
     })
 
-    // Compute score by points when problem test_cases available, otherwise by count
-    let scoreComputed = 0
-    try {
-      const totalPoints = (problem && problem.test_cases && problem.test_cases.length > 0)
-        ? problem.test_cases.reduce((sum: number, tc: any) => sum + (tc.points || 0), 0)
-        : 0
-
-      if (totalPoints > 0) {
-        const earnedPoints = resultsArr.reduce((sum: number, r: any) => {
-          const s = String(r.status || '').toLowerCase()
-          if (['passed', 'accepted', 'ok', 'success'].includes(s)) {
-            const tc = problem!.test_cases.find((t: any) => t.id === r.test_case_id)
-            return sum + (tc ? (tc.points || 0) : 0)
-          }
-          return sum
-        }, 0)
-        scoreComputed = Math.round((earnedPoints / totalPoints) * 100)
-      } else if (totalTestsComputed > 0) {
-        scoreComputed = Math.round((passedTestsComputed / totalTestsComputed) * 100)
-      } else {
-        scoreComputed = submissionData.score || 0
-      }
-    } catch (e) {
-      scoreComputed = submissionData.score || 0
-    }
+    // ✅ FIX: Trust backend's cached_score instead of recalculating
+    // Backend calculates score using unified logic with constants
+    const scoreComputed = submissionData.cached_score !== undefined && submissionData.cached_score !== null
+      ? submissionData.cached_score
+      : (submissionData.score || 0)
 
     const finalStatus = (passedTestsComputed > 0 && totalTestsComputed > 0 && passedTestsComputed === totalTestsComputed) 
       ? 'Accepted' 
@@ -85,7 +66,7 @@ export function useSubmission({ problemId, problem, onSubmissionComplete }: UseS
       test_results: resultsArr,
       results: resultsArr  // Alias
     }
-  }, [problem?.id])
+  }, [])
 
   const pollSubmission = useCallback(async (
     submissionId: number, 

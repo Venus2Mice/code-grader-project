@@ -9,7 +9,7 @@ import (
 )
 
 // generateJavaHarnessV2 generates simplified Java harness with type inference
-func generateJavaHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string) (string, error) {
+func generateJavaHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string, paramNames []string) (string, error) {
 	var sb strings.Builder
 
 	// Class declaration
@@ -17,10 +17,12 @@ func generateJavaHarnessV2(problem *models.Problem, functionName string, paramTy
 	sb.WriteString("import com.google.gson.Gson;\n\n")
 	sb.WriteString("class Solution {\n")
 
-	// Generate parameter names
-	paramNames := make([]string, len(paramTypes))
-	for i := range paramTypes {
-		paramNames[i] = fmt.Sprintf("param%d", i)
+	// Use provided parameter names, or generate defaults
+	if len(paramNames) == 0 {
+		paramNames = make([]string, len(paramTypes))
+		for i := range paramTypes {
+			paramNames[i] = fmt.Sprintf("param%d", i)
+		}
 	}
 
 	// Convert types to Java syntax

@@ -9,7 +9,7 @@ import (
 )
 
 // generatePythonHarnessV2 generates simplified Python harness with type inference
-func generatePythonHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string) (string, error) {
+func generatePythonHarnessV2(problem *models.Problem, functionName string, paramTypes []string, returnType string, paramNames []string) (string, error) {
 	var sb strings.Builder
 
 	// Imports
@@ -17,10 +17,12 @@ func generatePythonHarnessV2(problem *models.Problem, functionName string, param
 	sb.WriteString("import sys\n")
 	sb.WriteString("from typing import List, Optional, Any\n\n")
 
-	// Generate parameter names (param0, param1, ...)
-	paramNames := make([]string, len(paramTypes))
-	for i := range paramTypes {
-		paramNames[i] = fmt.Sprintf("param%d", i)
+	// Use provided parameter names, or generate defaults if not provided
+	if len(paramNames) == 0 {
+		paramNames = make([]string, len(paramTypes))
+		for i := range paramTypes {
+			paramNames[i] = fmt.Sprintf("param%d", i)
+		}
 	}
 
 	// Convert types to Python syntax

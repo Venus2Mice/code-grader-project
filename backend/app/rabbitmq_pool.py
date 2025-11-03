@@ -157,6 +157,12 @@ def publish_task_with_pool(task_data, queue_name='grading_queue', max_retries=3)
     Returns:
         bool: True if published successfully, False otherwise
     """
+    # Ensure all required fields are present
+    if 'retry_count' not in task_data:
+        task_data['retry_count'] = 0
+    if 'is_test' not in task_data:
+        task_data['is_test'] = False
+    
     pool = get_pool()
     conn = None
     

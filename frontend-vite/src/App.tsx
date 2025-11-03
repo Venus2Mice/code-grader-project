@@ -7,6 +7,7 @@ import RegisterPage from '@/pages/Register'
 // Student pages
 import StudentDashboard from '@/pages/student/Dashboard'
 import StudentClassDetail from '@/pages/student/ClassDetail'
+import StudentProblemDetail from '@/pages/student/ProblemDetail'
 import StudentProblemView from '@/pages/student/ProblemView'
 
 // Teacher pages
@@ -27,6 +28,7 @@ function App() {
         {/* Student routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/class/:id" element={<StudentClassDetail />} />
+        <Route path="/student/problem/:id/detail" element={<StudentProblemDetail />} />
         <Route path="/student/problem/:id" element={<StudentProblemView />} />
         
         {/* Teacher routes */}

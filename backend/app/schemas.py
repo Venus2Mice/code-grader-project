@@ -145,9 +145,10 @@ class ProblemCreateSchema(Schema):
         error_messages={'validator_failed': MSG_INVALID_LANGUAGE}
     )
     function_signature = fields.Str(
-        required=True,
+        required=False,
+        allow_none=True,
         validate=validate.Length(min=5),
-        error_messages={'required': 'Function signature is required'}
+        error_messages={'validator_failed': 'Function signature must be at least 5 characters'}
     )
     difficulty = fields.Str(
         missing=DIFFICULTY_MEDIUM,
@@ -200,6 +201,80 @@ class TestCaseCreateSchema(Schema):
         missing=DEFAULT_TEST_CASE_POINTS,
         validate=validate.Range(min=MIN_TEST_CASE_POINTS, max=MAX_TEST_CASE_POINTS),
         error_messages={'validator_failed': f'Points must be between {MIN_TEST_CASE_POINTS} and {MAX_TEST_CASE_POINTS}'}
+    )
+
+
+class ParameterDefinitionSchema(Schema):
+    """Schema for parameter definition in ProblemDefineSchema"""
+    name = fields.Str(
+        required=True,
+        validate=validate.Length(min=1, max=100),
+        error_messages={'required': 'Parameter name is required'}
+    )
+    type = fields.Str(
+        required=True,
+        validate=validate.Length(min=1),
+        error_messages={'required': 'Parameter type is required'}
+    )
+
+
+class ProblemDefineSchema(Schema):
+    """Schema for creating a problem with explicit function definition (NEW)"""
+    title = fields.Str(
+        required=True,
+        validate=validate.Length(min=3, max=200),
+        error_messages={'required': 'Problem title is required'}
+    )
+    description = fields.Str(
+        required=True,
+        validate=validate.Length(min=10),
+        error_messages={'required': 'Problem description is required'}
+    )
+    markdown_content = fields.Str(
+        required=False,
+        allow_none=True,
+        validate=validate.Length(max=1000000),
+        error_messages={'validator_failed': 'Markdown content too large (max 1MB)'}
+    )
+    class_id = fields.Int(
+        required=True,
+        validate=validate.Range(min=1),
+        error_messages={'required': 'Class ID is required'}
+    )
+    language = fields.Str(
+        missing=DEFAULT_LANGUAGE,
+        validate=validate.OneOf(SUPPORTED_LANGUAGES),
+        error_messages={'validator_failed': MSG_INVALID_LANGUAGE}
+    )
+    function_name = fields.Str(
+        required=True,
+        validate=validate.Length(min=1, max=100),
+        error_messages={'required': 'Function name is required'}
+    )
+    return_type = fields.Str(
+        required=True,
+        validate=validate.Length(min=1),
+        error_messages={'required': 'Return type is required'}
+    )
+    parameters = fields.List(
+        fields.Nested(ParameterDefinitionSchema),
+        required=True,
+        error_messages={'required': 'Parameters array is required'}
+    )
+    difficulty = fields.Str(
+        missing=DIFFICULTY_MEDIUM,
+        validate=validate.OneOf(ALL_DIFFICULTIES),
+        error_messages={'validator_failed': MSG_INVALID_DIFFICULTY}
+    )
+    time_limit_ms = fields.Int(
+        missing=DEFAULT_TIME_LIMIT_MS,
+        validate=validate.Range(min=MIN_TIME_LIMIT_MS, max=MAX_TIME_LIMIT_MS),
+        error_messages={'validator_failed': f'Time limit must be between {MIN_TIME_LIMIT_MS}ms and {MAX_TIME_LIMIT_MS}ms'}
+    )
+    memory_limit_kb = fields.Int(
+        missing=DEFAULT_MEMORY_LIMIT_KB,
+        validate=validate.Range(min=MIN_MEMORY_LIMIT_KB, max=MAX_MEMORY_LIMIT_KB),
+        error_messages={'validator_failed': f'Memory limit must be between {MIN_MEMORY_LIMIT_KB//1024}MB and {MAX_MEMORY_LIMIT_KB//1024}MB'}
     )
 
 

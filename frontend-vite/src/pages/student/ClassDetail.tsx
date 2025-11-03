@@ -128,7 +128,7 @@ export default function StudentClassPage() {
             }
 
             return (
-              <Link key={problem.id} to={`/student/problem/${problem.id}?classId=${classId}`}>
+              <Link key={problem.id} to={`/student/problem/${problem.id}/detail?classId=${classId}`}>
                 <Card className="group cursor-pointer border-4 border-border bg-card shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,0.3)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all p-6">
                   <div className="flex items-start justify-between gap-6 flex-wrap lg:flex-nowrap">
                     <div className="flex-1 min-w-[300px] space-y-3">
