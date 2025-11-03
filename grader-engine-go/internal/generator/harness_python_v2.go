@@ -61,8 +61,11 @@ func generatePythonHarnessV2(problem *models.Problem, functionName string, param
 
 		// Validate input count
 		if len(inputs) != len(paramTypes) {
-			return "", fmt.Errorf("test case %d: expected %d parameters but got %d inputs",
-				i+1, len(paramTypes), len(inputs))
+			return "", fmt.Errorf("test case %d: expected %d parameters but got %d inputs.\n"+
+				"Problem definition: function_name='%s', parameters=%v\n"+
+				"Test case inputs: %s\n"+
+				"HINT: Make sure the problem's 'parameters' field matches the number of test case inputs",
+				i+1, len(paramTypes), len(inputs), functionName, paramNames, string(tc.Inputs))
 		}
 
 		// Generate input variables

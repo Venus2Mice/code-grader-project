@@ -27,8 +27,42 @@ func GetSignatureFromProblemDefinition(problem *models.Problem) (string, []strin
 	var parameters []Parameter
 	if len(problem.Parameters) > 0 {
 		if err := json.Unmarshal(problem.Parameters, &parameters); err != nil {
-			return "", nil, "", nil, fmt.Errorf("failed to parse parameters: %w", err)
+			return "", nil, "", nil, fmt.Errorf("failed to parse parameters (raw: %s): %w", string(problem.Parameters), err)
 		}
+	}
+
+	// FIX: If parameters is empty but test cases exist, infer from first test case
+	if len(parameters) == 0 && len(problem.TestCases) > 0 {
+		fmt.Printf("[WARNING] Problem %d ('%s') has empty parameters field. Inferring from test cases...\n",
+			problem.ID, problem.Title)
+
+		// Parse first test case to infer parameter count and types
+		firstTC := problem.TestCases[0]
+		var inputs []TestInput
+		if err := json.Unmarshal(firstTC.Inputs, &inputs); err != nil {
+			return "", nil, "", nil, fmt.Errorf("failed to infer parameters from test case inputs: %w", err)
+		}
+
+		// Create parameter definitions from inputs
+		parameters = make([]Parameter, len(inputs))
+		for i, input := range inputs {
+			parameters[i] = Parameter{
+				Name: fmt.Sprintf("param%d", i),
+				Type: input.Type,
+			}
+		}
+
+		// Also infer return type if not set
+		if returnType == "" {
+			var output TestOutput
+			if err := json.Unmarshal(firstTC.ExpectedOutput, &output); err != nil {
+				return "", nil, "", nil, fmt.Errorf("failed to infer return type from test case output: %w", err)
+			}
+			returnType = output.Type
+			fmt.Printf("[INFO] Inferred return type from test case output: %s\n", returnType)
+		}
+
+		fmt.Printf("[INFO] Inferred %d parameters from test case inputs: %v\n", len(parameters), parameters)
 	}
 
 	// Extract types and names

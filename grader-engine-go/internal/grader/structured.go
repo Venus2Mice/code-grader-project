@@ -12,6 +12,7 @@ import (
 	"grader-engine-go/internal/generator"
 	"grader-engine-go/internal/grader/language"
 	"grader-engine-go/internal/models"
+	"grader-engine-go/internal/parser"
 
 	"github.com/docker/docker/client"
 )
@@ -42,9 +43,26 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 		return nil, fmt.Errorf("failed to generate test harness: %w", err)
 	}
 
-	// Step 3: Inject user code into harness
+	// Step 2.5: NEW - Preprocess student code to extract function matching signature
+	log.Printf("[%d] Preprocessing student code...", submissionID)
+	processedCode, err := s.preprocessStudentCode(submission, &submission.Problem)
+	if err != nil {
+		log.Printf("[%d] Preprocessing error: %v", submissionID, err)
+		return &models.GradingResult{
+			OverallStatus: models.StatusCompileError,
+			Results: []models.TestCaseResult{
+				{
+					TestCaseID:   nil,
+					Status:       models.StatusCompileError,
+					ErrorMessage: fmt.Sprintf("Code preprocessing failed: %v", err),
+				},
+			},
+		}, nil
+	}
+
+	// Step 3: Inject user code into harness (use processed code)
 	log.Printf("[%d] Injecting user code...", submissionID)
-	finalCode := generator.InjectUserCode(testHarness, submission.SourceCode, submission.Language)
+	finalCode := generator.InjectUserCode(testHarness, processedCode, submission.Language)
 
 	// Step 4: Compile
 	log.Printf("[%d] Compiling code...", submissionID)
@@ -500,6 +518,36 @@ func toBool(v interface{}) (bool, bool) {
 		return b, true
 	}
 	return false, false
+}
+
+// preprocessStudentCode parses student code and extracts the function matching problem signature
+func (s *Service) preprocessStudentCode(submission *models.Submission, problem *models.Problem) (string, error) {
+	// Get expected signature from problem
+	functionName, paramTypes, returnType, _, err := generator.GetSignatureFromProblemDefinition(problem)
+	if err != nil {
+		return "", fmt.Errorf("failed to get problem signature: %w", err)
+	}
+
+	log.Printf("[%d] Expected signature: %s(%v) -> %s", submission.ID, functionName, paramTypes, returnType)
+
+	// Preprocess code to find matching function
+	parsed, err := parser.PreprocessCode(submission.SourceCode, submission.Language, returnType, paramTypes)
+	if err != nil {
+		return "", fmt.Errorf("failed to preprocess code: %w", err)
+	}
+
+	if parsed.MatchedFunc == nil {
+		return "", fmt.Errorf("no function found matching signature %s(%v) -> %s", functionName, paramTypes, returnType)
+	}
+
+	log.Printf("[%d] Found matching function: %s(%v) -> %s",
+		submission.ID, parsed.MatchedFunc.Name, parsed.MatchedFunc.ParamTypes, parsed.MatchedFunc.ReturnType)
+
+	// Extract the function body
+	codeParser, _ := parser.GetParser(submission.Language)
+	functionBody := codeParser.ExtractFunctionBody(parsed.MatchedFunc)
+
+	return functionBody, nil
 }
 
 func compareArrays(actual, expected interface{}) bool {
