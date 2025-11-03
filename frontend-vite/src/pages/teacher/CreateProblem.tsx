@@ -514,7 +514,7 @@ export default function CreateProblemPage() {
           </Card>
 
           <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            <Button type="button" variant="outline" onClick={() => navigate(`/teacher/class/${classToken}`)}>
               CANCEL
             </Button>
             <Button type="submit">CREATE ASSIGNMENT</Button>

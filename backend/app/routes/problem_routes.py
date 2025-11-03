@@ -288,6 +288,7 @@ def get_problem_details(problem_token):
         "id": problem.id,
         "token": problem.public_token,  # Add token
         "class_id": problem.class_id,
+        "class_token": problem.class_obj.public_token if problem.class_obj else None,  # Add class token
         "title": problem.title,
         "description": problem.description,
         "markdown_content": problem.markdown_content,

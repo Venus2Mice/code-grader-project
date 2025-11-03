@@ -9,6 +9,7 @@ from datetime import datetime
 
 from ..models import db, Resource, Problem, User
 from ..decorators import role_required
+from ..token_utils import find_problem_by_token_or_404
 
 resource_bp = Blueprint('resources', __name__)
 
@@ -31,13 +32,13 @@ def get_file_size_readable(size_bytes):
 
 
 # ==================== GET Resources by Problem ====================
-@resource_bp.route('/api/problems/<int:problem_id>/resources', methods=['GET'])
+@resource_bp.route('/api/problems/<string:problem_token>/resources', methods=['GET'])
 @jwt_required()
-def get_resources_by_problem(problem_id):
+def get_resources_by_problem(problem_token):
     """Get all resources attached to a problem"""
-    problem = Problem.query.get_or_404(problem_id)
+    problem = find_problem_by_token_or_404(problem_token)
     
-    resources = Resource.query.filter_by(problem_id=problem_id).order_by(Resource.uploaded_at.desc()).all()
+    resources = Resource.query.filter_by(problem_id=problem.id).order_by(Resource.uploaded_at.desc()).all()
     
     resources_data = [{
         'id': r.id,
@@ -61,12 +62,12 @@ def get_resources_by_problem(problem_id):
 
 
 # ==================== Upload File Resource ====================
-@resource_bp.route('/api/problems/<int:problem_id>/resources/upload', methods=['POST'])
+@resource_bp.route('/api/problems/<string:problem_token>/resources/upload', methods=['POST'])
 @jwt_required()
 @role_required('teacher')
-def upload_file_resource(problem_id):
+def upload_file_resource(problem_token):
     """Upload a file resource to a problem (teacher only)"""
-    problem = Problem.query.get_or_404(problem_id)
+    problem = find_problem_by_token_or_404(problem_token)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -114,7 +115,7 @@ def upload_file_resource(problem_id):
         
         # Create resource record
         new_resource = Resource(
-            problem_id=problem_id,
+            problem_id=problem.id,
             file_name=filename,
             file_url=f'/uploads/{unique_filename}',  # Relative URL
             file_size=file_size,
@@ -146,12 +147,12 @@ def upload_file_resource(problem_id):
 
 
 # ==================== Add Drive Link Resource ====================
-@resource_bp.route('/api/problems/<int:problem_id>/resources/drive-link', methods=['POST'])
+@resource_bp.route('/api/problems/<string:problem_token>/resources/drive-link', methods=['POST'])
 @jwt_required()
 @role_required('teacher')
-def add_drive_link_resource(problem_id):
+def add_drive_link_resource(problem_token):
     """Add a Google Drive link resource to a problem (teacher only)"""
-    problem = Problem.query.get_or_404(problem_id)
+    problem = find_problem_by_token_or_404(problem_token)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -172,7 +173,7 @@ def add_drive_link_resource(problem_id):
     
     # Create resource record
     new_resource = Resource(
-        problem_id=problem_id,
+        problem_id=problem.id,
         file_name='Google Drive Link',
         file_url=drive_link,
         resource_type='drive_link',
@@ -200,12 +201,12 @@ def add_drive_link_resource(problem_id):
 
 
 # ==================== Add External Link Resource ====================
-@resource_bp.route('/api/problems/<int:problem_id>/resources/external-link', methods=['POST'])
+@resource_bp.route('/api/problems/<string:problem_token>/resources/external-link', methods=['POST'])
 @jwt_required()
 @role_required('teacher')
-def add_external_link_resource(problem_id):
+def add_external_link_resource(problem_token):
     """Add an external link resource to a problem (teacher only)"""
-    problem = Problem.query.get_or_404(problem_id)
+    problem = find_problem_by_token_or_404(problem_token)
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -230,7 +231,7 @@ def add_external_link_resource(problem_id):
     
     # Create resource record
     new_resource = Resource(
-        problem_id=problem_id,
+        problem_id=problem.id,
         file_name=file_name,
         file_url=file_url,
         resource_type='external_link',

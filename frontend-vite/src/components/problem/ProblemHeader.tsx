@@ -8,7 +8,7 @@ import type { Problem } from "@/types/problem"
 
 interface ProblemHeaderProps {
   problem: Problem
-  classId: string | null
+  classId: string | null  // This is actually classToken but keeping prop name for compatibility
   language: string
   onLanguageChange: (lang: string) => void
   onReset: () => void
@@ -24,7 +24,7 @@ interface ProblemHeaderProps {
 
 export function ProblemHeader({
   problem,
-  classId,
+  classId,  // This is actually classToken but keeping prop name for compatibility
   language,
   onLanguageChange,
   onReset,
@@ -53,14 +53,13 @@ export function ProblemHeader({
               <span className="hidden sm:inline">BACK</span>
             </Link>
           ) : (
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
+            <Link
+              to="/student/dashboard"
               className="inline-flex items-center gap-2 border-4 border-border bg-muted px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-foreground transition-all hover:translate-x-0.5 hover:translate-y-0.5 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,255,255,0.2)]"
             >
               <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
               <span className="hidden sm:inline">BACK</span>
-            </Button>
+            </Link>
           )}
           <div className="hidden md:block h-8 w-1 bg-border" />
           <h1 className="text-sm md:text-lg font-black uppercase text-foreground line-clamp-1">{problem.title}</h1>

@@ -3,24 +3,25 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
 from ..models import User, Class, Problem, Submission
 from ..decorators import role_required
+from ..token_utils import find_class_by_token_or_404
 
 student_bp = Blueprint('students', __name__, url_prefix='/api/students')
 
 
-@student_bp.route('/me/classes/<int:class_id>/problems-status', methods=['GET'])
+@student_bp.route('/me/classes/<string:class_token>/problems-status', methods=['GET'])
 @jwt_required()
 @role_required('student')
-def get_problems_status_in_class(class_id):
+def get_problems_status_in_class(class_token):
     """Lấy trạng thái của tất cả problems trong class cho student hiện tại."""
     student_id = get_jwt_identity()
     student = User.query.get(student_id)
-    target_class = Class.query.get_or_404(class_id)
+    target_class = find_class_by_token_or_404(class_token)
     
     # Check if student is in the class
     if target_class not in student.classes_joined:
         return jsonify({"msg": "Forbidden - You are not in this class"}), 403
     
-    problems = Problem.query.filter_by(class_id=class_id).all()
+    problems = Problem.query.filter_by(class_id=target_class.id).all()
     problems_status = []
     
     for problem in problems:
@@ -69,6 +70,7 @@ def get_problems_status_in_class(class_id):
         problems_status.append({
             "problem": {
                 "id": problem.id,
+                "token": problem.public_token,
                 "title": problem.title,
                 "description": problem.description,
                 "difficulty": problem.difficulty,
@@ -80,7 +82,8 @@ def get_problems_status_in_class(class_id):
                 "status": status,
                 "score": best_score
             } if attempts > 0 else None,
-            "attempts_count": attempts
+            "attempts_count": attempts,
+            "created_at": problem.created_at.isoformat() if problem.created_at else None
         })
     
     return jsonify(problems_status), 200
