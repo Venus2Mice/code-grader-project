@@ -7,6 +7,7 @@ from .internal_routes import internal_bp
 from .student_routes import student_bp
 from .health_routes import bp as health_bp
 from .resource_routes import resource_bp
+from .language_routes import language_bp
 
 __all__ = [
     'auth_bp',
@@ -16,5 +17,6 @@ __all__ = [
     'internal_bp',
     'student_bp',
     'health_bp',
-    'resource_bp'
+    'resource_bp',
+    'language_bp'
 ]

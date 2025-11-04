@@ -1,0 +1,44 @@
+{
+  "title": "Problem",
+  "problems": "Problems",
+  "create": "Create Problem",
+  "edit": "Edit Problem",
+  "delete": "Delete Problem",
+  "details": "Problem Details",
+  "description": "Description",
+  "testCases": "Test Cases",
+  "input": "Input",
+  "output": "Output",
+  "expectedOutput": "Expected Output",
+  "actualOutput": "Actual Output",
+  "timeLimit": "Time Limit (ms)",
+  "memoryLimit": "Memory Limit (MB)",
+  "difficulty": {
+    "label": "Difficulty",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "language": {
+    "label": "Programming Language",
+    "cpp": "C++",
+    "python": "Python",
+    "java": "Java"
+  },
+  "gradingType": {
+    "label": "Grading Type",
+    "functionBased": "Function-Based",
+    "stdio": "Standard I/O"
+  },
+  "functionName": "Function Name",
+  "functionSignature": "Function Signature",
+  "addTestCase": "Add Test Case",
+  "removeTestCase": "Remove Test Case",
+  "sampleTestCase": "Sample Test Case",
+  "hiddenTestCase": "Hidden Test Case",
+  "submit": "Submit Solution",
+  "submitting": "Submitting...",
+  "viewSubmissions": "View Submissions",
+  "noProblems": "No problems available",
+  "createFirstProblem": "Create your first problem"
+}

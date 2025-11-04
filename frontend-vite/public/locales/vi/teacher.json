@@ -1,0 +1,47 @@
+{
+  "dashboard": {
+    "title": "Bảng điều khiển giáo viên",
+    "welcomeMessage": "Chào mừng, {{name}}!",
+    "myClasses": "Lớp học của tôi",
+    "createClass": "Tạo lớp học",
+    "noClasses": "Bạn chưa tạo lớp nào",
+    "createFirstClass": "Tạo lớp đầu tiên để bắt đầu"
+  },
+  "class": {
+    "title": "Lớp học",
+    "classes": "Các lớp học",
+    "classDetails": "Chi tiết lớp học",
+    "className": "Tên lớp",
+    "courseCode": "Mã môn học",
+    "description": "Mô tả",
+    "createClass": "Tạo lớp học",
+    "editClass": "Sửa lớp học",
+    "deleteClass": "Xóa lớp học",
+    "deleteConfirm": "Bạn có chắc muốn xóa lớp này? Hành động này không thể hoàn tác.",
+    "inviteCode": "Mã mời",
+    "copyInviteCode": "Sao chép mã mời",
+    "inviteCodeCopied": "Đã sao chép mã mời",
+    "students": "Học sinh",
+    "studentCount": "{{count}} học sinh",
+    "problems": "Bài tập",
+    "problemCount": "{{count}} bài tập",
+    "viewStudents": "Xem học sinh",
+    "manageProblems": "Quản lý bài tập"
+  },
+  "problem": {
+    "createProblem": "Tạo bài tập",
+    "editProblem": "Sửa bài tập",
+    "deleteProblem": "Xóa bài tập",
+    "deleteConfirm": "Bạn có chắc muốn xóa bài tập này?",
+    "viewSubmissions": "Xem bài nộp",
+    "gradeSubmissions": "Chấm bài"
+  },
+  "submission": {
+    "allSubmissions": "Tất cả bài nộp",
+    "pendingGrading": "Chờ chấm",
+    "graded": "Đã chấm",
+    "viewDetails": "Xem chi tiết",
+    "grade": "Chấm điểm",
+    "regrade": "Chấm lại"
+  }
+}

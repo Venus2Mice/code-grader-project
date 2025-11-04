@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Code2, ArrowRight, CheckCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
-import { authAPI } from "@/services/api"
+import { authAPI, languageAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { useTranslation } from "react-i18next"
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +31,21 @@ export default function LoginPage() {
       const userData = response.data.data?.user || response.data.user
       
       logger.info('Login successful', { email: userData?.email, role: userData?.role })
+      
+      // Fetch and apply user's language preference
+      try {
+        const langResponse = await languageAPI.getPreference()
+        const userLanguage = langResponse.data.language
+        
+        if (userLanguage && userLanguage !== i18n.language) {
+          await i18n.changeLanguage(userLanguage)
+          localStorage.setItem('i18nextLng', userLanguage)
+          logger.info('Applied user language preference', { language: userLanguage })
+        }
+      } catch (langError) {
+        logger.error('Failed to fetch language preference', langError)
+        // Continue login even if language sync fails
+      }
       
       // Redirect based on role
       if (userData && userData.role === 'teacher') {
@@ -60,7 +77,7 @@ export default function LoginPage() {
             <div className="h-20 w-20 bg-background border-4 border-border flex items-center justify-center">
               <Code2 className="h-12 w-12 text-foreground" />
             </div>
-            <h1 className="text-5xl font-black uppercase text-primary-foreground">CodeGrader</h1>
+            <h1 className="text-5xl font-black uppercase text-primary-foreground">{t('common:appName')}</h1>
           </div>
 
           <h2 className="text-4xl font-black uppercase text-primary-foreground mb-6">
@@ -99,9 +116,9 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center bg-background p-4 md:p-8">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-3">
-            <CardTitle className="text-2xl md:text-4xl font-black uppercase">Sign In</CardTitle>
+            <CardTitle className="text-2xl md:text-4xl font-black uppercase">{t('auth:login.title')}</CardTitle>
             <CardDescription className="font-bold text-sm md:text-base">
-              Enter your credentials to access your account
+              {t('auth:login.subtitle')}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
@@ -113,12 +130,12 @@ export default function LoginPage() {
               )}
               <div className="space-y-3">
                 <Label htmlFor="email" className="font-bold uppercase text-sm">
-                  Email Address
+                  {t('auth:login.emailLabel')}
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@example.com"
+                  placeholder={t('auth:login.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -126,12 +143,12 @@ export default function LoginPage() {
               </div>
               <div className="space-y-3">
                 <Label htmlFor="password" className="font-bold uppercase text-sm">
-                  Password
+                  {t('auth:login.passwordLabel')}
                 </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder={t('auth:login.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -140,13 +157,13 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4 mt-6">
               <Button type="submit" className="w-full gap-2 text-sm md:text-base" disabled={isLoading}>
-                {isLoading ? "SIGNING IN..." : "SIGN IN"}
+                {isLoading ? t('auth:login.submitting').toUpperCase() : t('auth:login.submit').toUpperCase()}
                 <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
               <p className="text-xs md:text-sm text-center font-bold">
-                Don't have an account?{" "}
+                {t('auth:login.noAccount')}{" "}
                 <Link to="/register" className="text-primary hover:underline underline-offset-4 font-black">
-                  REGISTER HERE
+                  {t('auth:login.signUp').toUpperCase()}
                 </Link>
               </p>
             </CardFooter>

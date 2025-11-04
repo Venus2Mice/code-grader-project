@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from .class_routes import class_bp 
 from ..models import db, Problem, Class, TestCase, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
+from ..i18n_decorators import with_user_language
 from ..token_utils import find_class_by_token_or_404, find_problem_by_token_or_404
 import json
 import re
@@ -328,9 +329,13 @@ def get_problems_in_class(class_token):
 # Route này thuộc về problem_bp
 @problem_bp.route('/<string:problem_token>', methods=['GET'])
 @jwt_required()
+@with_user_language
 def get_problem_details(problem_token):
-    """Get problem details with structured test cases."""
+    """Get problem details with structured test cases and localized content."""
     problem = find_problem_by_token_or_404(problem_token)
+    
+    # Get user's preferred language from context
+    lang = getattr(g, 'language', 'en')
     
     # Include test cases with structured inputs/outputs
     test_cases_data = [{
@@ -346,9 +351,9 @@ def get_problem_details(problem_token):
         "token": problem.public_token,  # Add token
         "class_id": problem.class_id,
         "class_token": problem.class_obj.public_token if problem.class_obj else None,  # Add class token
-        "title": problem.title,
-        "description": problem.description,
-        "markdown_content": problem.markdown_content,
+        "title": problem.get_title(lang),  # Use localized title
+        "description": problem.get_description(lang),  # Use localized description
+        "markdown_content": problem.get_markdown_content(lang),  # Use localized markdown
         "difficulty": problem.difficulty,
         "function_name": problem.function_name,
         "return_type": problem.return_type,
@@ -359,7 +364,8 @@ def get_problem_details(problem_token):
         "language": problem.language,
         "grading_mode": "function" if problem.function_name else "stdio",
         "test_cases": test_cases_data,
-        "created_at": problem.created_at.isoformat() if problem.created_at else None
+        "created_at": problem.created_at.isoformat() if problem.created_at else None,
+        "user_language": lang  # Include user's language preference in response
     })
 
 

@@ -1,0 +1,21 @@
+{
+  "required": "Trường này là bắt buộc",
+  "email": {
+    "invalid": "Vui lòng nhập địa chỉ email hợp lệ",
+    "required": "Email là bắt buộc"
+  },
+  "password": {
+    "required": "Mật khẩu là bắt buộc",
+    "minLength": "Mật khẩu phải có ít nhất {{min}} ký tự",
+    "maxLength": "Mật khẩu không được quá {{max}} ký tự",
+    "mismatch": "Mật khẩu không khớp"
+  },
+  "name": {
+    "required": "Tên là bắt buộc",
+    "minLength": "Tên phải có ít nhất {{min}} ký tự"
+  },
+  "code": {
+    "required": "Mã là bắt buộc",
+    "invalid": "Định dạng mã không hợp lệ"
+  }
+}

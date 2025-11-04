@@ -50,7 +50,8 @@ def create_app():
             internal_bp,
             student_bp,
             health_bp,
-            resource_bp
+            resource_bp,
+            language_bp
         )
         from .routes.config_routes import config_bp
         
@@ -63,6 +64,7 @@ def create_app():
         app.register_blueprint(student_bp)
         app.register_blueprint(health_bp)
         app.register_blueprint(resource_bp)
+        app.register_blueprint(language_bp)
         app.register_blueprint(config_bp)
 
         # Import models để migrate có thể "thấy" chúng

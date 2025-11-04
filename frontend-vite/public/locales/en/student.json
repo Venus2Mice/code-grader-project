@@ -1,0 +1,34 @@
+{
+  "dashboard": {
+    "title": "Student Dashboard",
+    "welcomeMessage": "Welcome back, {{name}}!",
+    "myClasses": "My Classes",
+    "joinClass": "Join Class",
+    "noClasses": "You haven't joined any classes yet",
+    "joinFirstClass": "Join your first class using an invite code"
+  },
+  "class": {
+    "title": "Class",
+    "classes": "Classes",
+    "classDetails": "Class Details",
+    "className": "Class Name",
+    "courseCode": "Course Code",
+    "teacher": "Teacher",
+    "students": "Students",
+    "studentCount": "{{count}} students",
+    "problems": "Problems",
+    "problemCount": "{{count}} problems",
+    "joinWithCode": "Join with code",
+    "inviteCode": "Invite Code",
+    "inviteCodePlaceholder": "Enter class invite code",
+    "join": "Join Class",
+    "leave": "Leave Class",
+    "leaveConfirm": "Are you sure you want to leave this class?"
+  },
+  "problem": {
+    "solve": "Solve Problem",
+    "submission": "Submit Solution",
+    "mySubmissions": "My Submissions",
+    "viewProblem": "View Problem"
+  }
+}

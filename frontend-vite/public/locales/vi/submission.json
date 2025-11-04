@@ -1,0 +1,33 @@
+{
+  "title": "Bài nộp",
+  "submissions": "Các bài nộp",
+  "mySubmissions": "Bài nộp của tôi",
+  "allSubmissions": "Tất cả bài nộp",
+  "viewSubmission": "Xem bài nộp",
+  "submittedAt": "Nộp lúc",
+  "submittedBy": "Nộp bởi",
+  "status": {
+    "label": "Trạng thái",
+    "pending": "Chờ xử lý",
+    "grading": "Đang chấm",
+    "completed": "Hoàn thành",
+    "accepted": "Chấp nhận",
+    "wrong_answer": "Sai kết quả",
+    "compilation_error": "Lỗi biên dịch",
+    "runtime_error": "Lỗi runtime",
+    "time_limit_exceeded": "Vượt giới hạn thời gian",
+    "memory_limit_exceeded": "Vượt giới hạn bộ nhớ"
+  },
+  "score": "Điểm",
+  "totalScore": "Tổng điểm",
+  "passedTests": "Test đạt",
+  "failedTests": "Test không đạt",
+  "executionTime": "Thời gian chạy",
+  "memoryUsed": "Bộ nhớ sử dụng",
+  "code": "Mã nguồn",
+  "output": "Đầu ra",
+  "errorOutput": "Lỗi đầu ra",
+  "testResults": "Kết quả test",
+  "noSubmissions": "Chưa có bài nộp",
+  "submitFirst": "Nộp bài đầu tiên của bạn"
+}

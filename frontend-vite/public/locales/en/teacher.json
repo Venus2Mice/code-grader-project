@@ -1,0 +1,47 @@
+{
+  "dashboard": {
+    "title": "Teacher Dashboard",
+    "welcomeMessage": "Welcome, {{name}}!",
+    "myClasses": "My Classes",
+    "createClass": "Create Class",
+    "noClasses": "You haven't created any classes yet",
+    "createFirstClass": "Create your first class to get started"
+  },
+  "class": {
+    "title": "Class",
+    "classes": "Classes",
+    "classDetails": "Class Details",
+    "className": "Class Name",
+    "courseCode": "Course Code",
+    "description": "Description",
+    "createClass": "Create Class",
+    "editClass": "Edit Class",
+    "deleteClass": "Delete Class",
+    "deleteConfirm": "Are you sure you want to delete this class? This action cannot be undone.",
+    "inviteCode": "Invite Code",
+    "copyInviteCode": "Copy Invite Code",
+    "inviteCodeCopied": "Invite code copied to clipboard",
+    "students": "Students",
+    "studentCount": "{{count}} students",
+    "problems": "Problems",
+    "problemCount": "{{count}} problems",
+    "viewStudents": "View Students",
+    "manageProblems": "Manage Problems"
+  },
+  "problem": {
+    "createProblem": "Create Problem",
+    "editProblem": "Edit Problem",
+    "deleteProblem": "Delete Problem",
+    "deleteConfirm": "Are you sure you want to delete this problem?",
+    "viewSubmissions": "View Submissions",
+    "gradeSubmissions": "Grade Submissions"
+  },
+  "submission": {
+    "allSubmissions": "All Submissions",
+    "pendingGrading": "Pending Grading",
+    "graded": "Graded",
+    "viewDetails": "View Details",
+    "grade": "Grade",
+    "regrade": "Re-grade"
+  }
+}

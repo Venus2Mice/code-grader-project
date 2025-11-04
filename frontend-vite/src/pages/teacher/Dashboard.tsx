@@ -8,8 +8,12 @@ import { CreateClassDialog } from "@/components/create-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { useTranslation } from "react-i18next"
+import { useLanguageSync } from "@/hooks/useLanguageSync"
 
 export default function TeacherDashboard() {
+  const { t } = useTranslation(['teacher', 'common'])
+  useLanguageSync()
   const navigate = useNavigate()
   const [classes, setClasses] = useState<any[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -79,15 +83,15 @@ export default function TeacherDashboard() {
         <div className="mx-auto max-w-7xl px-6 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-black uppercase text-white drop-shadow-lg">My Classes</h1>
-              <p className="mt-2 font-bold text-orange-50">Manage your courses and assignments</p>
+              <h1 className="text-4xl font-black uppercase text-white drop-shadow-lg">{t('teacher:dashboard.myClasses')}</h1>
+              <p className="mt-2 font-bold text-orange-50">{t('teacher:dashboard.manageSubtitle')}</p>
             </div>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
               className="gap-2 bg-white text-orange-600 hover:bg-orange-50 border-3 border-orange-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)] font-black"
             >
               <Plus className="h-5 w-5" />
-              Create Class
+              {t('teacher:dashboard.createClass')}
             </Button>
           </div>
         </div>
@@ -97,12 +101,12 @@ export default function TeacherDashboard() {
         {isLoading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
-            <p className="mt-4 font-bold">Loading classes...</p>
+            <p className="mt-4 font-bold">{t('common:loading')}</p>
           </div>
         ) : error ? (
           <div className="text-center py-20 border-4 border-red-500 bg-red-100">
             <p className="font-bold text-red-700">{error}</p>
-            <Button onClick={fetchClasses} className="mt-4">Retry</Button>
+            <Button onClick={fetchClasses} className="mt-4">{t('common:retry')}</Button>
           </div>
         ) : (
           <>
@@ -126,11 +130,11 @@ export default function TeacherDashboard() {
                     <div className="flex items-center gap-6 font-bold text-sm text-gray-700 dark:text-gray-300">
                       <div className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-orange-500" />
-                        <span>{classItem.student_count || 0} students</span>
+                        <span>{classItem.student_count || 0} {t('teacher:dashboard.students')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-orange-500" />
-                        <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : 'Just now'}</span>
+                        <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : t('teacher:dashboard.justNow')}</span>
                       </div>
                     </div>
                   </Card>
@@ -143,14 +147,14 @@ export default function TeacherDashboard() {
                 <div className="bg-gradient-to-br from-orange-400 to-amber-500 p-6 rounded-full mb-6 border-3 border-orange-300">
                   <BookOpen className="h-20 w-20 text-white" />
                 </div>
-                <h3 className="mb-3 text-2xl font-black uppercase text-gray-900 dark:text-white">No classes yet</h3>
-                <p className="mb-8 font-bold text-gray-600 dark:text-gray-400">Create your first class to get started</p>
+                <h3 className="mb-3 text-2xl font-black uppercase text-gray-900 dark:text-white">{t('teacher:dashboard.noClasses')}</h3>
+                <p className="mb-8 font-bold text-gray-600 dark:text-gray-400">{t('teacher:dashboard.createFirstClass')}</p>
                 <Button 
                   onClick={() => setIsCreateDialogOpen(true)} 
                   className="gap-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 border-3 border-orange-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] font-black"
                 >
                   <Plus className="h-5 w-5" />
-                  Create Class
+                  {t('teacher:dashboard.createClass')}
                 </Button>
               </div>
             )}

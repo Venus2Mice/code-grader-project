@@ -50,6 +50,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
+    language = Column(String(5), nullable=False, default='en')  # User's preferred language: 'en' or 'vi'
     created_at = Column(DateTime, default=datetime.utcnow)
     
     role = relationship('Role', back_populates='users')
@@ -98,6 +99,10 @@ class Problem(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text)
     markdown_content = Column(Text, nullable=True)  # NEW: Markdown description (optional)
+    # Vietnamese translations for i18n support
+    title_vi = Column(String(255), nullable=True)  # Vietnamese title
+    description_vi = Column(Text, nullable=True)  # Vietnamese description
+    markdown_content_vi = Column(Text, nullable=True)  # Vietnamese markdown content
     difficulty = Column(String(20), default='medium')  # 'easy', 'medium', 'hard'
     language = Column(String(50), nullable=False, default='cpp')  # Target language for this problem
     function_signature = Column(Text, nullable=True)  # Optional - kept for backward compatibility
@@ -123,6 +128,24 @@ class Problem(Base):
             memory_kb = lang_limits.get('memoryKb', self.memory_limit_kb)
             return time_ms, memory_kb
         return self.time_limit_ms, self.memory_limit_kb
+    
+    def get_title(self, lang='en'):
+        """Get problem title in the requested language with fallback to English"""
+        if lang == 'vi' and self.title_vi:
+            return self.title_vi
+        return self.title
+    
+    def get_description(self, lang='en'):
+        """Get problem description in the requested language with fallback to English"""
+        if lang == 'vi' and self.description_vi:
+            return self.description_vi
+        return self.description
+    
+    def get_markdown_content(self, lang='en'):
+        """Get problem markdown content in the requested language with fallback to English"""
+        if lang == 'vi' and self.markdown_content_vi:
+            return self.markdown_content_vi
+        return self.markdown_content
 
 class TestCase(Base):
     __tablename__ = 'test_cases'

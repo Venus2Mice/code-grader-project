@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button"
 import { Code2, LogOut, User, Moon, Sun } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useTheme } from "@/components/theme-provider"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { useTranslation } from "react-i18next"
 
 interface NavbarProps {
   userName?: string
@@ -11,6 +13,7 @@ interface NavbarProps {
 
 export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
   const { theme, toggleTheme } = useTheme()
+  const { t } = useTranslation('common')
 
   return (
     <nav className="border-b-4 border-border bg-card">
@@ -22,10 +25,12 @@ export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
           <div className="h-8 w-8 md:h-10 md:w-10 bg-primary border-4 border-border flex items-center justify-center">
             <Code2 className="h-4 w-4 md:h-6 md:w-6 text-primary-foreground" />
           </div>
-          <span className="hidden sm:inline">CodeGrader</span>
+          <span className="hidden sm:inline">{t('appName')}</span>
         </Link>
 
         <div className="flex items-center gap-2 md:gap-3">
+          <LanguageSwitcher />
+          
           <Button variant="outline" size="sm" onClick={toggleTheme} className="gap-2 bg-transparent">
             {theme === "light" ? (
               <>
@@ -49,7 +54,7 @@ export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
               </div>
               <Button variant="outline" size="sm" onClick={onLogout} className="gap-1 md:gap-2 bg-transparent">
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t('logout')}</span>
               </Button>
             </>
           )}

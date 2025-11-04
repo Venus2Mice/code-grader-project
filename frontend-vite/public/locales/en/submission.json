@@ -1,0 +1,33 @@
+{
+  "title": "Submission",
+  "submissions": "Submissions",
+  "mySubmissions": "My Submissions",
+  "allSubmissions": "All Submissions",
+  "viewSubmission": "View Submission",
+  "submittedAt": "Submitted at",
+  "submittedBy": "Submitted by",
+  "status": {
+    "label": "Status",
+    "pending": "Pending",
+    "grading": "Grading",
+    "completed": "Completed",
+    "accepted": "Accepted",
+    "wrong_answer": "Wrong Answer",
+    "compilation_error": "Compilation Error",
+    "runtime_error": "Runtime Error",
+    "time_limit_exceeded": "Time Limit Exceeded",
+    "memory_limit_exceeded": "Memory Limit Exceeded"
+  },
+  "score": "Score",
+  "totalScore": "Total Score",
+  "passedTests": "Passed Tests",
+  "failedTests": "Failed Tests",
+  "executionTime": "Execution Time",
+  "memoryUsed": "Memory Used",
+  "code": "Code",
+  "output": "Output",
+  "errorOutput": "Error Output",
+  "testResults": "Test Results",
+  "noSubmissions": "No submissions yet",
+  "submitFirst": "Submit your first solution"
+}

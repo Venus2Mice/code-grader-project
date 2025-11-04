@@ -1,0 +1,34 @@
+{
+  "dashboard": {
+    "title": "Bảng điều khiển học sinh",
+    "welcomeMessage": "Chào mừng trở lại, {{name}}!",
+    "myClasses": "Lớp học của tôi",
+    "joinClass": "Tham gia lớp",
+    "noClasses": "Bạn chưa tham gia lớp nào",
+    "joinFirstClass": "Tham gia lớp đầu tiên bằng mã mời"
+  },
+  "class": {
+    "title": "Lớp học",
+    "classes": "Các lớp học",
+    "classDetails": "Chi tiết lớp học",
+    "className": "Tên lớp",
+    "courseCode": "Mã môn học",
+    "teacher": "Giáo viên",
+    "students": "Học sinh",
+    "studentCount": "{{count}} học sinh",
+    "problems": "Bài tập",
+    "problemCount": "{{count}} bài tập",
+    "joinWithCode": "Tham gia bằng mã",
+    "inviteCode": "Mã mời",
+    "inviteCodePlaceholder": "Nhập mã mời lớp học",
+    "join": "Tham gia lớp",
+    "leave": "Rời lớp",
+    "leaveConfirm": "Bạn có chắc muốn rời khỏi lớp này?"
+  },
+  "problem": {
+    "solve": "Giải bài tập",
+    "submission": "Nộp bài",
+    "mySubmissions": "Bài nộp của tôi",
+    "viewProblem": "Xem bài tập"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "title": "Bài tập",
+  "problems": "Các bài tập",
+  "create": "Tạo bài tập",
+  "edit": "Sửa bài tập",
+  "delete": "Xóa bài tập",
+  "details": "Chi tiết bài tập",
+  "description": "Mô tả",
+  "testCases": "Test cases",
+  "input": "Đầu vào",
+  "output": "Đầu ra",
+  "expectedOutput": "Kết quả mong đợi",
+  "actualOutput": "Kết quả thực tế",
+  "timeLimit": "Giới hạn thời gian (ms)",
+  "memoryLimit": "Giới hạn bộ nhớ (MB)",
+  "difficulty": {
+    "label": "Độ khó",
+    "easy": "Dễ",
+    "medium": "Trung bình",
+    "hard": "Khó"
+  },
+  "language": {
+    "label": "Ngôn ngữ lập trình",
+    "cpp": "C++",
+    "python": "Python",
+    "java": "Java"
+  },
+  "gradingType": {
+    "label": "Loại chấm bài",
+    "functionBased": "Chấm hàm",
+    "stdio": "Nhập/Xuất chuẩn"
+  },
+  "functionName": "Tên hàm",
+  "functionSignature": "Chữ ký hàm",
+  "addTestCase": "Thêm test case",
+  "removeTestCase": "Xóa test case",
+  "sampleTestCase": "Test case mẫu",
+  "hiddenTestCase": "Test case ẩn",
+  "submit": "Nộp bài",
+  "submitting": "Đang nộp...",
+  "viewSubmissions": "Xem bài nộp",
+  "noProblems": "Chưa có bài tập nào",
+  "createFirstProblem": "Tạo bài tập đầu tiên"
+}

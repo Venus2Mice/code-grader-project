@@ -314,6 +314,22 @@ export const resourceAPI = {
   },
 }
 
+// ==================== LANGUAGE APIs ====================
+
+export const languageAPI = {
+  getPreference: async () => {
+    return api.get('/api/language/preference')
+  },
+
+  updatePreference: async (language: 'en' | 'vi') => {
+    return api.put('/api/language/preference', { language })
+  },
+
+  getSupportedLanguages: async () => {
+    return api.get('/api/language/supported')
+  },
+}
+
 // ==================== HELPER FUNCTIONS ====================
 
 export const isAuthenticated = (): boolean => {

@@ -9,9 +9,11 @@ import { ArrowRight, Sparkles } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { authAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { useTranslation } from "react-i18next"
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation(['auth', 'common'])
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -59,9 +61,9 @@ export default function RegisterPage() {
               <div className="h-12 w-12 bg-primary border-4 border-border flex items-center justify-center">
                 <Sparkles className="h-6 w-6 text-primary-foreground" />
               </div>
-              <CardTitle className="text-4xl font-black uppercase">Join Us</CardTitle>
+              <CardTitle className="text-4xl font-black uppercase">{t('auth:register.title')}</CardTitle>
             </div>
-            <CardDescription className="text-base font-bold">Create your account and start coding</CardDescription>
+            <CardDescription className="text-base font-bold">{t('auth:register.subtitle')}</CardDescription>
           </CardHeader>
           <form onSubmit={handleRegister}>
             <CardContent className="space-y-5">
@@ -72,12 +74,12 @@ export default function RegisterPage() {
               )}
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="font-black uppercase text-sm">
-                  Full Name
+                  {t('auth:register.fullNameLabel')}
                 </Label>
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder={t('auth:register.fullNamePlaceholder')}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
@@ -85,12 +87,12 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="font-black uppercase text-sm">
-                  Email Address
+                  {t('auth:register.emailLabel')}
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@example.com"
+                  placeholder={t('auth:register.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -98,31 +100,31 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="font-black uppercase text-sm">
-                  Password
+                  {t('auth:register.passwordLabel')}
                 </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Create a strong password"
+                  placeholder={t('auth:register.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-3">
-                <Label className="font-black uppercase text-sm">Account Type</Label>
+                <Label className="font-black uppercase text-sm">{t('auth:register.roleLabel')}</Label>
                 <RadioGroup value={role} onValueChange={(value) => setRole(value as "student" | "teacher")}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex items-center space-x-3 border-4 border-border p-5 bg-card hover:bg-primary/5 transition-colors cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none data-[state=checked]:bg-primary/10 data-[state=checked]:border-primary">
                       <RadioGroupItem value="student" id="student" />
                       <Label htmlFor="student" className="font-bold cursor-pointer uppercase text-xs md:text-sm flex-1">
-                        Student - Learn & Practice
+                        {t('auth:register.roleStudent')}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3 border-4 border-border p-5 bg-card hover:bg-primary/5 transition-colors cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none data-[state=checked]:bg-primary/10 data-[state=checked]:border-primary">
                       <RadioGroupItem value="teacher" id="teacher" />
                       <Label htmlFor="teacher" className="font-bold cursor-pointer uppercase text-xs md:text-sm flex-1">
-                        Teacher - Create & Manage
+                        {t('auth:register.roleTeacher')}
                       </Label>
                     </div>
                   </div>
@@ -131,13 +133,13 @@ export default function RegisterPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4 mt-6">
               <Button type="submit" className="w-full gap-2" disabled={isLoading}>
-                {isLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
+                {isLoading ? t('auth:register.submitting').toUpperCase() : t('auth:register.submit').toUpperCase()}
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <p className="text-sm text-center font-bold">
-                Already have an account?{" "}
+                {t('auth:register.hasAccount')}{" "}
                 <Link to="/login" className="text-primary hover:underline underline-offset-4 font-black">
-                  SIGN IN HERE
+                  {t('auth:register.signIn').toUpperCase()}
                 </Link>
               </p>
             </CardFooter>

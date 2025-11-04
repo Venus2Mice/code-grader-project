@@ -8,9 +8,13 @@ import { JoinClassDialog } from "@/components/join-class-dialog"
 import { Navbar } from "@/components/navbar"
 import { classAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { useTranslation } from "react-i18next"
+import { useLanguageSync } from "@/hooks/useLanguageSync"
 
 export default function StudentDashboard() {
   const navigate = useNavigate()
+  const { t } = useTranslation(['student', 'common'])
+  useLanguageSync() // Sync language on mount
   const [enrolledClasses, setEnrolledClasses] = useState<any[]>([])
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -87,10 +91,10 @@ export default function StudentDashboard() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-5xl font-black uppercase text-white tracking-tight drop-shadow-lg">
-                My Classes
+                {t('student:dashboard.myClasses')}
               </h1>
               <p className="mt-3 text-lg font-bold text-white/90">
-                Continue your learning journey, {userName}
+                {t('student:dashboard.welcomeMessage', { name: userName })}
               </p>
             </div>
             <Button 
@@ -99,7 +103,7 @@ export default function StudentDashboard() {
               className="gap-2 bg-white text-blue-600 hover:bg-white/90 border-4 border-white font-black uppercase shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] transition-all"
             >
               <Plus className="h-5 w-5" />
-              Join Class
+              {t('student:dashboard.joinClass')}
             </Button>
           </div>
         </div>
@@ -109,12 +113,12 @@ export default function StudentDashboard() {
         {isLoading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500"></div>
-            <p className="mt-4 font-bold text-blue-600 dark:text-blue-400">Loading classes...</p>
+            <p className="mt-4 font-bold text-blue-600 dark:text-blue-400">{t('common:loading')}</p>
           </div>
         ) : error ? (
           <div className="text-center py-20 border-4 border-red-500 bg-red-100 dark:bg-red-900/20">
             <p className="font-bold text-red-700 dark:text-red-400">{error}</p>
-            <Button onClick={fetchClasses} className="mt-4">Retry</Button>
+            <Button onClick={fetchClasses} className="mt-4">{t('common:retry')}</Button>
           </div>
         ) : (
           <>
@@ -142,11 +146,11 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-4 text-sm font-bold">
                       <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                         <CheckCircle className="h-5 w-5" />
-                        <span>{classItem.problems_done || 0} Done</span>
+                        <span>{classItem.problems_done || 0} {t('student:dashboard.done')}</span>
                       </div>
                       <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                         <Clock className="h-5 w-5" />
-                        <span>{classItem.problems_todo || 0} Todo</span>
+                        <span>{classItem.problems_todo || 0} {t('student:dashboard.todo')}</span>
                       </div>
                     </div>
                   </Card>
@@ -159,15 +163,15 @@ export default function StudentDashboard() {
                 <div className="h-24 w-24 border-4 border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 rotate-12 shadow-lg">
                   <BookOpen className="h-12 w-12 text-white -rotate-12" />
                 </div>
-                <h3 className="mb-3 text-3xl font-black uppercase text-blue-700 dark:text-blue-400">No Classes Yet</h3>
-                <p className="mb-8 font-bold text-blue-600 dark:text-blue-500 text-lg">Join your first class to get started</p>
+                <h3 className="mb-3 text-3xl font-black uppercase text-blue-700 dark:text-blue-400">{t('student:dashboard.noClasses')}</h3>
+                <p className="mb-8 font-bold text-blue-600 dark:text-blue-500 text-lg">{t('student:dashboard.joinFirstClass')}</p>
                 <Button 
                   onClick={() => setIsJoinDialogOpen(true)} 
                   size="lg"
                   className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-4 border-border font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   <Plus className="h-5 w-5" />
-                  Join Class
+                  {t('student:dashboard.joinClass')}
                 </Button>
               </div>
             )}
