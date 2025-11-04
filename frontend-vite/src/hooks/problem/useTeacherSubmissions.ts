@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react"
 import { problemAPI } from "@/services/api"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "@/types"
 import { logger } from "@/lib/logger"
 
 export function useTeacherSubmissions(problemToken: string) {

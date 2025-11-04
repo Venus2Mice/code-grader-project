@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react"
-import type { Problem } from "@/types/problem"
+import type { Problem } from "@/types"
 import { convertSignatureToLanguage, detectSignatureLanguage } from "@/lib/signatureConverter"
 
 const DEFAULT_CPP_CODE = `#include <iostream>

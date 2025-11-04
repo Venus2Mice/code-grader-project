@@ -45,78 +45,6 @@ export type {
 // Import types for use in this file
 import type { Submission, Problem, APIResponse as BaseAPIResponse } from './index'
 
-export interface LeaderboardEntry {
-  rank: number
-  user_id: number
-  username: string
-  full_name: string
-  total_score: number
-  problems_solved: number
-  submissions_count: number
-  last_submission?: string
-}
-
-export interface ProblemStats {
-  problem_id: number
-  problem_title: string
-  total_submissions: number
-  accepted_submissions: number
-  acceptance_rate: number
-  average_score: number
-}
-
-// ============================================
-// WebSocket Types (for real-time updates)
-// ============================================
-
-export interface WebSocketMessage {
-  type: "submission_update" | "test_result" | "error"
-  data: any
-}
-
-export interface SubmissionUpdate {
-  submission_id: number
-  status: Submission["status"]
-  progress?: number
-  message?: string
-}
-
-// ============================================
-// Legacy Error Types (use APIError from index.ts)
-// ============================================
-
-export interface ValidationError {
-  field: string
-  message: string
-}
-
-export interface ValidationErrors {
-  errors: ValidationError[]
-}
-
-// ============================================
-// Statistics Types
-// ============================================
-
-export interface UserStats {
-  total_submissions: number
-  accepted_submissions: number
-  problems_solved: number
-  total_score: number
-  average_score: number
-  submissions_by_status: Record<Submission["status"], number>
-  recent_activity: Submission[]
-}
-
-export interface ClassStats {
-  total_students: number
-  total_problems: number
-  total_submissions: number
-  average_score: number
-  top_students: LeaderboardEntry[]
-  problem_stats: ProblemStats[]
-}
-
 // ============================================
 // Type Guards
 // ============================================
@@ -136,3 +64,4 @@ export function isProblem(obj: any): obj is Problem {
 export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>
 export type PartialFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export type ExtractData<T> = T extends BaseAPIResponse<infer U> ? U : T
+

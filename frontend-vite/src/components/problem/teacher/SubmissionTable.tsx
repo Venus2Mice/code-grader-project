@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table as TableIcon } from "lucide-react"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "@/types"
 import { getStatusIcon, getStatusText } from "@/lib/teacherUtils"
 import { formatVietnameseDate } from "@/lib/problemUtils"
 

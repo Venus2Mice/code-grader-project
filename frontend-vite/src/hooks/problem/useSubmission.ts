@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from "react"
 import { submissionAPI } from "@/services/api"
-import type { SubmissionResult, TestResult, Problem } from "@/types/problem"
+import type { SubmissionResult, TestResult, Problem } from "@/types"
 import { logger } from "@/lib/logger"
 import { extractImplementation } from "@/lib/codeExtractor"
 

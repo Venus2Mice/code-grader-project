@@ -1,7 +1,7 @@
 
 import { Card } from "@/components/ui/card"
 import { MarkdownDisplay } from "@/components/problem/MarkdownDisplay"
-import type { Problem } from "@/types/problem"
+import type { Problem } from "@/types"
 
 // Helper function to format structured test case data for display
 function formatTestCaseData(data: any, isInput: boolean = false, functionSig?: string): string {
@@ -85,12 +85,6 @@ export function ProblemDetailsTab({ problem }: ProblemDetailsTabProps) {
               <p className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase">Memory Limit</p>
               <p className="mt-2 text-lg font-black text-gray-900 dark:text-white">
                 {Math.round((problem.memory_limit_kb || problem.memory_limit || 256000) / 1024)}MB
-              </p>
-            </div>
-            <div className="bg-white dark:bg-gray-900 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
-              <p className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase">Grading Mode</p>
-              <p className="mt-2 text-lg font-black text-gray-900 dark:text-white uppercase">
-                {problem.grading_mode || 'stdio'}
               </p>
             </div>
             <div className="bg-white dark:bg-gray-900 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">

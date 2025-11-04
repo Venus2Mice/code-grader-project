@@ -14,7 +14,7 @@ import (
 )
 
 // ContainerPool manages a pool of reusable Docker containers
-type ContainerPool struct {
+type ContainerPoolImpl struct {
 	client         *client.Client
 	imageName      string
 	size           int
@@ -25,7 +25,8 @@ type ContainerPool struct {
 }
 
 // NewContainerPool creates and initializes a new container pool
-func NewContainerPool(size int, imageName string) (*ContainerPool, error) {
+// Returns the interface type for dependency inversion
+func NewContainerPool(size int, imageName string) (ContainerPool, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
@@ -34,7 +35,7 @@ func NewContainerPool(size int, imageName string) (*ContainerPool, error) {
 	// Create cleanup service
 	cleanupSvc := cleanup.NewCleanupService(cli, 30*time.Second)
 
-	pool := &ContainerPool{
+	pool := &ContainerPoolImpl{
 		client:         cli,
 		imageName:      imageName,
 		size:           size,
@@ -57,7 +58,7 @@ func NewContainerPool(size int, imageName string) (*ContainerPool, error) {
 }
 
 // initialize pre-creates containers for the pool
-func (p *ContainerPool) initialize() error {
+func (p *ContainerPoolImpl) initialize() error {
 	ctx := context.Background()
 
 	log.Printf("🐳 Creating %d containers for pool...", p.size)
@@ -82,7 +83,7 @@ func (p *ContainerPool) initialize() error {
 }
 
 // createContainer creates a new sandbox container
-func (p *ContainerPool) createContainer(ctx context.Context) (string, error) {
+func (p *ContainerPoolImpl) createContainer(ctx context.Context) (string, error) {
 	// Create container config
 	config := &container.Config{
 		Image: p.imageName,
@@ -113,7 +114,7 @@ func (p *ContainerPool) createContainer(ctx context.Context) (string, error) {
 }
 
 // Get retrieves a container from the pool
-func (p *ContainerPool) Get(timeout time.Duration) (string, error) {
+func (p *ContainerPoolImpl) Get(timeout time.Duration) (string, error) {
 	select {
 	case containerID := <-p.containers:
 		// Verify container is still running
@@ -139,7 +140,7 @@ func (p *ContainerPool) Get(timeout time.Duration) (string, error) {
 }
 
 // Return returns a container to the pool after cleanup
-func (p *ContainerPool) Return(containerID string) error {
+func (p *ContainerPoolImpl) Return(containerID string) error {
 	ctx := context.Background()
 
 	// Cleanup container sandbox
@@ -159,7 +160,7 @@ func (p *ContainerPool) Return(containerID string) error {
 }
 
 // cleanupContainer removes temporary files from container for reuse
-func (p *ContainerPool) cleanupContainer(ctx context.Context, containerID string) error {
+func (p *ContainerPoolImpl) cleanupContainer(ctx context.Context, containerID string) error {
 	// Comprehensive cleanup: remove all files in sandbox and recreate directory
 	// This prevents any data contamination between different submissions
 	cleanupCmd := []string{
@@ -189,7 +190,7 @@ func (p *ContainerPool) cleanupContainer(ctx context.Context, containerID string
 }
 
 // removeContainer removes a container from the pool
-func (p *ContainerPool) removeContainer(containerID string) error {
+func (p *ContainerPoolImpl) removeContainer(containerID string) error {
 	p.mu.Lock()
 	delete(p.active, containerID)
 	p.mu.Unlock()
@@ -199,7 +200,7 @@ func (p *ContainerPool) removeContainer(containerID string) error {
 }
 
 // Shutdown cleans up all containers in the pool
-func (p *ContainerPool) Shutdown() {
+func (p *ContainerPoolImpl) Shutdown() {
 	log.Println("🧹 Shutting down container pool...")
 
 	// Use cleanup service for graceful shutdown
@@ -213,7 +214,7 @@ func (p *ContainerPool) Shutdown() {
 }
 
 // GetCleanupStats returns cleanup service statistics
-func (p *ContainerPool) GetCleanupStats() map[string]interface{} {
+func (p *ContainerPoolImpl) GetCleanupStats() map[string]interface{} {
 	if p.cleanupService != nil {
 		return p.cleanupService.GetStats()
 	}
@@ -223,11 +224,11 @@ func (p *ContainerPool) GetCleanupStats() map[string]interface{} {
 }
 
 // GetSize returns the total size of the pool
-func (p *ContainerPool) GetSize() int {
+func (p *ContainerPoolImpl) GetSize() int {
 	return p.size
 }
 
 // GetAvailableCount returns the number of available containers
-func (p *ContainerPool) GetAvailableCount() int {
+func (p *ContainerPoolImpl) GetAvailableCount() int {
 	return len(p.containers)
 }

@@ -17,7 +17,7 @@ import (
 // Server provides HTTP API endpoints for health checks and metadata
 type Server struct {
 	db              *gorm.DB
-	pool            *pool.ContainerPool
+	pool            pool.ContainerPool // Use interface instead of concrete type
 	port            string
 	startTime       time.Time
 	tasksProcessed  uint64
@@ -50,7 +50,7 @@ type LanguageInfoResponse struct {
 }
 
 // NewServer creates a new API server
-func NewServer(db *gorm.DB, containerPool *pool.ContainerPool, port string) *Server {
+func NewServer(db *gorm.DB, containerPool pool.ContainerPool, port string) *Server {
 	return &Server{
 		db:             db,
 		pool:           containerPool,

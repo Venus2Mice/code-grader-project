@@ -107,7 +107,6 @@ export default function StudentClassPage() {
               description: problemData.description || '',
               markdown_content: problemData.markdown_content,
               difficulty: problemData.difficulty,
-              grading_mode: problemData.grading_mode,
               time_limit: problemData.time_limit || 1000,
               memory_limit: problemData.memory_limit || 256
             }

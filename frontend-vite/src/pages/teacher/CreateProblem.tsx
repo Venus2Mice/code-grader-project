@@ -2,7 +2,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,10 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { classAPI, problemAPI } from "@/services/api"
+import { classAPI, problemAPI, resourceAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
-import { MarkdownEditor } from "@/components/problem"
-import type { TestCaseInput, TestCaseOutput, Language, Difficulty } from "@/types"
+import { MarkdownEditor, ResourceUpload, ResourceDisplay } from "@/components/problem"
+import type { TestCaseInput, TestCaseOutput, Language, Difficulty, Resource } from "@/types"
 
 interface TestCaseForm {
   id: string
@@ -22,6 +22,11 @@ interface TestCaseForm {
   expected_output: TestCaseOutput
   is_hidden: boolean
   points: number
+}
+
+interface ParameterForm {
+  name: string
+  type: string
 }
 
 export default function CreateProblemPage() {
@@ -39,8 +44,13 @@ export default function CreateProblemPage() {
     language: "cpp" as Language,
     timeLimit: 1000,
     memoryLimit: 256,
-    functionSignature: "",
+    functionName: "",
+    returnType: "",
   })
+
+  const [parameters, setParameters] = useState<ParameterForm[]>([
+    { name: "param1", type: "int" }
+  ])
 
   const [testCases, setTestCases] = useState<TestCaseForm[]>([
     { 
@@ -51,6 +61,11 @@ export default function CreateProblemPage() {
       points: 10 
     },
   ])
+
+  // Resource management state
+  const [resources, setResources] = useState<Resource[]>([])
+  const [showResourceUpload, setShowResourceUpload] = useState(false)
+  const [problemToken, setProblemToken] = useState<string | null>(null)
 
   // State for validation modal
   const [validationModal, setValidationModal] = useState({
@@ -92,6 +107,82 @@ export default function CreateProblemPage() {
     if (testCases.length > 1) {
       setTestCases(testCases.filter((tc) => tc.id !== id))
     }
+  }
+
+  // Parameter management
+  const addParameter = () => {
+    setParameters([...parameters, { name: `param${parameters.length + 1}`, type: "int" }])
+  }
+
+  const removeParameter = (index: number) => {
+    if (parameters.length > 1) {
+      setParameters(parameters.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateParameter = (index: number, field: keyof ParameterForm, value: string) => {
+    // Validate parameter name: only alphanumeric characters
+    if (field === 'name') {
+      const alphanumericRegex = /^[a-zA-Z0-9_]*$/
+      if (!alphanumericRegex.test(value)) {
+        setValidationModal({
+          isOpen: true,
+          title: "Invalid Parameter Name",
+          message: "Parameter names can only contain letters, numbers, and underscores. No special characters allowed.",
+          type: "error"
+        })
+        return
+      }
+    }
+    
+    setParameters(parameters.map((param, i) => (i === index ? { ...param, [field]: value } : param)))
+  }
+
+  // Validate function name
+  const validateFunctionName = (name: string): boolean => {
+    // Only alphanumeric and underscore allowed, must start with letter or underscore
+    const functionNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    return functionNameRegex.test(name)
+  }
+
+  const handleFunctionNameChange = (value: string) => {
+    // Allow empty for typing
+    if (value === "") {
+      setFormData({ ...formData, functionName: value })
+      return
+    }
+
+    // Check if valid
+    if (!validateFunctionName(value)) {
+      setValidationModal({
+        isOpen: true,
+        title: "Invalid Function Name",
+        message: "Function names must start with a letter or underscore and contain only letters, numbers, and underscores. No special characters or spaces allowed.",
+        type: "error"
+      })
+      return
+    }
+
+    setFormData({ ...formData, functionName: value })
+  }
+
+  // Resource upload handlers
+  const handleResourceUploaded = (newResource: Resource) => {
+    setResources([...resources, newResource])
+    setShowResourceUpload(false)
+  }
+
+  const handleResourceDeleted = (resourceId: number) => {
+    setResources(resources.filter(r => r.id !== resourceId))
+  }
+
+  const openErrorModal = (title: string, message: string) => {
+    setValidationModal({
+      isOpen: true,
+      title,
+      message,
+      type: "error"
+    })
   }
 
   const updateTestCase = (id: string, field: keyof TestCaseForm, value: any) => {
@@ -147,6 +238,51 @@ export default function CreateProblemPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Validate function name
+    if (!formData.functionName || !validateFunctionName(formData.functionName)) {
+      setValidationModal({
+        isOpen: true,
+        title: "Invalid Function Name",
+        message: "Function name is required and must start with a letter or underscore, containing only letters, numbers, and underscores.",
+        type: "error"
+      })
+      return
+    }
+
+    // Validate return type
+    if (!formData.returnType) {
+      setValidationModal({
+        isOpen: true,
+        title: "Missing Return Type",
+        message: "Return type is required. Examples: int, string, int[], vector<int>",
+        type: "error"
+      })
+      return
+    }
+
+    // Validate parameters
+    for (let i = 0; i < parameters.length; i++) {
+      const param = parameters[i]
+      if (!param.name || !validateFunctionName(param.name)) {
+        setValidationModal({
+          isOpen: true,
+          title: "Invalid Parameter Name",
+          message: `Parameter ${i + 1}: Name must start with a letter or underscore and contain only letters, numbers, and underscores.`,
+          type: "error"
+        })
+        return
+      }
+      if (!param.type) {
+        setValidationModal({
+          isOpen: true,
+          title: "Missing Parameter Type",
+          message: `Parameter ${i + 1} (${param.name}): Type is required.`,
+          type: "error"
+        })
+        return
+      }
+    }
+    
     // Validate total points before submission
     const totalPoints = testCases.reduce((sum, tc) => sum + tc.points, 0)
     
@@ -183,14 +319,16 @@ export default function CreateProblemPage() {
     }
     
     try {
-      // Create problem with test cases matching backend schema
+      // Create problem with NEW /define endpoint
       const problemData = {
         title: formData.title,
         description: formData.description,
         markdown_content: formData.markdown_content || undefined,
         difficulty: formData.difficulty,
         language: formData.language,
-        function_signature: formData.functionSignature,
+        function_name: formData.functionName,
+        return_type: formData.returnType,
+        parameters: parameters.map(p => ({ name: p.name, type: p.type })),
         time_limit_ms: formData.timeLimit,
         memory_limit_kb: formData.memoryLimit * 1024, // Convert MB to KB
         test_cases: testCases.map(tc => ({
@@ -201,8 +339,22 @@ export default function CreateProblemPage() {
         }))
       }
 
-      await problemAPI.create(classToken, problemData)
-      navigate(`/teacher/class/${classToken}`)
+      const response = await problemAPI.createWithDefinition(classToken, problemData)
+      const createdProblemToken = response.data.token || response.data.problem_token
+      
+      // If there are resources to upload, stay on page to upload them
+      if (resources.length > 0 && createdProblemToken) {
+        setProblemToken(createdProblemToken)
+        setValidationModal({
+          isOpen: true,
+          title: "Problem Created!",
+          message: "Your problem has been created. You can now upload resources or go back to the class.",
+          type: "warning"
+        })
+      } else {
+        // Navigate back to class
+        navigate(`/teacher/class/${classToken}`)
+      }
     } catch (err: any) {
       logger.error('Error creating problem', err, { classToken })
       alert(err.response?.data?.msg || 'Failed to create problem')
@@ -348,33 +500,167 @@ export default function CreateProblemPage() {
               FUNCTION CONFIGURATION
             </h2>
 
-            <div className="space-y-4">
-              <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4 border-l-4 border-blue-500">
-                <div className="flex gap-2">
-                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div className="space-y-6">
+              {/* Info Banner - Neo Brutalism */}
+              <div className="border-4 border-cyan-500 bg-cyan-50 dark:bg-cyan-950 p-4 shadow-[4px_4px_0px_0px_rgba(6,182,212,1)]">
+                <div className="flex gap-3">
+                  <Info className="h-6 w-6 text-cyan-600 dark:text-cyan-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-bold text-blue-900 dark:text-blue-100">Function-Based Grading</p>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                      Students implement the specified function. The system automatically generates test harness code.
+                    <p className="font-black text-lg uppercase text-cyan-900 dark:text-cyan-100">Function-Based Grading</p>
+                    <p className="text-sm font-bold text-cyan-700 dark:text-cyan-300 mt-2">
+                      Students implement ONLY the function. The Go worker auto-generates test harness with starter code.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="functionSignature">Function Signature *</Label>
+              {/* Function Name - Neo Brutalism */}
+              <div className="space-y-3">
+                <Label htmlFor="functionName" className="text-base font-black uppercase tracking-wide">
+                  Function Name *
+                </Label>
                 <Input
-                  id="functionSignature"
-                  placeholder="e.g., vector<int> twoSum(vector<int>& nums, int target)"
-                  value={formData.functionSignature}
-                  onChange={(e) => setFormData({ ...formData, functionSignature: e.target.value })}
-                  className="font-mono text-sm"
+                  id="functionName"
+                  placeholder="e.g., twoSum"
+                  value={formData.functionName}
+                  onChange={(e) => handleFunctionNameChange(e.target.value)}
+                  className="border-4 border-border font-mono text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-1 focus:translate-y-1 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Function that students must implement. Must include return type, name, and parameters.
+                <p className="text-sm font-bold text-muted-foreground border-l-4 border-yellow-500 pl-3 bg-yellow-50 dark:bg-yellow-950 py-2">
+                  ⚠️ Must start with letter/underscore. Only letters, numbers, underscores allowed.
                 </p>
               </div>
+
+              {/* Return Type - Neo Brutalism */}
+              <div className="space-y-3">
+                <Label htmlFor="returnType" className="text-base font-black uppercase tracking-wide">
+                  Return Type *
+                </Label>
+                <Input
+                  id="returnType"
+                  placeholder="e.g., int, string, int[], vector<int>"
+                  value={formData.returnType}
+                  onChange={(e) => setFormData({ ...formData, returnType: e.target.value })}
+                  className="border-4 border-border font-mono text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-1 focus:translate-y-1 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  required
+                />
+                <p className="text-sm font-bold text-muted-foreground">
+                  Examples: <code className="bg-muted px-2 py-1 rounded font-mono">int</code>, <code className="bg-muted px-2 py-1 rounded font-mono">vector&lt;int&gt;</code>, <code className="bg-muted px-2 py-1 rounded font-mono">string</code>
+                </p>
+              </div>
+
+              {/* Parameters Section - Neo Brutalism */}
+              <div className="border-4 border-border bg-muted/30 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-black uppercase tracking-wide">Parameters</h3>
+                  <Button 
+                    type="button" 
+                    onClick={addParameter}
+                    className="border-4 border-border bg-lime-500 px-4 py-2 font-black uppercase text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    ADD
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {parameters.map((param, index) => (
+                    <div key={index} className="border-4 border-border bg-background p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-black uppercase">Name</Label>
+                            <Input
+                              placeholder="e.g., nums"
+                              value={param.name}
+                              onChange={(e) => updateParameter(index, 'name', e.target.value)}
+                              className="border-4 border-border font-mono font-bold"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-black uppercase">Type</Label>
+                            <Input
+                              placeholder="e.g., int[]"
+                              value={param.type}
+                              onChange={(e) => updateParameter(index, 'type', e.target.value)}
+                              className="border-4 border-border font-mono font-bold"
+                              required
+                            />
+                          </div>
+                        </div>
+                        {parameters.length > 1 && (
+                          <Button
+                            type="button"
+                            onClick={() => removeParameter(index)}
+                            className="border-4 border-border bg-red-500 p-2 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Resources Section - NEW */}
+          <Card className="border-4 border-border bg-card p-8">
+            <h2 className="mb-6 border-l-8 border-purple-500 pl-4 text-2xl font-black uppercase text-foreground">
+              RESOURCES (OPTIONAL)
+            </h2>
+
+            <div className="space-y-4">
+              <div className="border-4 border-purple-500 bg-purple-50 dark:bg-purple-950 p-4 shadow-[4px_4px_0px_0px_rgba(168,85,247,1)]">
+                <div className="flex gap-3">
+                  <Upload className="h-6 w-6 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-black text-lg uppercase text-purple-900 dark:text-purple-100">Add Files or Drive Links</p>
+                    <p className="text-sm font-bold text-purple-700 dark:text-purple-300 mt-2">
+                      Upload files or provide Google Drive links for students. These will appear in problem detail view.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Display uploaded resources (if problem created) */}
+              {resources.length > 0 && problemToken && (
+                <ResourceDisplay 
+                  resources={resources} 
+                  canDelete={true}
+                  onResourceDeleted={handleResourceDeleted}
+                />
+              )}
+
+              {/* Resource upload component */}
+              {showResourceUpload && problemToken && (
+                <ResourceUpload
+                  problemId={problemToken}
+                  onUploadSuccess={handleResourceUploaded}
+                  onError={openErrorModal}
+                />
+              )}
+
+              {/* Upload button */}
+              {!showResourceUpload && problemToken && (
+                <Button
+                  type="button"
+                  onClick={() => setShowResourceUpload(true)}
+                  className="w-full border-4 border-border bg-purple-500 px-6 py-3 font-black uppercase text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <Upload className="h-5 w-5 mr-2" />
+                  UPLOAD RESOURCES
+                </Button>
+              )}
+
+              {!problemToken && (
+                <p className="text-sm font-bold text-muted-foreground text-center border-4 border-dashed border-border p-6 bg-muted/30">
+                  Resources can be added after creating the problem
+                </p>
+              )}
             </div>
           </Card>
 

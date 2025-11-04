@@ -2,7 +2,7 @@
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { SubmissionResult } from "@/types/problem"
+import type { SubmissionResult } from "@/types"
 
 interface TestResultsPanelProps {
   testResults: SubmissionResult | null

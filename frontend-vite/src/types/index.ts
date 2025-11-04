@@ -131,7 +131,6 @@ export interface Problem {
   // Convenience aliases for backward compatibility
   time_limit?: number  // Alias for time_limit_ms
   memory_limit?: number // Alias for memory_limit_kb
-  grading_mode?: 'stdio' | 'function' // Deprecated: always 'function' now
 }
 
 export interface CreateProblemRequest {
@@ -229,6 +228,11 @@ export interface SubmissionStats {
   averageScore?: string
 }
 
+// Extended submission for student-specific views
+export interface StudentSubmission extends Submission {
+  allSubmissions?: Submission[]
+}
+
 export interface Student {
   id: number
   full_name: string
@@ -271,4 +275,14 @@ export interface Resource {
   description?: string
   uploaded_at?: string
   uploaded_by?: number
+}
+
+// ============================================
+// Code Analysis (for file upload validation)
+// ============================================
+
+export interface CodeAnalysis {
+  hasMain: boolean
+  hasFunctions: boolean
+  analysis: string
 }

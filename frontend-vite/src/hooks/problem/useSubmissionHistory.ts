@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react"
 import { submissionAPI } from "@/services/api"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "@/types"
 import { logger } from "@/lib/logger"
 
 export function useSubmissionHistory(problemToken: string) {

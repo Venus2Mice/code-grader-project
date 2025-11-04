@@ -17,16 +17,18 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// Service handles the grading logic
-type Service struct {
+// GraderService handles the grading logic
+// Renamed from Service to avoid confusion with the interface
+type GraderService struct {
 	config *config.Config
 	db     *gorm.DB
-	pool   *pool.ContainerPool
+	pool   pool.ContainerPool // Use interface instead of concrete type
 }
 
 // NewService creates a new grading service
-func NewService(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPool) *Service {
-	return &Service{
+// Returns the interface type for dependency inversion
+func NewService(cfg *config.Config, db *gorm.DB, containerPool pool.ContainerPool) Service {
+	return &GraderService{
 		config: cfg,
 		db:     db,
 		pool:   containerPool,
@@ -34,7 +36,7 @@ func NewService(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPo
 }
 
 // GradeSubmission grades a single submission
-func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, error) {
+func (s *GraderService) GradeSubmission(submissionID int) (*models.GradingResult, error) {
 	log.Printf("[%d] Starting grading process...", submissionID)
 
 	// FIX #11: Use pessimistic locking to prevent race conditions
@@ -93,7 +95,7 @@ func (s *Service) GradeSubmission(submissionID int) (*models.GradingResult, erro
 }
 
 // updateBackend sends grading result to backend API
-func (s *Service) updateBackend(submissionID int, result *models.GradingResult) {
+func (s *GraderService) updateBackend(submissionID int, result *models.GradingResult) {
 	url := fmt.Sprintf("%s/internal/submissions/%d/result", s.config.BackendAPIURL, submissionID)
 
 	jsonData, err := json.Marshal(result)

@@ -1,6 +1,6 @@
 
 import { useState, useRef } from "react"
-import type { CodeAnalysis } from "@/types/problem"
+import type { CodeAnalysis } from "@/types"
 
 interface UseFileUploadProps {
   onCodeLoaded: (code: string, fileName: string) => void

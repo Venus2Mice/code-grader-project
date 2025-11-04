@@ -1,6 +1,6 @@
 
 import { useMemo } from "react"
-import type { Submission, SubmissionStats, StudentSubmission } from "@/types/submission"
+import type { Submission, SubmissionStats, StudentSubmission } from "@/types"
 
 export function useSubmissionStats(submissions: Submission[]) {
   // Group submissions by student (show best submission for each student)

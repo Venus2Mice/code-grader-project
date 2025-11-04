@@ -8,21 +8,45 @@ import (
 
 	"grader-engine-go/internal/config"
 	"grader-engine-go/internal/grader"
-	"grader-engine-go/internal/pool"
+	"grader-engine-go/internal/models"
 
 	"github.com/streadway/amqp"
 	"gorm.io/gorm"
 )
 
+// GraderService interface for grading submissions
+type GraderService interface {
+	GradeSubmission(submissionID int) (*models.GradingResult, error)
+}
+
+// ContainerPool interface for managing Docker containers
+type ContainerPool interface {
+	Get(timeout time.Duration) (string, error)
+	Return(containerID string) error
+	Shutdown()
+	GetCleanupStats() map[string]interface{}
+	GetSize() int
+	GetAvailableCount() int
+}
+
+// RabbitMQChannel interface for publishing messages
+type RabbitMQChannel interface {
+	Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	Qos(prefetchCount, prefetchSize int, global bool) error
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
+	Close() error
+}
+
 // Worker represents the grading worker
 type Worker struct {
 	config        *config.Config
 	db            *gorm.DB
-	pool          *pool.ContainerPool
+	pool          ContainerPool
 	conn          *amqp.Connection
-	channel       *amqp.Channel
+	channel       RabbitMQChannel
 	stopChan      chan bool
-	graderService *grader.Service
+	graderService GraderService
 	apiServer     interface{ IncrementTaskCounter() } // For tracking metrics
 }
 
@@ -34,7 +58,8 @@ type TaskMessage struct {
 }
 
 // New creates a new worker instance
-func New(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPool) *Worker {
+func New(cfg *config.Config, db *gorm.DB, containerPool ContainerPool) *Worker {
+	// Create grader service with the pool interface
 	graderService := grader.NewService(cfg, db, containerPool)
 
 	return &Worker{
@@ -44,6 +69,18 @@ func New(cfg *config.Config, db *gorm.DB, containerPool *pool.ContainerPool) *Wo
 		stopChan:      make(chan bool),
 		graderService: graderService,
 		apiServer:     nil, // Will be set via SetAPIServer
+	}
+}
+
+// NewWithGraderService creates a new worker with a custom grader service (for testing)
+func NewWithGraderService(cfg *config.Config, db *gorm.DB, containerPool ContainerPool, graderSvc GraderService) *Worker {
+	return &Worker{
+		config:        cfg,
+		db:            db,
+		pool:          containerPool,
+		stopChan:      make(chan bool),
+		graderService: graderSvc,
+		apiServer:     nil,
 	}
 }
 

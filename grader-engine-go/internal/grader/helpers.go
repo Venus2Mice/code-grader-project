@@ -16,7 +16,7 @@ import (
 )
 
 // copyFileToContainer copies a file content to a container
-func (s *Service) copyFileToContainer(ctx context.Context, cli *client.Client, containerID, filename, content string) error {
+func (s *GraderService) copyFileToContainer(ctx context.Context, cli *client.Client, containerID, filename, content string) error {
 	// Create tar archive
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -42,7 +42,7 @@ func (s *Service) copyFileToContainer(ctx context.Context, cli *client.Client, c
 }
 
 // execInContainer executes a command in a container and returns exit code and output
-func (s *Service) execInContainer(ctx context.Context, cli *client.Client, containerID string, cmd []string) (int, string, error) {
+func (s *GraderService) execInContainer(ctx context.Context, cli *client.Client, containerID string, cmd []string) (int, string, error) {
 	// Create exec instance
 	execConfig := container.ExecOptions{
 		Cmd:          cmd,
@@ -87,7 +87,7 @@ func (s *Service) execInContainer(ctx context.Context, cli *client.Client, conta
 }
 
 // readFileFromContainer reads a file from a container
-func (s *Service) readFileFromContainer(ctx context.Context, cli *client.Client, containerID, filepath string) string {
+func (s *GraderService) readFileFromContainer(ctx context.Context, cli *client.Client, containerID, filepath string) string {
 	reader, _, err := cli.CopyFromContainer(ctx, containerID, filepath)
 	if err != nil {
 		return ""
@@ -115,7 +115,7 @@ func (s *Service) readFileFromContainer(ctx context.Context, cli *client.Client,
 // parseTimeMetrics extracts execution time and memory usage from /usr/bin/time output
 // Uses User time + System time for better precision (microsecond level)
 // FIX #6: Improved regex patterns to avoid false matches
-func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb int) {
+func (s *GraderService) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb int) {
 	lines := strings.Split(timeOutput, "\n")
 
 	var userTime, systemTime float64
@@ -175,7 +175,7 @@ func (s *Service) parseTimeMetrics(timeOutput string) (execTimeMs int, memoryKb 
 
 // parseBashTime extracts real time from bash time command output
 // Format: "real 0m0.003s" -> 3ms (millisecond precision)
-func (s *Service) parseBashTime(bashTimeOutput string) int {
+func (s *GraderService) parseBashTime(bashTimeOutput string) int {
 	// Parse format: real 0m0.123s or real 0m0.001s
 	re := regexp.MustCompile(`real\s+(\d+)m(\d+\.\d+)s`)
 	matches := re.FindStringSubmatch(bashTimeOutput)

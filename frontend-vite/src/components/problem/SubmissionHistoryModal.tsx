@@ -3,7 +3,7 @@ import { History } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "@/types"
 
 interface SubmissionHistoryModalProps {
   isOpen: boolean

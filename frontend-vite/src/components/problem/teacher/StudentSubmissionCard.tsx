@@ -2,7 +2,7 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { StudentSubmission } from "@/types/submission"
+import type { StudentSubmission } from "@/types"
 import { getStatusIcon, getStatusText } from "@/lib/teacherUtils"
 import { formatVietnameseDate } from "@/lib/problemUtils"
 

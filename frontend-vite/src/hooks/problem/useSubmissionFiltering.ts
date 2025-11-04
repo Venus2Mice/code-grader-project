@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from "react"
-import type { Submission, StudentSubmission } from "@/types/submission"
+import type { Submission, StudentSubmission } from "@/types"
 
 type ViewMode = 'grouped' | 'table'
 type SortBy = 'latest' | 'score' | 'name'

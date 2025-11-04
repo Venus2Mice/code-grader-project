@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react"
 import { problemAPI } from "@/services/api"
-import type { Problem } from "@/types/problem"
+import type { Problem } from "@/types"
 import { logger } from "@/lib/logger"
 
 export function useProblemData(problemToken: string) {

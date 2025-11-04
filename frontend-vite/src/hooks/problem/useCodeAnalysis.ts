@@ -1,6 +1,6 @@
 
 import { useState } from "react"
-import type { CodeAnalysis } from "@/types/problem"
+import type { CodeAnalysis } from "@/types"
 
 export function useCodeAnalysis() {
   const analyzeCppCode = (code: string): CodeAnalysis => {

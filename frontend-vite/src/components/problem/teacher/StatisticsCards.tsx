@@ -1,6 +1,6 @@
 
 import { Card } from "@/components/ui/card"
-import type { SubmissionStats } from "@/types/submission"
+import type { SubmissionStats } from "@/types"
 
 interface StatisticsCardsProps {
   stats: SubmissionStats

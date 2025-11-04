@@ -18,7 +18,7 @@ import (
 )
 
 // gradeStructured performs LeetCode-style grading with structured inputs
-func (s *Service) gradeStructured(submission *models.Submission, containerID string) (*models.GradingResult, error) {
+func (s *GraderService) gradeStructured(submission *models.Submission, containerID string) (*models.GradingResult, error) {
 	ctx := context.Background()
 	cli, _ := client.NewClientWithOpts(client.FromEnv)
 	defer cli.Close()
@@ -299,7 +299,7 @@ func (s *Service) gradeStructured(submission *models.Submission, containerID str
 }
 
 // runTestHarness executes the compiled test harness
-func (s *Service) runTestHarness(ctx context.Context, cli *client.Client, containerID string, handler language.LanguageHandler, multipliers language.ResourceMultipliers, baseTimeMs, baseMemoryKb int) (string, int, int, error) {
+func (s *GraderService) runTestHarness(ctx context.Context, cli *client.Client, containerID string, handler language.LanguageHandler, multipliers language.ResourceMultipliers, baseTimeMs, baseMemoryKb int) (string, int, int, error) {
 	adjustedTimeLimit := float64(baseTimeMs) * multipliers.TimeMultiplier / 1000.0
 	execCmd := handler.GetExecutableCommand()
 
@@ -521,7 +521,7 @@ func toBool(v interface{}) (bool, bool) {
 }
 
 // preprocessStudentCode parses student code and extracts the function matching problem signature
-func (s *Service) preprocessStudentCode(submission *models.Submission, problem *models.Problem) (string, error) {
+func (s *GraderService) preprocessStudentCode(submission *models.Submission, problem *models.Problem) (string, error) {
 	// Get expected signature from problem
 	functionName, paramTypes, returnType, _, err := generator.GetSignatureFromProblemDefinition(problem)
 	if err != nil {

@@ -2,8 +2,7 @@
 import { AlertCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Problem } from "@/types/problem"
-import type { Submission } from "@/types/submission"
+import type { Problem, Submission } from "@/types"
 import { convertSignatureToLanguage } from "@/lib/signatureConverter"
 import { MarkdownDisplay } from "./MarkdownDisplay"
 

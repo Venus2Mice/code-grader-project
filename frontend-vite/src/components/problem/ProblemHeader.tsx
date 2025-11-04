@@ -4,7 +4,7 @@ import { ArrowLeft, Play, History, CheckCircle, RotateCcw, Upload, Moon, Sun } f
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTheme } from "@/components/theme-provider"
-import type { Problem } from "@/types/problem"
+import type { Problem } from "@/types"
 
 interface ProblemHeaderProps {
   problem: Problem

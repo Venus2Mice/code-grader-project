@@ -2,8 +2,12 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { Problem } from "@/types/problem"
-import type { Submission, StudentSubmission, SubmissionStats } from "@/types/submission"
+import type { Problem, Submission, SubmissionStats } from "@/types"
+
+// StudentSubmission is now just Submission with optional allSubmissions
+interface StudentSubmission extends Submission {
+  allSubmissions?: Submission[]
+}
 
 interface StatisticsTabProps {
   submissions: Submission[]
@@ -176,12 +180,6 @@ export function StatisticsTab({
             >
               {problem.difficulty}
             </Badge>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Grading Mode</p>
-            <p className="mt-1 text-sm font-bold text-foreground uppercase">
-              {problem.grading_mode || 'stdio'}
-            </p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">Time Limit</p>

@@ -204,6 +204,30 @@ export const problemAPI = {
     return api.post(`/api/classes/${classToken}/problems`, data)
   },
 
+  createWithDefinition: async (
+    classToken: string,
+    data: {
+      title: string
+      description: string
+      markdown_content?: string
+      difficulty: 'easy' | 'medium' | 'hard'
+      language: 'cpp' | 'python' | 'java'
+      function_name: string
+      return_type: string
+      parameters: Array<{ name: string; type: string }>
+      time_limit_ms?: number
+      memory_limit_kb?: number
+      test_cases: Array<{
+        inputs: Array<{ type: string; value: any }>
+        expected_output: { type: string; value: any }
+        is_hidden: boolean
+        points: number
+      }>
+    }
+  ) => {
+    return api.post(`/api/classes/${classToken}/problems/define`, data)
+  },
+
   getByClass: async (classToken: string) => {
     return api.get(`/api/classes/${classToken}/problems`)
   },

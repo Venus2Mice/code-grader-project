@@ -78,7 +78,7 @@ def create_problem_in_class(class_token):
         function_signature=function_signature,
         time_limit_ms=time_limit_ms,
         memory_limit_kb=memory_limit_kb,
-        class_id=class_id
+        class_id=target_class.id
     )
 
     # Add test cases with structured inputs/outputs
@@ -217,7 +217,7 @@ def create_problem_with_definition(class_token):
         function_signature=None,  # Not required for new flow
         time_limit_ms=data.get('time_limit_ms', 1000),
         memory_limit_kb=data.get('memory_limit_kb', 256000),
-        class_id=class_id
+        class_id=target_class.id
     )
 
     # Add test cases
@@ -235,6 +235,7 @@ def create_problem_with_definition(class_token):
 
     return jsonify({
         "id": new_problem.id,
+        "token": new_problem.public_token,
         "title": new_problem.title,
         "difficulty": new_problem.difficulty,
         "function_name": new_problem.function_name,
