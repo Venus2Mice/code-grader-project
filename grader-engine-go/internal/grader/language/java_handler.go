@@ -21,7 +21,7 @@ func NewJavaHandler() *JavaHandler {
 			language:      "java",
 			fileExtension: "java",
 			supportsStdio: true,
-			supportsFunc:  false, // TODO: Implement function grading for Java
+			supportsFunc:  true, // ✅ IMPLEMENTED: See harness_java_v2.go
 		},
 	}
 }

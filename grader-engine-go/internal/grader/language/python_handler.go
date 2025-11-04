@@ -21,7 +21,7 @@ func NewPythonHandler() *PythonHandler {
 			language:      "python",
 			fileExtension: "py",
 			supportsStdio: true,
-			supportsFunc:  true, // TODO: Implement function grading for Python
+			supportsFunc:  true, // ✅ IMPLEMENTED: See harness_python_v2.go
 		},
 	}
 }

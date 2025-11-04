@@ -11,3 +11,7 @@ export { MarkdownDisplay } from './MarkdownDisplay'
 export { ExpandableDescription } from './ExpandableDescription'
 export { ResourceUpload } from './ResourceUpload'
 export { ResourceDisplay } from './ResourceDisplay'
+export { TestCaseBuilder } from './TestCaseBuilder'
+export { FunctionTemplates } from './FunctionTemplates'
+export { CodePreview } from './CodePreview'
+

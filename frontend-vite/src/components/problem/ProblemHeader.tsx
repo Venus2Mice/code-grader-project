@@ -77,7 +77,12 @@ export function ProblemHeader({
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           <ThemeSwitcher />
 
-          <LanguageDropdown value={language} onChange={onLanguageChange} />
+          <LanguageDropdown 
+            value={language} 
+            onChange={onLanguageChange}
+            disabled={!!problem.language}
+            lockedLanguage={problem.language || undefined}
+          />
 
           {hasResetTemplate && (
             <button

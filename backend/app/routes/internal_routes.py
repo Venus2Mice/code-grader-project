@@ -3,7 +3,8 @@ import logging
 from ..models import db, Submission, SubmissionResult
 from ..constants import (
     ERROR_STATUSES,
-    STATUS_SYSTEM_ERROR
+    STATUS_SYSTEM_ERROR,
+    STATUS_ACCEPTED
 )
 
 logger = logging.getLogger(__name__)
@@ -70,10 +71,26 @@ def update_submission_result(submission_id):
             db.session.add(new_result)
             new_results.append(new_result)  # ✅ FIX: Track new result
         
-        # ⚠️ MANUAL GRADING: Auto-scoring disabled - teacher assigns grades manually
-        # Worker only saves test execution results, does NOT calculate score
-        # Score will be set to NULL (ungraded) until teacher manually grades
-        submission.cached_score = None  # Keep NULL until teacher grades
+        # ✅ AUTO-SCORING: Calculate score based on test case points
+        # Load problem with test cases to calculate score
+        problem = submission.problem
+        total_points = sum(tc.points for tc in problem.test_cases)
+        
+        # Count earned points from passed test cases
+        earned_points = 0
+        for result in new_results:
+            if result.status == STATUS_ACCEPTED:  # Use constant instead of hardcoded string
+                test_case = next((tc for tc in problem.test_cases if tc.id == result.test_case_id), None)
+                if test_case:
+                    earned_points += test_case.points
+        
+        # Calculate percentage score (0-100)
+        if total_points > 0:
+            submission.cached_score = round((earned_points / total_points) * 100)
+        else:
+            submission.cached_score = 0
+        
+        logger.info(f"Submission {submission_id}: earned {earned_points}/{total_points} points = {submission.cached_score}%")
         
     db.session.commit()
     

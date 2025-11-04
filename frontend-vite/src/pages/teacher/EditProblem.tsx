@@ -2,7 +2,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info, Upload, Save } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info, Upload, Save, Copy, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { problemAPI, resourceAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
-import { MarkdownEditor, ResourceUpload, ResourceDisplay } from "@/components/problem"
+import { MarkdownEditor, ResourceUpload, ResourceDisplay, TestCaseBuilder, FunctionTemplates, CodePreview } from "@/components/problem"
 import type { TestCaseInput, TestCaseOutput, Language, Difficulty, Resource, Problem } from "@/types"
 
 interface TestCaseForm {
@@ -21,7 +21,7 @@ interface TestCaseForm {
   inputs: TestCaseInput[]
   expected_output: TestCaseOutput
   is_hidden: boolean
-  points: number
+  // points removed - backend auto-calculates score from test results
 }
 
 interface ParameterForm {
@@ -67,14 +67,17 @@ export default function EditProblemPage() {
       id: "1", 
       inputs: [{ type: "int", value: 0 }], 
       expected_output: { type: "int", value: 0 },
-      is_hidden: false, 
-      points: 10 
+      is_hidden: false
     },
   ])
 
   // Resource management state
   const [resources, setResources] = useState<Resource[]>([])
   const [showResourceUpload, setShowResourceUpload] = useState(false)
+
+  // UX enhancement state
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showCodePreview, setShowCodePreview] = useState(false)
 
   // State for validation modal
   const [validationModal, setValidationModal] = useState({
@@ -120,8 +123,8 @@ export default function EditProblemPage() {
           id: String(tc.id || index + 1),
           inputs: tc.inputs || [],
           expected_output: tc.expected_output || { type: "int", value: 0 },
-          is_hidden: tc.is_hidden || false,
-          points: tc.points || 10
+          is_hidden: tc.is_hidden || false
+          // points removed - not needed in frontend
         })))
       }
 
@@ -154,8 +157,7 @@ export default function EditProblemPage() {
         id: String(testCases.length + 1),
         inputs: [{ type: "int", value: 0 }],
         expected_output: { type: "int", value: 0 },
-        is_hidden: false,
-        points: 10,
+        is_hidden: false
       },
     ])
   }
@@ -243,36 +245,6 @@ export default function EditProblemPage() {
   }
 
   const updateTestCase = (id: string, field: keyof TestCaseForm, value: any) => {
-    // Validate points: must be non-negative
-    if (field === 'points') {
-      const points = Number(value)
-      if (points < 0) {
-        setValidationModal({
-          isOpen: true,
-          title: "Invalid Points",
-          message: "Test case points cannot be negative. Please enter a value of 0 or greater.",
-          type: "error"
-        })
-        return
-      }
-      
-      // Calculate total points with this new value
-      const updatedTestCases = testCases.map((tc) => 
-        tc.id === id ? { ...tc, [field]: points } : tc
-      )
-      const totalPoints = updatedTestCases.reduce((sum, tc) => sum + tc.points, 0)
-      
-      if (totalPoints > 100) {
-        setValidationModal({
-          isOpen: true,
-          title: "Points Limit Exceeded",
-          message: `Total points would be ${totalPoints}, which exceeds the maximum of 100 points. Please reduce the points to stay within the limit.`,
-          type: "error"
-        })
-        return
-      }
-    }
-    
     setTestCases(testCases.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc)))
   }
 
@@ -290,6 +262,36 @@ export default function EditProblemPage() {
         type: "error"
       })
     }
+  }
+
+  // Template selection handler
+  const handleTemplateSelect = (template: any) => {
+    setFormData({
+      ...formData,
+      functionName: template.functionName,
+      returnType: template.returnType
+    })
+    setParameters(template.parameters)
+    setTestCases(template.testCases.map((tc: any, idx: number) => ({
+      id: String(idx + 1),
+      inputs: tc.inputs,
+      expected_output: tc.expected_output,
+      is_hidden: false
+    })))
+    setShowTemplates(false)
+  }
+
+  // Quick action handlers for test cases
+  const duplicateTestCase = (id: string) => {
+    const testCase = testCases.find(tc => tc.id === id)
+    if (testCase) {
+      const newId = String(Math.max(...testCases.map(tc => parseInt(tc.id))) + 1)
+      setTestCases([...testCases, { ...testCase, id: newId }])
+    }
+  }
+
+  const setAllTestCasesVisibility = (hidden: boolean) => {
+    setTestCases(testCases.map(tc => ({ ...tc, is_hidden: hidden })))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -342,40 +344,7 @@ export default function EditProblemPage() {
       }
     }
     
-    // Validate total points before submission
-    const totalPoints = testCases.reduce((sum, tc) => sum + tc.points, 0)
-    
-    if (totalPoints === 0) {
-      setValidationModal({
-        isOpen: true,
-        title: "No Points Assigned",
-        message: "Total points must be greater than 0. Please assign points to your test cases.",
-        type: "warning"
-      })
-      return
-    }
-    
-    if (totalPoints > 100) {
-      setValidationModal({
-        isOpen: true,
-        title: "Points Limit Exceeded",
-        message: `Total points is ${totalPoints}, which exceeds the maximum of 100 points. Please adjust your test case points.`,
-        type: "error"
-      })
-      return
-    }
-    
-    // Check for negative points
-    const hasNegativePoints = testCases.some(tc => tc.points < 0)
-    if (hasNegativePoints) {
-      setValidationModal({
-        isOpen: true,
-        title: "Invalid Points",
-        message: "Some test cases have negative points. Please ensure all points are 0 or greater.",
-        type: "error"
-      })
-      return
-    }
+    // Points validation removed - backend auto-calculates score from test results
     
     try {
       // Update problem using PUT endpoint
@@ -393,8 +362,8 @@ export default function EditProblemPage() {
         test_cases: testCases.map(tc => ({
           inputs: tc.inputs,
           expected_output: tc.expected_output,
-          is_hidden: tc.is_hidden,
-          points: tc.points
+          is_hidden: tc.is_hidden
+          // points removed - backend will use default 10 points per test case for weighted scoring
         }))
       }
       
@@ -589,9 +558,25 @@ export default function EditProblemPage() {
           </Card>
 
           <Card className="border-4 border-border bg-card p-8">
-            <h2 className="mb-6 border-l-8 border-secondary pl-4 text-2xl font-black uppercase text-foreground">
-              FUNCTION CONFIGURATION
-            </h2>
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="border-l-8 border-secondary pl-4 text-2xl font-black uppercase text-foreground">
+                FUNCTION CONFIGURATION
+              </h2>
+              <Button
+                type="button"
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="border-4 border-border bg-purple-500 px-4 py-2 font-black uppercase text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
+                📝 USE TEMPLATE
+              </Button>
+            </div>
+
+            {/* Template Selector */}
+            {showTemplates && (
+              <div className="mb-6">
+                <FunctionTemplates onSelectTemplate={handleTemplateSelect} />
+              </div>
+            )}
 
             <div className="space-y-6">
               {/* Info Banner - Neo Brutalism */}
@@ -796,98 +781,82 @@ export default function EditProblemPage() {
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => duplicateTestCase(testCase.id)}
+                        className="gap-1"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Duplicate
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Inputs (JSON Array)</Label>
-                      <Textarea
-                        placeholder='[{"type":"int","value":5},{"type":"int","value":10}]'
-                        value={JSON.stringify(testCase.inputs)}
-                        onChange={(e) => updateTestCaseJSON(testCase.id, "inputs", e.target.value)}
-                        rows={4}
-                        className="font-mono text-sm"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Array of objects with "type" and "value" fields
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Expected Output (JSON Object)</Label>
-                      <Textarea
-                        placeholder='{"type":"int","value":15}'
-                        value={JSON.stringify(testCase.expected_output)}
-                        onChange={(e) => updateTestCaseJSON(testCase.id, "expected_output", e.target.value)}
-                        rows={4}
-                        className="font-mono text-sm"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Object with "type" and "value" fields
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    <Label>Points</Label>
-                    <Input
-                      type="number"
-                      value={testCase.points}
-                      onChange={(e) => updateTestCase(testCase.id, "points", Number(e.target.value))}
-                      className="w-32"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </div>
+                  {/* Replace JSON textareas with TestCaseBuilder */}
+                  <TestCaseBuilder
+                    inputs={testCase.inputs}
+                    expectedOutput={testCase.expected_output}
+                    onInputsChange={(inputs) => updateTestCase(testCase.id, "inputs", inputs)}
+                    onExpectedOutputChange={(output) => updateTestCase(testCase.id, "expected_output", output)}
+                    parameterNames={parameters.map(p => p.name)}
+                  />
                 </Card>
               ))}
             </div>
 
-            {(() => {
-              const totalPoints = testCases.reduce((sum, tc) => sum + tc.points, 0)
-              const isValid = totalPoints > 0 && totalPoints <= 100
-              const isEmpty = totalPoints === 0
-              const isOverLimit = totalPoints > 100
-              
-              return (
-                <div className={`mt-6 border-4 border-border p-6 ${
-                  isOverLimit ? 'bg-destructive/10' : 
-                  isEmpty ? 'bg-orange-500/10' : 
-                  'bg-primary/10'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-lg font-black uppercase text-foreground">
-                      TOTAL POINTS: <span className={
-                        isOverLimit ? 'text-destructive' : 
-                        isEmpty ? 'text-orange-600' : 
-                        'text-primary'
-                      }>{totalPoints}</span>
-                      <span className="text-muted-foreground"> / 100</span>
-                    </p>
-                    {!isValid && (
-                      <span className={`text-sm font-bold uppercase ${
-                        isOverLimit ? 'text-destructive' : 'text-orange-600'
-                      }`}>
-                        {isOverLimit ? '⚠️ EXCEEDS LIMIT!' : '⚠️ MUST BE > 0'}
-                      </span>
-                    )}
-                  </div>
-                  {!isValid && (
-                    <p className={`mt-2 text-xs font-medium ${
-                      isOverLimit ? 'text-destructive' : 'text-orange-600'
-                    }`}>
-                      {isOverLimit 
-                        ? 'Please reduce the points. Total must not exceed 100.' 
-                        : 'Please assign points to test cases. Total must be greater than 0.'}
-                    </p>
-                  )}
-                </div>
-              )
-            })()}
+            {/* Quick Actions for Test Cases */}
+            <div className="mt-6 flex items-center justify-between border-4 border-border bg-muted/30 p-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAllTestCasesVisibility(false)}
+                  className="gap-1"
+                >
+                  <Eye className="h-4 w-4" />
+                  Show All
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAllTestCasesVisibility(true)}
+                  className="gap-1"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  Hide All
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCodePreview(!showCodePreview)}
+                className="gap-2"
+              >
+                <Code className="h-4 w-4" />
+                {showCodePreview ? "Hide" : "Show"} Code Preview
+              </Button>
+            </div>
+
+            {/* Code Preview */}
+            {showCodePreview && testCases.length > 0 && (
+              <div className="mt-6">
+                <CodePreview
+                  language={formData.language}
+                  functionName={formData.functionName || "solution"}
+                  returnType={formData.returnType}
+                  parameters={parameters}
+                  testCase={{
+                    inputs: testCases[0].inputs,
+                    expected_output: testCases[0].expected_output
+                  }}
+                />
+              </div>
+            )}
           </Card>
 
           <div className="flex justify-end gap-4">

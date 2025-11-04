@@ -7,6 +7,7 @@ from ..rabbitmq_pool import publish_task_with_pool
 from ..services.token_service import generate_submission_token
 from ..constants import (
     STATUS_PENDING,
+    STATUS_ACCEPTED,
     SUCCESS_STATUSES,
     DEFAULT_LANGUAGE
 )
@@ -114,13 +115,13 @@ def get_submission_result(submission_id):
         total_points = sum(tc.points for tc in submission.problem.test_cases)
         earned_points = 0
         for result in submission.results:
-            if result.status in ['Passed', 'Accepted']:
+            if result.status == STATUS_ACCEPTED:  # Use constant instead of hardcoded string
                 test_case = next((tc for tc in submission.problem.test_cases if tc.id == result.test_case_id), None)
                 if test_case:
                     earned_points += test_case.points
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
     
-    passed_tests = len([r for r in submission.results if r.status in ['Passed', 'Accepted']])
+    passed_tests = len([r for r in submission.results if r.status == STATUS_ACCEPTED])
     total_tests = len(submission.problem.test_cases)
     
     # Build results with test case info
