@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useSearchParams } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Code2, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
@@ -18,8 +18,19 @@ import type { Problem, Resource } from '@/types'
 export default function StudentProblemDetailPage() {
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const classToken = searchParams.get('classToken')
   const problemToken = token as string
+
+  // Guard against null/undefined token
+  useEffect(() => {
+    if (!problemToken || problemToken === 'null' || problemToken === 'undefined') {
+      logger.error('Invalid problem token in student ProblemDetail', { token: problemToken })
+      navigate('/student/dashboard')
+      return
+    }
+    fetchProblemData()
+  }, [problemToken, navigate])
 
   // State
   const [problem, setProblem] = useState<Problem | null>(null)
@@ -29,9 +40,6 @@ export default function StudentProblemDetailPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [errorModal, setErrorModal] = useState({ isOpen: false, title: '', message: '' })
 
-  useEffect(() => {
-    fetchProblemData()
-  }, [problemToken])
 
   const fetchProblemData = async () => {
     try {
@@ -121,7 +129,7 @@ export default function StudentProblemDetailPage() {
         <div className="relative mx-auto max-w-7xl px-6 py-8">
           <Link
             to={backLink}
-            className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-muted px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+            className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-white dark:bg-gray-800 px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:bg-primary hover:text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
           >
             <ArrowLeft className="h-5 w-5" />
             BACK

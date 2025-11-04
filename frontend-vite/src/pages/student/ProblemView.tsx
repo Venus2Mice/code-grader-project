@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useParams } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import { submissionAPI } from "@/services/api"
 import { CodeEditor } from "@/components/code-editor"
 import {
@@ -28,6 +28,15 @@ import { logger } from "@/lib/logger"
 export default function ProblemSolvePage() {
   const { token } = useParams<{ token: string }>()
   const problemToken = token as string
+  const navigate = useNavigate()
+
+  // Guard against null/undefined token
+  useEffect(() => {
+    if (!problemToken || problemToken === 'null' || problemToken === 'undefined') {
+      logger.error('Invalid problem token in student ProblemView', { token: problemToken })
+      navigate('/student/dashboard')
+    }
+  }, [problemToken, navigate])
 
   // Fetch problem data
   const { problem, isLoading, classToken } = useProblemData(problemToken)

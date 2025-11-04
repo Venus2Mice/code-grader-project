@@ -37,9 +37,9 @@ export function LanguageSwitcher() {
   return (
     <div className="relative group">
       <button 
-        className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-yellow-400 border-4 border-border
-                   hover:bg-cyan-300 hover:translate-x-1 hover:translate-y-1 
-                   transition-transform font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+        className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-white dark:bg-gray-800 border-4 border-border
+                   hover:bg-primary hover:text-white dark:hover:bg-primary hover:translate-x-1 hover:translate-y-1 
+                   transition-all font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                    text-sm md:text-base"
         aria-label="Change language"
       >
@@ -55,8 +55,8 @@ export function LanguageSwitcher() {
             key={lang.code}
             onClick={() => changeLanguage(lang.code)}
             className={`w-full px-4 py-3 text-left font-bold border-b-4 border-border last:border-b-0
-                       hover:bg-yellow-400 transition-colors flex items-center gap-3
-                       ${i18n.language === lang.code ? 'bg-cyan-300' : 'bg-card'}`}
+                       hover:bg-primary hover:text-white transition-colors flex items-center gap-3
+                       ${i18n.language === lang.code ? 'bg-primary text-white' : 'bg-card'}`}
           >
             <span className="text-2xl">{lang.flag}</span>
             <span className="text-sm md:text-base">{lang.name}</span>

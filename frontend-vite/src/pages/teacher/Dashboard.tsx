@@ -76,19 +76,34 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-orange-950">
+    <div className="min-h-screen bg-background">
+      {/* Decorative geometric shapes - Teacher themed */}
+      <div className="absolute top-20 right-20 w-32 h-32 border-4 border-primary bg-primary/10 rotate-12 animate-pulse" />
+      <div className="absolute top-60 right-40 w-20 h-20 border-4 border-accent bg-accent/10 rounded-full" />
+      <div className="absolute bottom-20 left-10 w-40 h-40 border-4 border-secondary bg-secondary/10 -rotate-12" />
+      <div className="absolute bottom-40 left-40 w-24 h-24 border-4 border-card bg-card/10 rounded-full animate-pulse" />
+
       <Navbar userName={userName} userRole="teacher" onLogout={handleLogout} />
 
-      <div className="border-b-4 border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-400 to-amber-500 dark:from-orange-700 dark:to-amber-800">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="flex items-center justify-between">
+      {/* Header with gradient and pattern - Same as student */}
+      <div className="border-b-4 border-border bg-primary dark:bg-primary-foreground/5 relative overflow-hidden">
+        {/* Animated pattern background */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMCAzNmMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBvcGFjaXR5PSIuMSIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
+        
+        <div className="mx-auto max-w-7xl px-6 py-10 relative z-10">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-black uppercase text-white drop-shadow-lg">{t('teacher:dashboard.myClasses')}</h1>
-              <p className="mt-2 font-bold text-orange-50">{t('teacher:dashboard.manageSubtitle')}</p>
+              <h1 className="text-5xl font-black uppercase text-white tracking-tight drop-shadow-lg">
+                {t('teacher:dashboard.myClasses')}
+              </h1>
+              <p className="mt-3 text-lg font-bold text-white/90">
+                {t('teacher:dashboard.manageSubtitle')}
+              </p>
             </div>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="gap-2 bg-white text-orange-600 hover:bg-orange-50 border-3 border-orange-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)] font-black"
+              size="lg"
+              className="gap-2 bg-white text-blue-600 hover:bg-white/90 border-4 border-white font-black uppercase shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] transition-all"
             >
               <Plus className="h-5 w-5" />
               {t('teacher:dashboard.createClass')}
@@ -97,15 +112,15 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-6 py-12 relative z-10">
         {isLoading ? (
           <div className="text-center py-20">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
-            <p className="mt-4 font-bold">{t('common:loading')}</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500"></div>
+            <p className="mt-4 font-bold text-blue-600 dark:text-blue-400">{t('common:loading')}</p>
           </div>
         ) : error ? (
-          <div className="text-center py-20 border-4 border-red-500 bg-red-100">
-            <p className="font-bold text-red-700">{error}</p>
+          <div className="text-center py-20 border-4 border-red-500 bg-red-100 dark:bg-red-900/20">
+            <p className="font-bold text-red-700 dark:text-red-400">{error}</p>
             <Button onClick={fetchClasses} className="mt-4">{t('common:retry')}</Button>
           </div>
         ) : (
@@ -113,27 +128,31 @@ export default function TeacherDashboard() {
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {classes.map((classItem) => (
                 <Link key={classItem.id} to={`/teacher/class/${classItem.token}`}>
-                  <Card className="group cursor-pointer p-6 transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[6px_6px_0px_0px_rgba(249,115,22,0.3)] border-3 border-orange-200 dark:border-orange-700 bg-white dark:bg-gray-800 hover:border-orange-400 dark:hover:border-orange-500">
+                  <Card className="group cursor-pointer p-6 transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.5)] dark:hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.3)] border-4 border-border bg-white dark:bg-gray-900">
                     <div className="mb-6 flex items-start justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center bg-gradient-to-br from-orange-400 to-amber-500 border-3 border-orange-300 dark:border-orange-600 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]">
+                      <div className="flex h-14 w-14 items-center justify-center border-4 border-border bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
                         <BookOpen className="h-7 w-7 text-white" />
                       </div>
-                      <span className="border-3 border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-900 px-4 py-2 text-xs font-black uppercase text-orange-700 dark:text-orange-200">
+                      <span className="border-4 border-border bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 px-3 py-1 text-xs font-black uppercase text-blue-700 dark:text-blue-300">
                         {classItem.course_code}
                       </span>
                     </div>
 
-                    <h3 className="mb-3 text-2xl font-black uppercase text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400">{classItem.name}</h3>
+                    <h3 className="mb-3 text-2xl font-black uppercase group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {classItem.name}
+                    </h3>
 
-                    <p className="mb-6 line-clamp-2 font-medium text-gray-600 dark:text-gray-300">{classItem.description}</p>
+                    <p className="mb-6 line-clamp-2 text-sm font-bold text-muted-foreground">
+                      {classItem.description}
+                    </p>
 
-                    <div className="flex items-center gap-6 font-bold text-sm text-gray-700 dark:text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-orange-500" />
+                    <div className="flex items-center gap-4 text-sm font-bold">
+                      <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <Users className="h-5 w-5" />
                         <span>{classItem.student_count || 0} {t('teacher:dashboard.students')}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-orange-500" />
+                      <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                        <Calendar className="h-5 w-5" />
                         <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : t('teacher:dashboard.justNow')}</span>
                       </div>
                     </div>
@@ -143,15 +162,16 @@ export default function TeacherDashboard() {
             </div>
 
             {classes.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-4 border-orange-200 dark:border-orange-700 bg-white dark:bg-gray-800 rounded-lg shadow-[8px_8px_0px_0px_rgba(249,115,22,0.2)]">
-                <div className="bg-gradient-to-br from-orange-400 to-amber-500 p-6 rounded-full mb-6 border-3 border-orange-300">
-                  <BookOpen className="h-20 w-20 text-white" />
+              <div className="flex flex-col items-center justify-center py-20 border-4 border-dashed border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg">
+                <div className="h-24 w-24 border-4 border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 rotate-12 shadow-lg">
+                  <BookOpen className="h-12 w-12 text-white -rotate-12" />
                 </div>
-                <h3 className="mb-3 text-2xl font-black uppercase text-gray-900 dark:text-white">{t('teacher:dashboard.noClasses')}</h3>
-                <p className="mb-8 font-bold text-gray-600 dark:text-gray-400">{t('teacher:dashboard.createFirstClass')}</p>
+                <h3 className="mb-3 text-3xl font-black uppercase text-blue-700 dark:text-blue-400">{t('teacher:dashboard.noClasses')}</h3>
+                <p className="mb-8 font-bold text-blue-600 dark:text-blue-500 text-lg">{t('teacher:dashboard.createFirstClass')}</p>
                 <Button 
                   onClick={() => setIsCreateDialogOpen(true)} 
-                  className="gap-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 border-3 border-orange-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] font-black"
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-4 border-border font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   <Plus className="h-5 w-5" />
                   {t('teacher:dashboard.createClass')}

@@ -236,10 +236,38 @@ export const problemAPI = {
     return api.get(`/api/problems/${token}`)
   },
 
+  update: async (
+    problemToken: string,
+    data: {
+      title?: string
+      description?: string
+      markdown_content?: string
+      difficulty?: 'easy' | 'medium' | 'hard'
+      language?: 'cpp' | 'python' | 'java'
+      function_name?: string
+      return_type?: string
+      parameters?: Array<{ name: string; type: string }>
+      time_limit_ms?: number
+      memory_limit_kb?: number
+      test_cases?: Array<{
+        inputs: Array<{ type: string; value: any }>
+        expected_output: { type: string; value: any }
+        is_hidden: boolean
+        points: number
+      }>
+    }
+  ) => {
+    return api.put(`/api/problems/${problemToken}`, data)
+  },
+
   getSubmissions: async (token: string, page: number = 1, perPage: number = 20) => {
     return api.get(`/api/problems/${token}/submissions`, {
       params: { page, per_page: perPage }
     })
+  },
+
+  delete: async (problemToken: string) => {
+    return api.delete(`/api/problems/${problemToken}`)
   },
 }
 

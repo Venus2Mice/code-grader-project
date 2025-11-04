@@ -39,6 +39,18 @@ def create_submission():
     if target_class not in student.classes_joined:
         return jsonify({"msg": "You are not a member of the class for this problem"}), 403
     # --- Hết phần kiểm tra quyền ---
+    
+    # Check due date
+    is_late = False
+    if problem.due_date:
+        current_time = datetime.utcnow()
+        if current_time > problem.due_date:
+            is_late = True
+            # Option 1: Block submission (uncomment to use)
+            # return jsonify({"msg": "Submission deadline has passed", "due_date": problem.due_date.isoformat()}), 403
+            
+            # Option 2: Allow but mark as late (current implementation)
+            # Continue to create submission but mark it
 
     # 1. Lưu bài nộp vào CSDL với trạng thái 'Pending'
     new_submission = Submission(
@@ -47,7 +59,8 @@ def create_submission():
         source_code=source_code,
         language=language,
         status=STATUS_PENDING,
-        is_test=False  # Actual submission, not a test run
+        is_test=False,  # Actual submission, not a test run
+        is_late=is_late  # Mark if submitted after due date
     )
     db.session.add(new_submission)
     db.session.commit()

@@ -14,6 +14,7 @@ import StudentProblemView from '@/pages/student/ProblemView'
 import TeacherDashboard from '@/pages/teacher/Dashboard'
 import TeacherClassDetail from '@/pages/teacher/ClassDetail'
 import TeacherCreateProblem from '@/pages/teacher/CreateProblem'
+import TeacherEditProblem from '@/pages/teacher/EditProblem'
 import TeacherProblemView from '@/pages/teacher/ProblemView'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/class/:token" element={<TeacherClassDetail />} />
         <Route path="/teacher/class/:token/create-problem" element={<TeacherCreateProblem />} />
+        <Route path="/teacher/problem/:token/edit" element={<TeacherEditProblem />} />
         <Route path="/teacher/problem/:token" element={<TeacherProblemView />} />
       </Routes>
     </ErrorBoundary>

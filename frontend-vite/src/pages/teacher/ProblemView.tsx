@@ -1,13 +1,16 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate, useParams, Link } from "react-router-dom"
-import { ArrowLeft, Users, Table as TableIcon } from "lucide-react"
+import { ArrowLeft, Users, Table as TableIcon, Edit, Trash2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { MarkdownDisplay } from "@/components/problem/MarkdownDisplay"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { problemAPI } from "@/services/api"
+import { logger } from "@/lib/logger"
 
 // Hooks
 import { 
@@ -32,6 +35,21 @@ import {
 export default function TeacherProblemDetailPage() {
   const { token } = useParams<{ token: string }>()
   const problemToken = token as string
+  const navigate = useNavigate()
+
+  // Guard against null/undefined token
+  useEffect(() => {
+    if (!problemToken || problemToken === 'null' || problemToken === 'undefined') {
+      logger.error('Invalid problem token in ProblemView', { token: problemToken })
+      navigate('/teacher/dashboard')
+    }
+  }, [problemToken, navigate])
+
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    isDeleting: false
+  })
 
   // Fetch problem data
   const { problem, isLoading: problemLoading, classToken } = useProblemData(problemToken)
@@ -74,6 +92,27 @@ export default function TeacherProblemDetailPage() {
 
   const isLoading = problemLoading || submissionsLoading
 
+  const handleDeleteProblem = async () => {
+    setDeleteModal({ ...deleteModal, isDeleting: true })
+    
+    try {
+      const response = await problemAPI.delete(problemToken)
+      const data = response.data
+      
+      logger.info('Problem deleted', { 
+        problemToken, 
+        submissionsDeleted: data.submissions_deleted 
+      })
+      
+      // Navigate back to class
+      navigate(`/teacher/class/${classToken}`)
+    } catch (err: any) {
+      logger.error('Error deleting problem', err, { problemToken })
+      alert(err.response?.data?.msg || 'Failed to delete problem')
+      setDeleteModal({ isOpen: false, isDeleting: false })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -87,8 +126,8 @@ export default function TeacherProblemDetailPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground">Problem not found</h2>
-          <Link to="/teacher/classes" className="mt-4 inline-block text-primary hover:underline">
-            Return to classes
+          <Link to="/teacher/dashboard" className="mt-4 inline-block text-primary hover:underline">
+            Return to dashboard
           </Link>
         </div>
       </div>
@@ -102,26 +141,47 @@ export default function TeacherProblemDetailPage() {
         <div className="mx-auto max-w-7xl px-6 py-6">
           <Link
             to={`/teacher/class/${classToken || ''}`}
-            className="mb-6 inline-flex items-center gap-2 border-3 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100 transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)]"
+            className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-white dark:bg-gray-800 px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:bg-primary hover:text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
           >
             <ArrowLeft className="h-5 w-5" />
             BACK
           </Link>
 
           <div className="mt-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-black uppercase text-gray-900 dark:text-white">{problem.title}</h1>
-              <span
-                className={`border-3 px-3 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${
-                  problem.difficulty === "easy"
-                    ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700"
-                    : problem.difficulty === "medium"
-                      ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100 border-amber-300 dark:border-amber-700"
-                      : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 border-red-300 dark:border-red-700"
-                }`}
-              >
-                {problem.difficulty}
-              </span>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-black uppercase text-gray-900 dark:text-white">{problem.title}</h1>
+                <span
+                  className={`border-3 px-3 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${
+                    problem.difficulty === "easy"
+                      ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700"
+                      : problem.difficulty === "medium"
+                        ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100 border-amber-300 dark:border-amber-700"
+                        : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 border-red-300 dark:border-red-700"
+                  }`}
+                >
+                  {problem.difficulty}
+                </span>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Link
+                  to={`/teacher/problem/${problemToken}/edit`}
+                  className="inline-flex items-center gap-2 border-4 border-border bg-yellow-400 px-5 py-2.5 font-black uppercase tracking-wide text-black transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                >
+                  <Edit className="h-5 w-5" />
+                  EDIT
+                </Link>
+                
+                <Button
+                  onClick={() => setDeleteModal({ isOpen: true, isDeleting: false })}
+                  className="inline-flex items-center gap-2 border-4 border-border bg-red-500 px-5 py-2.5 font-black uppercase tracking-wide text-white transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  DELETE
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -258,6 +318,74 @@ export default function TeacherProblemDetailPage() {
         codeData={codeModalData}
         isLoading={codeLoading}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModal.isOpen} onOpenChange={(open) => setDeleteModal({ ...deleteModal, isOpen: open })}>
+        <DialogContent className="sm:max-w-md border-4 border-border">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full p-2 bg-red-100 dark:bg-red-950">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <DialogTitle className="text-xl font-black uppercase text-red-600 dark:text-red-400">
+                DELETE PROBLEM?
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-base text-foreground mt-4 space-y-3">
+              <p className="font-bold">
+                Are you sure you want to delete "<span className="text-primary">{problem.title}</span>"?
+              </p>
+              
+              {submissions.length > 0 ? (
+                <div className="border-4 border-orange-500 bg-orange-50 dark:bg-orange-950 p-4 mt-3">
+                  <p className="font-black text-orange-900 dark:text-orange-100 uppercase text-sm mb-2">
+                    ⚠️ Warning
+                  </p>
+                  <p className="text-sm font-bold text-orange-700 dark:text-orange-300">
+                    This problem has <span className="font-black text-lg">{submissions.length}</span> submission{submissions.length > 1 ? 's' : ''}.
+                    All submissions will be permanently deleted.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  This problem has no submissions yet.
+                </p>
+              )}
+              
+              <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-3">
+                This action cannot be undone!
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => setDeleteModal({ isOpen: false, isDeleting: false })}
+              disabled={deleteModal.isDeleting}
+              className="border-4 border-border font-black uppercase"
+            >
+              CANCEL
+            </Button>
+            <Button 
+              onClick={handleDeleteProblem}
+              disabled={deleteModal.isDeleting}
+              className="border-4 border-border bg-red-500 font-black uppercase text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
+            >
+              {deleteModal.isDeleting ? (
+                <>
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  DELETING...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  DELETE PERMANENTLY
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

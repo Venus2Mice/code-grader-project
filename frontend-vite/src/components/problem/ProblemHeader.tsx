@@ -45,17 +45,17 @@ export function ProblemHeader({
           {classId ? (
             <Link
               to={`/student/class/${classId}`}
-              className="inline-flex items-center gap-2 border-4 border-border bg-yellow-400 px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-foreground transition-all hover:bg-cyan-300 hover:translate-x-1 hover:translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="inline-flex items-center gap-2 border-4 border-border bg-white dark:bg-gray-800 px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-foreground transition-all hover:bg-primary hover:text-white hover:translate-x-1 hover:translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:h-5" />
               <span className="hidden sm:inline">BACK</span>
             </Link>
           ) : (
             <Link
               to="/student/dashboard"
-              className="inline-flex items-center gap-2 border-4 border-border bg-yellow-400 px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-foreground transition-all hover:bg-cyan-300 hover:translate-x-1 hover:translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="inline-flex items-center gap-2 border-4 border-border bg-white dark:bg-gray-800 px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-foreground transition-all hover:bg-primary hover:text-white hover:translate-x-1 hover:translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:h-5" />
               <span className="hidden sm:inline">BACK</span>
             </Link>
           )}

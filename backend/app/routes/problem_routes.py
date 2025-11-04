@@ -62,98 +62,6 @@ def validate_function_name(name: str) -> bool:
         return False
     return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name))
 
-# Lưu ý: Endpoint này được lồng trong class_bp đã được import
-# POST /api/classes/<string:class_token>/problems (LEGACY - sử dụng function_signature)
-@class_bp.route('/<string:class_token>/problems', methods=['POST'])
-@jwt_required()
-@role_required('teacher')
-def create_problem_in_class(class_token):
-    """Create new problem in a class with LeetCode-style format (LEGACY)."""
-    target_class = find_class_by_token_or_404(class_token)
-    teacher_id = get_jwt_identity()
-
-    if str(target_class.teacher_id) != teacher_id:
-        return jsonify({"msg": "Forbidden"}), 403
-
-    data = request.get_json()
-    
-    # Check if this is the new ProblemDefineSchema format
-    if 'function_name' in data and 'return_type' in data and 'parameters' in data:
-        # Use new endpoint: POST /api/classes/<class_token>/problems/define
-        return create_problem_with_definition(class_token)
-    
-    # Legacy flow
-    title = data.get('title')
-    description = data.get('description')
-    markdown_content = data.get('markdown_content')
-    difficulty = data.get('difficulty', 'medium')
-    function_signature = data.get('function_signature')
-    time_limit_ms = data.get('time_limit_ms', 1000)
-    memory_limit_kb = data.get('memory_limit_kb', 256000)
-    test_cases = data.get('test_cases', [])
-
-    if not title:
-        return jsonify({"msg": "Problem title is required"}), 400
-    
-    if not function_signature:
-        return jsonify({"msg": "Function signature is required"}), 400
-    
-    if difficulty not in ['easy', 'medium', 'hard']:
-        return jsonify({"msg": "Invalid difficulty. Must be easy, medium, or hard"}), 400
-
-    if not test_cases or len(test_cases) == 0:
-        return jsonify({"msg": "At least one test case is required"}), 400
-    
-    # Validate test cases structure
-    total_points = 0
-    for tc_data in test_cases:
-        if 'inputs' not in tc_data or 'expected_output' not in tc_data:
-            return jsonify({"msg": "Each test case must have 'inputs' and 'expected_output'"}), 400
-        
-        points = tc_data.get('points', 10)
-        if points < 0:
-            return jsonify({"msg": "Test case points cannot be negative"}), 400
-        
-        total_points += points
-    
-    if total_points == 0:
-        return jsonify({"msg": "Total points must be greater than 0"}), 400
-    
-    if total_points > 100:
-        return jsonify({"msg": f"Total points ({total_points}) cannot exceed 100"}), 400
-
-    new_problem = Problem(
-        title=title,
-        description=description,
-        markdown_content=markdown_content,
-        difficulty=difficulty,
-        function_signature=function_signature,
-        time_limit_ms=time_limit_ms,
-        memory_limit_kb=memory_limit_kb,
-        class_id=target_class.id
-    )
-
-    # Add test cases with structured inputs/outputs
-    for tc_data in test_cases:
-        new_tc = TestCase(
-            inputs=tc_data.get('inputs'),
-            expected_output=tc_data.get('expected_output'),
-            is_hidden=tc_data.get('is_hidden', False),
-            points=tc_data.get('points', 10)
-        )
-        new_problem.test_cases.append(new_tc)
-
-    db.session.add(new_problem)
-    db.session.commit()
-
-    return jsonify({
-        "id": new_problem.id, 
-        "title": new_problem.title,
-        "difficulty": new_problem.difficulty,
-        "function_signature": new_problem.function_signature
-    }), 201
-
-
 # NEW ENDPOINT: POST /api/classes/<class_token>/problems/define
 # Tạo problem với định nghĩa hàm rõ ràng
 @class_bp.route('/<string:class_token>/problems/define', methods=['POST'])
@@ -218,8 +126,8 @@ def create_problem_with_definition(class_token):
         # Generate from title or use default
         function_name = generate_valid_function_name(title)
         # Log the fallback for debugging
-        from ..logging_config import logger
-        logger.info(f"Function name fallback applied: '{data.get('function_name')}' -> '{function_name}' for problem '{title}'")
+        from flask import current_app
+        current_app.logger.info(f"Function name fallback applied: '{data.get('function_name')}' -> '{function_name}' for problem '{title}'")
     
     if not return_type:
         return jsonify({"msg": "Return type is required"}), 400
@@ -261,6 +169,15 @@ def create_problem_with_definition(class_token):
     if language not in ['cpp', 'python', 'java']:
         return jsonify({"msg": "Invalid language"}), 400
 
+    # Parse due_date if provided
+    due_date = None
+    if data.get('due_date'):
+        try:
+            from datetime import datetime
+            due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            return jsonify({"msg": "Invalid due_date format. Use ISO 8601 format."}), 400
+
     # Create new problem
     new_problem = Problem(
         title=title,
@@ -274,6 +191,7 @@ def create_problem_with_definition(class_token):
         function_signature=None,  # Not required for new flow
         time_limit_ms=data.get('time_limit_ms', 1000),
         memory_limit_kb=data.get('memory_limit_kb', 256000),
+        due_date=due_date,
         class_id=target_class.id
     )
 
@@ -364,9 +282,146 @@ def get_problem_details(problem_token):
         "language": problem.language,
         "grading_mode": "function" if problem.function_name else "stdio",
         "test_cases": test_cases_data,
+        "due_date": problem.due_date.isoformat() if problem.due_date else None,
         "created_at": problem.created_at.isoformat() if problem.created_at else None,
         "user_language": lang  # Include user's language preference in response
     })
+
+
+# UPDATE ENDPOINT: PUT /api/problems/<problem_token>
+@problem_bp.route('/<string:problem_token>', methods=['PUT'])
+@jwt_required()
+@role_required('teacher')
+def update_problem(problem_token):
+    """
+    Update existing problem with full configuration.
+    
+    Only the teacher who owns the class can update the problem.
+    """
+    problem = find_problem_by_token_or_404(problem_token)
+    teacher_id = get_jwt_identity()
+    
+    # Check ownership
+    if str(problem.class_obj.teacher_id) != teacher_id:
+        return jsonify({"msg": "Forbidden - You don't own this problem"}), 403
+    
+    data = request.get_json()
+    
+    # Update basic fields
+    if 'title' in data and data['title']:
+        problem.title = data['title']
+    
+    if 'description' in data and data['description']:
+        problem.description = data['description']
+    
+    if 'markdown_content' in data:
+        problem.markdown_content = data['markdown_content']
+    
+    if 'difficulty' in data:
+        difficulty = data['difficulty']
+        if difficulty not in ['easy', 'medium', 'hard']:
+            return jsonify({"msg": "Invalid difficulty"}), 400
+        problem.difficulty = difficulty
+    
+    if 'language' in data:
+        language = data['language']
+        if language not in ['cpp', 'python', 'java']:
+            return jsonify({"msg": "Invalid language"}), 400
+        problem.language = language
+    
+    # Update function configuration
+    if 'function_name' in data:
+        function_name = data['function_name'].strip()
+        if function_name and not validate_function_name(function_name):
+            # Apply fallback
+            function_name = generate_valid_function_name(problem.title)
+            from flask import current_app
+            current_app.logger.info(f"Function name fallback on update: '{data['function_name']}' -> '{function_name}'")
+        problem.function_name = function_name if function_name else problem.function_name
+    
+    if 'return_type' in data and data['return_type']:
+        problem.return_type = data['return_type']
+    
+    if 'parameters' in data:
+        parameters = data['parameters']
+        if not isinstance(parameters, list):
+            return jsonify({"msg": "Parameters must be an array"}), 400
+        
+        # Validate each parameter
+        for param in parameters:
+            if not isinstance(param, dict) or 'name' not in param or 'type' not in param:
+                return jsonify({"msg": "Each parameter must have 'name' and 'type' fields"}), 400
+        
+        problem.parameters = parameters
+    
+    # Update limits
+    if 'time_limit_ms' in data:
+        problem.time_limit_ms = data['time_limit_ms']
+    
+    if 'memory_limit_kb' in data:
+        problem.memory_limit_kb = data['memory_limit_kb']
+    
+    # Update due_date if provided
+    if 'due_date' in data:
+        if data['due_date'] is None:
+            problem.due_date = None
+        else:
+            try:
+                from datetime import datetime
+                problem.due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                return jsonify({"msg": "Invalid due_date format. Use ISO 8601 format."}), 400
+    
+    # Update test cases if provided
+    if 'test_cases' in data:
+        test_cases_data = data['test_cases']
+        
+        if not test_cases_data or len(test_cases_data) == 0:
+            return jsonify({"msg": "At least one test case is required"}), 400
+        
+        # Validate total points
+        total_points = 0
+        for tc_data in test_cases_data:
+            if 'inputs' not in tc_data or 'expected_output' not in tc_data:
+                return jsonify({"msg": "Each test case must have 'inputs' and 'expected_output'"}), 400
+            
+            points = tc_data.get('points', 10)
+            if points < 0:
+                return jsonify({"msg": "Test case points cannot be negative"}), 400
+            
+            total_points += points
+        
+        if total_points == 0:
+            return jsonify({"msg": "Total points must be greater than 0"}), 400
+        
+        if total_points > 100:
+            return jsonify({"msg": f"Total points ({total_points}) cannot exceed 100"}), 400
+        
+        # Remove old test cases
+        TestCase.query.filter_by(problem_id=problem.id).delete()
+        
+        # Add new test cases
+        for tc_data in test_cases_data:
+            new_tc = TestCase(
+                problem_id=problem.id,
+                inputs=tc_data.get('inputs'),
+                expected_output=tc_data.get('expected_output'),
+                is_hidden=tc_data.get('is_hidden', False),
+                points=tc_data.get('points', 10)
+            )
+            db.session.add(new_tc)
+    
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Problem updated successfully",
+        "token": problem.public_token,
+        "title": problem.title,
+        "difficulty": problem.difficulty,
+        "function_name": problem.function_name,
+        "return_type": problem.return_type,
+        "parameters": problem.parameters
+    }), 200
 
 
 # NEW ENDPOINTS for Frontend Integration
@@ -442,4 +497,46 @@ def get_problem_submissions(problem_token):
             "total": paginated.total,
             "pages": paginated.pages
         }
+    }), 200
+
+
+# DELETE ENDPOINT: DELETE /api/problems/<problem_token>
+@problem_bp.route('/<string:problem_token>', methods=['DELETE'])
+@jwt_required()
+@role_required('teacher')
+def delete_problem(problem_token):
+    """
+    Delete a problem and all related submissions.
+    
+    Only the teacher who owns the class can delete the problem.
+    Returns warning if submissions exist but still allows deletion.
+    """
+    problem = find_problem_by_token_or_404(problem_token)
+    teacher_id = get_jwt_identity()
+    
+    # Check ownership
+    if str(problem.class_obj.teacher_id) != teacher_id:
+        return jsonify({"msg": "Forbidden - You don't own this problem"}), 403
+    
+    # Check if submissions exist
+    from ..models import Submission
+    submission_count = Submission.query.filter_by(problem_id=problem.id).count()
+    
+    # Delete all related submissions first (cascade)
+    if submission_count > 0:
+        Submission.query.filter_by(problem_id=problem.id).delete()
+    
+    # Delete test cases (should cascade, but explicit for safety)
+    TestCase.query.filter_by(problem_id=problem.id).delete()
+    
+    # Delete the problem
+    problem_title = problem.title
+    db.session.delete(problem)
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Problem deleted successfully",
+        "title": problem_title,
+        "submissions_deleted": submission_count,
+        "had_submissions": submission_count > 0
     }), 200

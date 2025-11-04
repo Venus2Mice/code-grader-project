@@ -109,7 +109,6 @@ class Problem(Base):
     function_name = Column(String(100), nullable=False)  # Teacher-defined function name
     return_type = Column(String(100), nullable=False, default='int')  # NEW: Return type (e.g., "int", "int[]", "string")
     parameters = Column(JSONB, nullable=False, default=list)  # NEW: [{"name": "param1", "type": "int[]"}, {...}]
-    parameter_types = Column(JSONB, nullable=True)  # DEPRECATED: kept for backward compatibility
     time_limit_ms = Column(Integer, default=1000)
     memory_limit_kb = Column(Integer, default=256000)
     language_limits = Column(JSONB, nullable=True)  # Language-specific limits {"cpp": {"timeMs": 1000, "memoryKb": 65536}}
@@ -170,8 +169,9 @@ class Submission(Base):
     language = Column(String(50), nullable=False, default='cpp')
     status = Column(String(50), default='Pending')
     is_test = Column(Boolean, default=False)  # NEW: True for test runs, False for actual submissions
+    is_late = Column(Boolean, default=False)  # NEW: True if submitted after due date
     submitted_at = Column(DateTime, default=datetime.utcnow)
-    cached_score = Column(Integer, nullable=True, default=0)  # DEPRECATED: Auto-calculated score (kept for backward compatibility)
+    cached_score = Column(Integer, nullable=True, default=0)  # Auto-calculated score from test results (used as fallback when manual_score is None)
     
     # Manual grading fields (teacher has full control)
     manual_score = Column(Integer, nullable=True)  # Teacher-assigned score (overrides cached_score)
