@@ -2,7 +2,7 @@
 
 import click
 from flask.cli import with_appcontext
-from ..models import Role, db, User, Class, Problem, TestCase
+from ..models import Role, db, User, Class
 
 
 @click.command(name='seed_test_data')

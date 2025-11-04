@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
-from ..models import db, Submission, Problem, User, Class
+from ..models import db, Submission, Problem, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from .. import rabbitmq_producer
 from ..rabbitmq_pool import publish_task_with_pool
+from ..services.token_service import generate_submission_token
 from ..constants import (
     STATUS_PENDING,
     SUCCESS_STATUSES,
@@ -66,6 +67,10 @@ def create_submission():
     db.session.commit()
     db.session.refresh(new_submission)  # Ensure all fields are loaded
     
+    # CRITICAL: Generate and save the public token AFTER commit (so we have an ID)
+    new_submission.public_token = generate_submission_token(new_submission.id)
+    db.session.commit()
+    
     # 2. Gửi task chấm điểm tới RabbitMQ với connection pool
     task_data = {
         'submission_id': new_submission.id,
@@ -82,6 +87,7 @@ def create_submission():
     return jsonify({
         "id": new_submission.id,
         "submission_id": new_submission.id,
+        "token": new_submission.public_token,  # Add token for frontend routing
         "status": new_submission.status
     }), 202 # 202 Accepted: Yêu cầu đã được chấp nhận để xử lý
 

@@ -3,7 +3,7 @@ Input Validation Schemas using Marshmallow
 Provides structured validation for API requests
 """
 
-from marshmallow import Schema, fields, validate, ValidationError, validates, validates_schema
+from marshmallow import Schema, fields, validate, ValidationError, validates
 import re
 from .constants import (
     SUPPORTED_LANGUAGES, 

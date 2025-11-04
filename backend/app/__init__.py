@@ -26,7 +26,7 @@ def create_app():
     # Enable compression for faster response
     compress.init_app(app)
     
-    # Khởi tạo các extension với CORS configuration
+    # Initialize extensions with CORS configuration
     CORS(app, 
          resources={r"/api/*": {"origins": "*"}},
          allow_headers=["Content-Type", "Authorization"],
@@ -39,9 +39,8 @@ def create_app():
     from .error_handlers import register_error_handlers
     register_error_handlers(app)
 
-    # Bắt đầu phần sửa lỗi
     with app.app_context():
-        # Import tất cả các blueprint từ thư mục routes
+        # Import all blueprints
         from .routes import (
             auth_bp,
             class_bp,
@@ -55,7 +54,7 @@ def create_app():
         )
         from .routes.config_routes import config_bp
         
-        # Đăng ký các blueprint với ứng dụng
+        # Register blueprints
         app.register_blueprint(auth_bp)
         app.register_blueprint(class_bp)
         app.register_blueprint(problem_bp)
@@ -67,10 +66,10 @@ def create_app():
         app.register_blueprint(language_bp)
         app.register_blueprint(config_bp)
 
-        # Import models để migrate có thể "thấy" chúng
+        # Import models for migration
         from . import models
 
-        # Đăng ký các lệnh cli
+        # Register CLI commands
         from . import commands
         commands.init_app(app)
 

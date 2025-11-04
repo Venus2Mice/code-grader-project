@@ -1,0 +1,105 @@
+services:
+  # Frontend (Vite + React) - DEVELOPMENT with Hot Reload
+  frontend:
+    build:
+      context: ./frontend-vite
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"  # Vite dev server port
+    volumes:
+      - ./frontend-vite:/app  # Hot reload for frontend
+      - /app/node_modules     # Prevent overriding node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Backend (Flask API) - DEVELOPMENT with Hot Reload
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app  # Hot reload for development
+      - /app/__pycache__  # Exclude cache directory
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=1
+      - SECRET_KEY=backend-secret-key-change-in-production
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Database (PostgreSQL)
+  postgres:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"  # Exposed for external connections (DBeaver, worker, etc.)
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Message Queue (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"   # AMQP port for worker
+      - "15672:15672" # Management UI
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Grader Worker (Go implementation) - DEVELOPMENT with Hot Reload
+  worker:
+    build:
+      context: ./grader-engine-go
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"   # Health check and API endpoints
+    volumes:
+      - ./grader-engine-go:/app  # Hot reload for worker
+      - ./grader-temp:/grader-temp
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for running containers
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_HOST=rabbitmq
+      - BACKEND_API_URL=http://backend:5000
+      - DOCKER_IMAGE=code-grader-project-sandbox:latest
+      - CONTAINER_POOL_SIZE=5
+      - API_PORT=8080
+      # Database connection pool settings
+      - DB_MAX_IDLE_CONNS=10
+      - DB_MAX_OPEN_CONNS=100
+      - DB_CONN_MAX_LIFETIME_MINUTES=60
+      # Logging configuration
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=text  # Use 'json' for production log aggregation
+    depends_on:
+      - postgres
+      - rabbitmq
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+    privileged: true  # Required for Docker-in-Docker
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify
+import logging
 from ..models import db, Submission, SubmissionResult
 from ..constants import (
     ERROR_STATUSES,
-    SUCCESS_STATUSES,
     STATUS_SYSTEM_ERROR
 )
 
+logger = logging.getLogger(__name__)
 internal_bp = Blueprint('internal', __name__, url_prefix='/internal')
 
 # API này không cần JWT vì nó chỉ được gọi từ Worker trong mạng nội bộ.
@@ -50,7 +51,7 @@ def update_submission_result(submission_id):
             db.session.add(new_result)
             new_results.append(new_result)  # ✅ FIX: Track new result
         submission.cached_score = 0  # Cache score for errors
-        print(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
+        logger.info(f"Submission {submission_id} failed with status {overall_status}. Error saved to results.")
     else:
         # Thêm kết quả chi tiết của từng test case
         for res_data in results_data:
@@ -74,30 +75,7 @@ def update_submission_result(submission_id):
         # Score will be set to NULL (ungraded) until teacher manually grades
         submission.cached_score = None  # Keep NULL until teacher grades
         
-        # DEPRECATED: Old auto-scoring logic (commented out for reference)
-        # ✅ FIX: Calculate and cache score using NEW results (not old submission.results)
-        # problem = submission.problem
-        # total_points = sum(tc.points for tc in problem.test_cases)
-        # 
-        # if total_points > 0:
-        #     # OPTIMIZATION: Create lookup dict for O(1) access instead of O(n) linear search
-        #     test_case_dict = {tc.id: tc for tc in problem.test_cases}
-        #     
-        #     earned_points = 0
-        #     # Use SUCCESS_STATUSES from constants
-        #     for result in new_results:
-        #         if result.status in SUCCESS_STATUSES:
-        #             test_case = test_case_dict.get(result.test_case_id)
-        #             if test_case:
-        #                 earned_points += test_case.points
-        #     
-        #     cached_score = round((earned_points / total_points * 100))
-        #     submission.cached_score = cached_score
-        #     print(f"Submission {submission_id}: earned {earned_points}/{total_points} points = {cached_score}% score")
-        # else:
-        #     submission.cached_score = 0
-        
     db.session.commit()
     
-    print(f"Updated result for submission {submission_id}, cached_score={submission.cached_score}")
+    logger.info(f"Updated result for submission {submission_id}, cached_score={submission.cached_score}")
     return jsonify({"msg": "Result updated successfully"}), 200

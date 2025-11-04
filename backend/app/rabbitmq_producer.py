@@ -1,12 +1,15 @@
 import pika
 import json
 import os
+import logging
 
-# Lấy thông tin RabbitMQ từ biến môi trường (an toàn hơn)
+logger = logging.getLogger(__name__)
+
+# Get RabbitMQ info from environment variables
 RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'localhost')
 
 def publish_task(task_data):
-    """Gửi một task chấm điểm vào hàng đợi."""
+    """Send a grading task to the queue."""
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
         channel = connection.channel()
@@ -29,10 +32,8 @@ def publish_task(task_data):
                 delivery_mode=2,  # make message persistent
             )
         )
-        print(f" [x] Sent task to RabbitMQ: {message_body}")
+        logger.info(f"Sent task to RabbitMQ: {message_body}")
         connection.close()
     except pika.exceptions.AMQPConnectionError as e:
-        print(f"Error: Could not connect to RabbitMQ at {RABBITMQ_HOST}. Task not sent.")
-        # Xử lý lỗi (ví dụ: log lại, thử lại sau, ...)
-        # Trong trường hợp này, chúng ta chỉ in ra lỗi.
-        # Để hệ thống tin cậy hơn, bạn có thể implement cơ chế retry.
+        logger.error(f"Could not connect to RabbitMQ at {RABBITMQ_HOST}. Task not sent: {e}")
+        # For better reliability, implement retry mechanism

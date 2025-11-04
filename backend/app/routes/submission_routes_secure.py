@@ -20,13 +20,11 @@ Backward Compatibility:
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
-from ..models import db, Submission, Problem, User
+from ..models import db, Submission
 from ..services.token_service import (
     generate_submission_token,
-    verify_submission_token,
-    TokenService
+    verify_submission_token
 )
-from ..decorators import role_required
 from ..exceptions import UnauthorizedError, ResourceNotFoundError, ValidationError
 
 # Create blueprint

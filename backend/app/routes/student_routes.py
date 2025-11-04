@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
-from ..models import User, Class, Problem, Submission
+from ..models import User, Problem, Submission
 from ..decorators import role_required
 from ..token_utils import find_class_by_token_or_404
 

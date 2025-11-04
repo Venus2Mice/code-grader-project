@@ -3,6 +3,7 @@ from ..models import db, Class, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from ..token_utils import find_class_by_token_or_404
+from ..services.token_service import generate_class_token
 
 class_bp = Blueprint('classes', __name__, url_prefix='/api/classes')
 
@@ -29,6 +30,10 @@ def create_class():
     )
     
     db.session.add(new_class)
+    db.session.commit()
+    
+    # CRITICAL: Generate and save the public token AFTER commit (so we have an ID)
+    new_class.public_token = generate_class_token(new_class.id)
     db.session.commit()
     
     return jsonify({

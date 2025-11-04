@@ -11,7 +11,7 @@ Routes:
 - PUT    /api/language/preference     - Update current user's language preference
 """
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models import db, User
 

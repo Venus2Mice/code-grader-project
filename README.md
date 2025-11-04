@@ -41,6 +41,76 @@ code-grader-project/
 
 ## 🚀 QUICK START
 
+### 🔥 Development Mode (Hot Reload - Khuyên dùng cho dev)
+
+**Option 1: Sử dụng helper script (Khuyên dùng)**
+```bash
+# Make scripts executable (first time only)
+chmod +x dev.sh prod.sh
+
+# Start development mode
+./dev.sh start
+
+# View logs
+./dev.sh logs
+
+# Stop
+./dev.sh stop
+```
+
+**Option 2: Docker compose trực tiếp**
+```bash
+# Chạy với hot reload cho tất cả services
+docker-compose -f docker-compose.dev.yml up -d
+
+# Build sandbox image cho worker
+docker build -t code-grader-project-sandbox:latest -f grader-engine-go/Dockerfile.sandbox grader-engine-go
+```
+
+**Development mode features:**
+- ✅ **Frontend (Vite)**: Auto refresh khi code thay đổi - http://localhost:5173
+- ✅ **Backend (Flask)**: Auto reload với Flask debug mode - http://localhost:5000
+- ✅ **Worker (Go)**: Auto rebuild với Air hot reload - http://localhost:8080
+- ✅ RabbitMQ: http://localhost:15672
+- ✅ Volume mounting cho tất cả services
+
+**Tài khoản test:**
+- Teacher: `teacher.test@example.com` / `password123`
+- Student: `student.test@example.com` / `password123`
+
+---
+
+### 🚀 Production Mode (Optimized Build)
+
+**Option 1: Sử dụng helper script**
+```bash
+# Start production mode
+./prod.sh start
+
+# View logs
+./prod.sh logs
+
+# Stop
+./prod.sh stop
+```
+
+**Option 2: Docker compose trực tiếp**
+```bash
+# Chạy production build (Nginx + optimized binaries)
+docker-compose up -d
+
+# Chạy worker (terminal riêng)
+./run_worker.sh
+```
+
+**Production mode features:**
+- ✅ Frontend: Nginx serving static files - http://localhost:3000
+- ✅ Backend API: http://localhost:5000
+- ✅ Swagger Docs: http://localhost:5000/api/docs
+- ✅ Optimized for performance
+
+---
+
 ### ⚡ Cách 1: Setup Tự Động (Khuyên dùng)
 
 ```bash
@@ -55,26 +125,16 @@ code-grader-project/
 - ✅ Build Docker image cho grader
 - ✅ Chạy worker
 
-**Sau khi setup thành công:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- Swagger Docs: http://localhost:5000/api/docs
-- RabbitMQ: http://localhost:15672
-
-**Tài khoản test:**
-- Teacher: `teacher.test@example.com` / `password123`
-- Student: `student.test@example.com` / `password123`
-
 ---
 
 ### 🔄 Chạy Lại (Khi đã setup)
 
 ```bash
-# Start services + tự động init database nếu cần
-docker-compose up -d
+# Development mode (hot reload)
+docker-compose -f docker-compose.dev.yml up -d
 
-# Chạy worker (terminal riêng)
-./run_worker.sh
+# Production mode (optimized)
+docker-compose up -d
 ```
 
 ✨ **New:** Database migrations và seed data **chạy tự động** khi container backend khởi động lần đầu - không cần chạy flask commands thủ công!
@@ -96,7 +156,72 @@ docker-compose up -d
 
 ---
 
-## 📚 TÀI LIỆU HOÀN CHỈNH
+## � Development vs Production Mode
+
+### 🔥 Development Mode (docker-compose.dev.yml)
+
+**Khuyên dùng cho:** Developers đang code và cần test thay đổi nhanh
+
+**Features:**
+- ✅ **Hot Reload enabled** cho tất cả services
+- ✅ **Frontend**: Vite dev server với HMR (Hot Module Replacement)
+- ✅ **Backend**: Flask debug mode với auto reload
+- ✅ **Worker**: Air hot reload - auto rebuild Go binary khi code thay đổi
+- ✅ Volume mounting cho source code
+- ✅ Faster feedback loop
+
+**Ports:**
+- Frontend: http://localhost:5173 (Vite dev server)
+- Backend: http://localhost:5000
+- Worker: http://localhost:8080
+- RabbitMQ: http://localhost:15672
+
+**Chạy:**
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+---
+
+### 🚀 Production Mode (docker-compose.yml)
+
+**Khuyên dùng cho:** Deploy production hoặc test performance
+
+**Features:**
+- ✅ **Optimized builds** - compiled và minified
+- ✅ **Frontend**: Nginx serving static files (Vite build)
+- ✅ **Backend**: Flask production mode
+- ✅ **Worker**: Compiled Go binary
+- ✅ Smaller images
+- ✅ Better performance
+
+**Ports:**
+- Frontend: http://localhost:3000 (Nginx)
+- Backend: http://localhost:5000
+- Worker: http://localhost:8080
+
+**Chạy:**
+```bash
+docker-compose up -d
+```
+
+---
+
+### 🔄 So sánh
+
+| Feature | Development Mode | Production Mode |
+|---------|------------------|-----------------|
+| **Hot Reload** | ✅ Yes | ❌ No |
+| **Build Time** | Faster startup | Slower startup |
+| **Image Size** | Larger | Smaller |
+| **Performance** | Dev-optimized | Production-optimized |
+| **Source Maps** | ✅ Yes | ❌ No |
+| **Debug Mode** | ✅ Enabled | ❌ Disabled |
+| **Volume Mount** | ✅ Source code | ❌ Only data |
+
+---
+
+## �📚 TÀI LIỆU HOÀN CHỈNH
 
 **→ XEM TẤT CẢ HƯỚNG DẪN CHI TIẾT TẠI: [`docs/BACKEND_DOCUMENTATION.md`](docs/BACKEND_DOCUMENTATION.md)**
 

@@ -11,10 +11,17 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,  // Vite default port
+    host: '0.0.0.0',  // Allow external connections (Docker)
+    watch: {
+      usePolling: true,  // Enable for Docker on Windows/Mac
+    },
+    hmr: {
+      clientPort: 5173,  // HMR WebSocket port
+    },
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:8000',
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
       },
     },

@@ -1,12 +1,7 @@
-# Đây là phiên bản models.py cuối cùng và chính xác
-# Hãy copy toàn bộ nội dung file này và dán đè lên cả 2 file:
-# 1. backend/app/models.py
-# 2. worker/worker/models.py
-
 from datetime import datetime
 import uuid
 
-# ----- Phần dành cho Backend (Flask-SQLAlchemy) -----
+# Backend (Flask-SQLAlchemy) or Worker (SQLAlchemy) compatibility layer
 try:
     from . import db
     from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,14 +17,14 @@ try:
     Table = db.Table
     relationship = db.relationship
     backref = db.backref
-# ----- Phần dành cho Worker (SQLAlchemy thuần) -----
 except ImportError:
+    # Worker mode (pure SQLAlchemy)
     from sqlalchemy.orm import declarative_base, relationship, backref
     from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Table
     from sqlalchemy.dialects.postgresql import JSONB
     Base = declarative_base()
 
-# Bảng trung gian
+# Association table for many-to-many relationship
 class_members = Table('class_members', Base.metadata,
     Column('student_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('class_id', Integer, ForeignKey('classes.id'), primary_key=True)

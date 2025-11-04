@@ -34,3 +34,7 @@ Thumbs.db
 # Temp
 tmp/
 temp/
+
+# Air hot reload
+.air.toml.tmp
+build-errors.log

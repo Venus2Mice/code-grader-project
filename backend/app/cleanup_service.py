@@ -1,24 +1,27 @@
 """
-Cleanup service để xóa test submissions cũ
-Test submissions (is_test=True) chỉ dùng tạm thời để test code,
-không cần lưu lâu dài. Service này sẽ tự động xóa các test submissions cũ hơn 1 giờ.
+Cleanup service to remove old test submissions
+Test submissions (is_test=True) are temporary and don't need long-term storage.
+This service automatically deletes test submissions older than 1 hour.
 """
 from datetime import datetime, timedelta
+import logging
 from ..models import db, Submission
+
+logger = logging.getLogger(__name__)
 
 def cleanup_old_test_submissions(hours=1):
     """
-    Xóa các test submissions (is_test=True) cũ hơn số giờ được chỉ định.
+    Delete test submissions (is_test=True) older than specified hours.
     
     Args:
-        hours (int): Số giờ. Test submissions cũ hơn thời gian này sẽ bị xóa.
+        hours (int): Number of hours. Test submissions older than this will be deleted.
     
     Returns:
-        int: Số lượng test submissions đã xóa
+        int: Number of test submissions deleted
     """
     cutoff_time = datetime.utcnow() - timedelta(hours=hours)
     
-    # Tìm và xóa test submissions cũ
+    # Find and delete old test submissions
     old_test_submissions = Submission.query.filter(
         Submission.is_test == True,
         Submission.submitted_at < cutoff_time
@@ -31,17 +34,17 @@ def cleanup_old_test_submissions(hours=1):
     
     db.session.commit()
     
-    print(f"[CLEANUP] Deleted {count} old test submissions (older than {hours} hour(s))")
+    logger.info(f"[CLEANUP] Deleted {count} old test submissions (older than {hours} hour(s))")
     return count
 
 
 def cleanup_completed_test_submissions():
     """
-    Xóa tất cả test submissions đã hoàn tất (không còn Pending/Running).
-    Chỉ giữ lại test submissions đang chạy.
+    Delete all completed test submissions (not Pending/Running).
+    Keep only running test submissions.
     
     Returns:
-        int: Số lượng test submissions đã xóa
+        int: Number of test submissions deleted
     """
     completed_test_submissions = Submission.query.filter(
         Submission.is_test == True,
@@ -55,5 +58,5 @@ def cleanup_completed_test_submissions():
     
     db.session.commit()
     
-    print(f"[CLEANUP] Deleted {count} completed test submissions")
+    logger.info(f"[CLEANUP] Deleted {count} completed test submissions")
     return count

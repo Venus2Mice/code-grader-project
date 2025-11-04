@@ -149,11 +149,11 @@ export default function TeacherDashboard() {
                     <div className="flex items-center gap-4 text-sm font-bold">
                       <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                         <Users className="h-5 w-5" />
-                        <span>{classItem.student_count || 0} {t('teacher:dashboard.students')}</span>
+                        <span>{classItem.student_count || 0} {t('teacher:class.students')}</span>
                       </div>
                       <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
                         <Calendar className="h-5 w-5" />
-                        <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : t('teacher:dashboard.justNow')}</span>
+                        <span>{classItem.created_at ? new Date(classItem.created_at).toLocaleDateString() : t('common:justNow')}</span>
                       </div>
                     </div>
                   </Card>

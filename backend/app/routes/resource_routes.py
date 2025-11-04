@@ -5,12 +5,14 @@ from flask import Blueprint, request, jsonify, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 import os
+import logging
 from datetime import datetime
 
-from ..models import db, Resource, Problem, User
+from ..models import db, Resource, User
 from ..decorators import role_required
 from ..token_utils import find_problem_by_token_or_404
 
+logger = logging.getLogger(__name__)
 resource_bp = Blueprint('resources', __name__)
 
 # Configuration
@@ -277,7 +279,7 @@ def delete_resource(resource_id):
                 os.remove(file_path)
         except Exception as e:
             # Log error but continue with database deletion
-            print(f"Error deleting file: {e}")
+            logger.error(f"Error deleting file: {e}")
     
     # Delete from database
     db.session.delete(resource)

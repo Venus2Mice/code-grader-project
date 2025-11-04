@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify, g
 from .class_routes import class_bp 
-from ..models import db, Problem, Class, TestCase, User
+from ..models import db, Problem, TestCase, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from ..i18n_decorators import with_user_language
 from ..token_utils import find_class_by_token_or_404, find_problem_by_token_or_404
-import json
+from ..services.token_service import generate_problem_token
 import re
 
 # Blueprint này vẫn được tạo ra để chứa các route không lồng trong class
@@ -206,6 +206,10 @@ def create_problem_with_definition(class_token):
         new_problem.test_cases.append(new_tc)
 
     db.session.add(new_problem)
+    db.session.commit()
+    
+    # CRITICAL: Generate and save the public token AFTER commit (so we have an ID)
+    new_problem.public_token = generate_problem_token(new_problem.id)
     db.session.commit()
 
     return jsonify({

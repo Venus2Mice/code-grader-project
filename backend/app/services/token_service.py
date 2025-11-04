@@ -9,7 +9,7 @@ This service provides:
 
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import current_app
-from typing import Optional, Union
+from typing import Optional
 
 
 class TokenService:

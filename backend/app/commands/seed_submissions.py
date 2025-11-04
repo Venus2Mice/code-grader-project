@@ -2,7 +2,7 @@
 
 import click
 from flask.cli import with_appcontext
-from ..models import Problem, User, Role, db, Submission
+from ..models import Problem, User, Role, db
 from .. import rabbitmq_producer
 
 
@@ -11,7 +11,6 @@ from .. import rabbitmq_producer
 def seed_test_submissions_command():
     """Tạo test submissions cho tất cả các problems."""
     from ..models import Submission, SubmissionResult
-    from ..rabbitmq_producer import RabbitMQProducer
     
     print("\n🚀 Creating test submissions for all problems...")
     print("="*60)

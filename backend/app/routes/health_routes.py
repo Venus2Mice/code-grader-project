@@ -4,7 +4,6 @@ from ..models import db
 from ..rabbitmq_pool import get_pool
 from sqlalchemy import text
 import os
-import pika
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 

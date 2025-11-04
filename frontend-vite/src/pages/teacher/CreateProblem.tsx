@@ -101,26 +101,39 @@ export default function CreateProblemPage() {
 
       const response = await problemAPI.createWithDefinition(classToken, problemData)
       
-      // Debug log to see response structure
-      logger.info('Problem creation response', { 
-        fullResponse: response,
-        data: response.data,
-        token: response.data?.token,
-        problemToken: response.data?.problem_token
-      })
+      // DEBUG: Direct console.log to see raw token value (bypasses logger sanitization)
+      console.log('=== RAW RESPONSE DEBUG ===')
+      console.log('response.data:', response.data)
+      console.log('response.data.token:', response.data?.token)
+      console.log('typeof token:', typeof response.data?.token)
+      console.log('token truthy?:', !!response.data?.token)
+      console.log('========================')
       
-      // Extract token with multiple fallback options
-      const createdProblemToken = response.data?.token || response.data?.problem_token || response.data?.public_token
+      // CRITICAL: Extract token IMMEDIATELY before any other operations
+      // Store in a const to prevent any reference issues
+      const responseData = response.data
+      const createdProblemToken = responseData?.token || responseData?.problem_token || responseData?.public_token
       
-      if (!createdProblemToken) {
-        logger.error('Problem token not found in response', { 
-          responseData: response.data,
-          fullResponse: response 
+      // Validate token exists and is not a placeholder
+      if (!createdProblemToken || createdProblemToken === '[REDACTED]' || createdProblemToken === 'null' || createdProblemToken === 'undefined') {
+        // Log raw response for debugging
+        console.error('❌ Invalid token received:', {
+          token: createdProblemToken,
+          tokenType: typeof createdProblemToken,
+          responseData: responseData,
+          allKeys: responseData ? Object.keys(responseData) : []
         })
-        throw new Error('Problem token not returned from server')
+        throw new Error('Problem token not returned from server or is invalid')
       }
       
-      logger.info('Successfully extracted problem token', { token: createdProblemToken })
+      console.log('✅ Token extracted successfully:', createdProblemToken)
+      
+      // Now safe to log after token extraction
+      logger.info('Problem created successfully', { 
+        problemId: responseData?.id,
+        title: responseData?.title,
+        hasValidToken: true
+      })
       
       // Show success and redirect to EDIT page
       setValidationModal({
