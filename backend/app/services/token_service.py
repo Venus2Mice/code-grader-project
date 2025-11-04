@@ -65,10 +65,14 @@ class TokenService:
         # Serialize both ID and type for extra security
         data = {
             'id': resource_id,
-            'type': resource_type
+            'type': resource_type,
+            'expiry': expiry_seconds  # Store expiry in token data for reference
         }
         
-        token = serializer.dumps(data, expires_in=expiry_seconds)
+        # URLSafeTimedSerializer.dumps() doesn't accept expires_in parameter
+        # The timestamp is automatically added by TimedSerializer
+        # Expiration is checked during loads() with max_age parameter
+        token = serializer.dumps(data)
         return token
     
     @staticmethod
