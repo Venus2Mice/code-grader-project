@@ -238,15 +238,18 @@ export default function CreateProblemPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate function name
-    if (!formData.functionName || !validateFunctionName(formData.functionName)) {
+    // Function name is now OPTIONAL - backend will apply fallback
+    // If provided, validate it; if not provided or invalid, backend will generate from title or use "Problem"
+    const functionNameToSend = formData.functionName.trim()
+    
+    if (functionNameToSend && !validateFunctionName(functionNameToSend)) {
       setValidationModal({
         isOpen: true,
         title: "Invalid Function Name",
-        message: "Function name is required and must start with a letter or underscore, containing only letters, numbers, and underscores.",
-        type: "error"
+        message: "Function name must start with a letter or underscore and contain only letters, numbers, and underscores. Leave empty to auto-generate from problem title.",
+        type: "warning"
       })
-      return
+      // Allow submission - backend will fallback
     }
 
     // Validate return type
@@ -517,19 +520,23 @@ export default function CreateProblemPage() {
               {/* Function Name - Neo Brutalism */}
               <div className="space-y-3">
                 <Label htmlFor="functionName" className="text-base font-black uppercase tracking-wide">
-                  Function Name *
+                  Function Name (Optional)
                 </Label>
                 <Input
                   id="functionName"
-                  placeholder="e.g., twoSum"
+                  placeholder="e.g., twoSum (leave empty to auto-generate)"
                   value={formData.functionName}
                   onChange={(e) => handleFunctionNameChange(e.target.value)}
                   className="border-4 border-border font-mono text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-1 focus:translate-y-1 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                  required
                 />
-                <p className="text-sm font-bold text-muted-foreground border-l-4 border-yellow-500 pl-3 bg-yellow-50 dark:bg-yellow-950 py-2">
-                  ⚠️ Must start with letter/underscore. Only letters, numbers, underscores allowed.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-muted-foreground border-l-4 border-cyan-500 pl-3 bg-cyan-50 dark:bg-cyan-950 py-2">
+                    ℹ️ Auto-generated from problem title if not provided
+                  </p>
+                  <p className="text-sm font-bold text-muted-foreground border-l-4 border-yellow-500 pl-3 bg-yellow-50 dark:bg-yellow-950 py-2">
+                    ⚠️ Must start with letter/underscore. Only letters, numbers, underscores allowed.
+                  </p>
+                </div>
               </div>
 
               {/* Return Type - Neo Brutalism */}

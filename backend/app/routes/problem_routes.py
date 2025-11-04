@@ -5,10 +5,61 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..decorators import role_required
 from ..token_utils import find_class_by_token_or_404, find_problem_by_token_or_404
 import json
+import re
 
 # Blueprint này vẫn được tạo ra để chứa các route không lồng trong class
 # Ví dụ: /api/problems/123
 problem_bp = Blueprint('problems', __name__, url_prefix='/api/problems')
+
+
+def generate_valid_function_name(title: str) -> str:
+    """
+    Generate a valid function name from problem title.
+    
+    Rules:
+    1. If title <= 20 chars and valid identifier, use it
+    2. Otherwise, default to "Problem"
+    
+    Valid identifier: starts with letter/underscore, contains only alphanumeric/underscore
+    """
+    if not title:
+        return "Problem"
+    
+    # Remove whitespace and convert to camelCase
+    words = title.strip().split()
+    if not words:
+        return "Problem"
+    
+    # Convert to camelCase: first word lowercase, rest capitalized
+    camel_case = words[0].lower()
+    for word in words[1:]:
+        # Capitalize first letter, keep rest lowercase
+        if word:
+            camel_case += word[0].upper() + word[1:].lower()
+    
+    # Remove non-alphanumeric characters (except underscore)
+    clean_name = re.sub(r'[^a-zA-Z0-9_]', '', camel_case)
+    
+    # Ensure it starts with letter or underscore
+    if not clean_name or not re.match(r'^[a-zA-Z_]', clean_name):
+        return "Problem"
+    
+    # Check length
+    if len(clean_name) <= 20:
+        return clean_name
+    
+    # If too long, default to "Problem"
+    return "Problem"
+
+
+def validate_function_name(name: str) -> bool:
+    """
+    Validate function name format.
+    Must start with letter/underscore and contain only alphanumeric/underscore.
+    """
+    if not name:
+        return False
+    return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name))
 
 # Lưu ý: Endpoint này được lồng trong class_bp đã được import
 # POST /api/classes/<string:class_token>/problems (LEGACY - sử dụng function_signature)
@@ -150,7 +201,7 @@ def create_problem_with_definition(class_token):
     # Validate required fields
     title = data.get('title')
     description = data.get('description')
-    function_name = data.get('function_name')
+    function_name = data.get('function_name', '').strip()
     return_type = data.get('return_type')
     parameters = data.get('parameters', [])
     test_cases = data.get('test_cases', [])
@@ -161,8 +212,13 @@ def create_problem_with_definition(class_token):
     if not description:
         return jsonify({"msg": "Problem description is required"}), 400
     
-    if not function_name:
-        return jsonify({"msg": "Function name is required"}), 400
+    # Function name fallback logic
+    if not function_name or not validate_function_name(function_name):
+        # Generate from title or use default
+        function_name = generate_valid_function_name(title)
+        # Log the fallback for debugging
+        from ..logging_config import logger
+        logger.info(f"Function name fallback applied: '{data.get('function_name')}' -> '{function_name}' for problem '{title}'")
     
     if not return_type:
         return jsonify({"msg": "Return type is required"}), 400
