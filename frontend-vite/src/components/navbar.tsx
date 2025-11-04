@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button"
-import { Code2, LogOut, User, Moon, Sun } from "lucide-react"
+import { Code2, LogOut, User } from "lucide-react"
 import { Link } from "react-router-dom"
-import { useTheme } from "@/components/theme-provider"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 import { useTranslation } from "react-i18next"
 
 interface NavbarProps {
@@ -12,7 +12,6 @@ interface NavbarProps {
 }
 
 export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
-  const { theme, toggleTheme } = useTheme()
   const { t } = useTranslation('common')
 
   return (
@@ -31,19 +30,7 @@ export function Navbar({ userName, userRole, onLogout }: NavbarProps) {
         <div className="flex items-center gap-2 md:gap-3">
           <LanguageSwitcher />
           
-          <Button variant="outline" size="sm" onClick={toggleTheme} className="gap-2 bg-transparent">
-            {theme === "light" ? (
-              <>
-                <Moon className="h-4 w-4" />
-                <span className="hidden md:inline">Dark</span>
-              </>
-            ) : (
-              <>
-                <Sun className="h-4 w-4" />
-                <span className="hidden md:inline">Light</span>
-              </>
-            )}
-          </Button>
+          <ThemeSwitcher />
 
           {userName && (
             <>
