@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { problemAPI, resourceAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
-import { MarkdownEditor, ResourceUpload, ResourceDisplay, TestCaseBuilder, FunctionTemplates, CodePreview } from "@/components/problem"
+import { TestCaseBuilder, FunctionTemplates } from "@/components/problem"
 import type { TestCaseInput, TestCaseOutput, Language, Difficulty, Resource, Problem } from "@/types"
 
 interface TestCaseForm {
@@ -48,7 +48,6 @@ export default function EditProblemPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    markdown_content: "",
     difficulty: "medium" as Difficulty,
     language: "cpp" as Language,
     timeLimit: 1000,
@@ -71,13 +70,8 @@ export default function EditProblemPage() {
     },
   ])
 
-  // Resource management state
-  const [resources, setResources] = useState<Resource[]>([])
-  const [showResourceUpload, setShowResourceUpload] = useState(false)
-
   // UX enhancement state
   const [showTemplates, setShowTemplates] = useState(false)
-  const [showCodePreview, setShowCodePreview] = useState(false)
 
   // Test case dialog state
   const [editingTestCase, setEditingTestCase] = useState<TestCaseForm | null>(null)
@@ -106,7 +100,6 @@ export default function EditProblemPage() {
       setFormData({
         title: problemData.title || "",
         description: problemData.description || "",
-        markdown_content: problemData.markdown_content || "",
         difficulty: problemData.difficulty || "medium",
         language: problemData.language || "cpp",
         timeLimit: problemData.time_limit_ms || 1000,
@@ -130,16 +123,6 @@ export default function EditProblemPage() {
           is_hidden: tc.is_hidden || false
           // points removed - not needed in frontend
         })))
-      }
-
-      // Fetch resources if available
-      if (problemData.id) {
-        try {
-          const resourcesResponse = await resourceAPI.getByProblem(problemToken)
-          setResources(resourcesResponse.data || [])
-        } catch (err) {
-          logger.warn('No resources found for problem')
-        }
       }
     } catch (err) {
       logger.error('Error fetching problem', err, { problemToken })
@@ -227,16 +210,6 @@ export default function EditProblemPage() {
     }
 
     setFormData({ ...formData, functionName: value })
-  }
-
-  // Resource upload handlers
-  const handleResourceUploaded = (newResource: Resource) => {
-    setResources([...resources, newResource])
-    setShowResourceUpload(false)
-  }
-
-  const handleResourceDeleted = (resourceId: number) => {
-    setResources(resources.filter(r => r.id !== resourceId))
   }
 
   const openErrorModal = (title: string, message: string) => {
@@ -375,7 +348,6 @@ export default function EditProblemPage() {
       const problemData: any = {
         title: formData.title,
         description: formData.description,
-        markdown_content: formData.markdown_content || undefined,
         difficulty: formData.difficulty,
         language: formData.language,
         function_name: formData.functionName,
@@ -494,15 +466,6 @@ export default function EditProblemPage() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">Use clear formatting to explain the problem statement</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Problem Description (Markdown - Optional)</Label>
-                <MarkdownEditor
-                  value={formData.markdown_content}
-                  onChange={(value) => setFormData({ ...formData, markdown_content: value })}
-                  onFileUpload={(filename) => logger.info(`Markdown file uploaded: ${filename}`)}
-                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
@@ -713,57 +676,6 @@ export default function EditProblemPage() {
             </div>
           </Card>
 
-          {/* Resources Section */}
-          <Card className="border-4 border-border bg-card p-8">
-            <h2 className="mb-6 border-l-8 border-purple-500 pl-4 text-2xl font-black uppercase text-foreground">
-              RESOURCES (OPTIONAL)
-            </h2>
-
-            <div className="space-y-4">
-              <div className="border-4 border-purple-500 bg-purple-50 dark:bg-purple-950 p-4 shadow-[4px_4px_0px_0px_rgba(168,85,247,1)]">
-                <div className="flex gap-3">
-                  <Upload className="h-6 w-6 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-black text-lg uppercase text-purple-900 dark:text-purple-100">Add Files or Drive Links</p>
-                    <p className="text-sm font-bold text-purple-700 dark:text-purple-300 mt-2">
-                      Upload files or provide Google Drive links for students. These will appear in problem detail view.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Display uploaded resources */}
-              {resources.length > 0 && (
-                <ResourceDisplay 
-                  resources={resources} 
-                  canDelete={true}
-                  onResourceDeleted={handleResourceDeleted}
-                />
-              )}
-
-              {/* Resource upload component */}
-              {showResourceUpload && (
-                <ResourceUpload
-                  problemId={problemToken}
-                  onUploadSuccess={handleResourceUploaded}
-                  onError={openErrorModal}
-                />
-              )}
-
-              {/* Upload button */}
-              {!showResourceUpload && (
-                <Button
-                  type="button"
-                  onClick={() => setShowResourceUpload(true)}
-                  className="w-full border-4 border-border bg-purple-500 px-6 py-3 font-black uppercase text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                >
-                  <Upload className="h-5 w-5 mr-2" />
-                  UPLOAD RESOURCES
-                </Button>
-              )}
-            </div>
-          </Card>
-
           <Card className="border-4 border-border bg-card p-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="border-l-8 border-accent pl-4 text-2xl font-black uppercase text-foreground">
@@ -868,21 +780,11 @@ export default function EditProblemPage() {
                   Hide All
                 </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCodePreview(!showCodePreview)}
-                className="gap-2"
-              >
-                <Code className="h-4 w-4" />
-                {showCodePreview ? "Hide" : "Show"} Code Preview
-              </Button>
             </div>
 
             {/* Test Case Edit Dialog */}
             <Dialog open={isTestCaseDialogOpen} onOpenChange={setIsTestCaseDialogOpen}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-border">
+              <DialogContent className="!w-[95vw] !max-w-[1400px] max-h-[90vh] overflow-y-auto overflow-x-hidden border-4 border-border">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-black uppercase">
                     Edit Test Case
@@ -947,22 +849,6 @@ export default function EditProblemPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-
-            {/* Code Preview */}
-            {showCodePreview && testCases.length > 0 && (
-              <div className="mt-6">
-                <CodePreview
-                  language={formData.language}
-                  functionName={formData.functionName || "solution"}
-                  returnType={formData.returnType}
-                  parameters={parameters}
-                  testCase={{
-                    inputs: testCases[0].inputs,
-                    expected_output: testCases[0].expected_output
-                  }}
-                />
-              </div>
-            )}
           </Card>
 
           <div className="flex justify-end gap-4">

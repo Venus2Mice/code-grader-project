@@ -26,18 +26,14 @@ export interface TestCaseBuilderProps {
   parameterNames?: string[]  // Optional: names from function signature
 }
 
-// Common type options
+// Common type options - Simplified for clarity
 const TYPE_OPTIONS = [
-  { value: "int", label: "Integer (int)" },
-  { value: "string", label: "String (string)" },
-  { value: "bool", label: "Boolean (bool)" },
-  { value: "float", label: "Float (float)" },
-  { value: "int[]", label: "Integer Array (int[])" },
-  { value: "string[]", label: "String Array (string[])" },
-  { value: "vector<int>", label: "Vector<int> (C++)" },
-  { value: "vector<string>", label: "Vector<string> (C++)" },
-  { value: "List[int]", label: "List[int] (Python)" },
-  { value: "List[str]", label: "List[str] (Python)" },
+  { value: "int", label: "Integer" },
+  { value: "float", label: "Float" },
+  { value: "string", label: "String" },
+  { value: "bool", label: "Boolean" },
+  { value: "int[]", label: "Integer Array" },
+  { value: "string[]", label: "String Array" },
 ]
 
 export function TestCaseBuilder({
@@ -125,7 +121,7 @@ export function TestCaseBuilder({
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-[300px_1fr] gap-3">
                     {/* Type Selector */}
                     <div className="space-y-2">
                       <Label className="text-sm font-black uppercase">Type</Label>
@@ -191,7 +187,7 @@ export function TestCaseBuilder({
         </h4>
 
         <Card className="border-4 border-border bg-background p-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-[300px_1fr] gap-3">
             {/* Type Selector */}
             <div className="space-y-2">
               <Label className="text-sm font-black uppercase">Type</Label>
