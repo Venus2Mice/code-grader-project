@@ -79,6 +79,10 @@ export default function EditProblemPage() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [showCodePreview, setShowCodePreview] = useState(false)
 
+  // Test case dialog state
+  const [editingTestCase, setEditingTestCase] = useState<TestCaseForm | null>(null)
+  const [isTestCaseDialogOpen, setIsTestCaseDialogOpen] = useState(false)
+
   // State for validation modal
   const [validationModal, setValidationModal] = useState({
     isOpen: false,
@@ -292,6 +296,26 @@ export default function EditProblemPage() {
 
   const setAllTestCasesVisibility = (hidden: boolean) => {
     setTestCases(testCases.map(tc => ({ ...tc, is_hidden: hidden })))
+  }
+
+  // Test case dialog handlers
+  const openTestCaseDialog = (testCase: TestCaseForm) => {
+    setEditingTestCase(testCase)
+    setIsTestCaseDialogOpen(true)
+  }
+
+  const closeTestCaseDialog = () => {
+    setEditingTestCase(null)
+    setIsTestCaseDialogOpen(false)
+  }
+
+  const saveTestCaseFromDialog = () => {
+    if (editingTestCase) {
+      setTestCases(testCases.map(tc => 
+        tc.id === editingTestCase.id ? editingTestCase : tc
+      ))
+      closeTestCaseDialog()
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -751,36 +775,49 @@ export default function EditProblemPage() {
               </Button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {testCases.map((testCase, index) => (
-                <Card key={testCase.id} className="border-4 border-border bg-muted/50 p-6">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">Test Case {index + 1}</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-3 border-2 border-border bg-background px-3 py-1.5 rounded">
-                        <Switch
-                          checked={testCase.is_hidden}
-                          onCheckedChange={(checked) => updateTestCase(testCase.id, "is_hidden", checked)}
-                        />
-                        <Label className="text-sm font-bold cursor-pointer">
+                <Card key={testCase.id} className="border-4 border-border bg-muted/50 p-4">
+                  <div className="flex items-center justify-between">
+                    {/* Left: Test case info */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-black text-lg">
+                        {index + 1}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
                           {testCase.is_hidden ? (
-                            <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
-                              <EyeOff className="h-4 w-4" />
-                              Hidden
+                            <span className="flex items-center gap-1 px-2 py-1 rounded bg-orange-500/20 text-orange-700 dark:text-orange-300 text-xs font-bold">
+                              <EyeOff className="h-3 w-3" />
+                              HIDDEN
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                              <Eye className="h-4 w-4" />
-                              Visible
+                            <span className="flex items-center gap-1 px-2 py-1 rounded bg-green-500/20 text-green-700 dark:text-green-300 text-xs font-bold">
+                              <Eye className="h-3 w-3" />
+                              VISIBLE
                             </span>
                           )}
-                        </Label>
+                        </div>
+                        <div className="text-sm text-muted-foreground font-mono">
+                          {testCase.inputs.length} input(s) → {testCase.expected_output.type}
+                        </div>
                       </div>
-                      {testCases.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeTestCase(testCase.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openTestCaseDialog(testCase)}
+                        className="gap-1"
+                      >
+                        <Code className="h-4 w-4" />
+                        EDIT
+                      </Button>
+                      
                       <Button
                         type="button"
                         variant="ghost"
@@ -789,19 +826,20 @@ export default function EditProblemPage() {
                         className="gap-1"
                       >
                         <Copy className="h-4 w-4" />
-                        Duplicate
                       </Button>
+
+                      {testCases.length > 1 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeTestCase(testCase.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Replace JSON textareas with TestCaseBuilder */}
-                  <TestCaseBuilder
-                    inputs={testCase.inputs}
-                    expectedOutput={testCase.expected_output}
-                    onInputsChange={(inputs) => updateTestCase(testCase.id, "inputs", inputs)}
-                    onExpectedOutputChange={(output) => updateTestCase(testCase.id, "expected_output", output)}
-                    parameterNames={parameters.map(p => p.name)}
-                  />
                 </Card>
               ))}
             </div>
@@ -841,6 +879,74 @@ export default function EditProblemPage() {
                 {showCodePreview ? "Hide" : "Show"} Code Preview
               </Button>
             </div>
+
+            {/* Test Case Edit Dialog */}
+            <Dialog open={isTestCaseDialogOpen} onOpenChange={setIsTestCaseDialogOpen}>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black uppercase">
+                    Edit Test Case
+                  </DialogTitle>
+                </DialogHeader>
+
+                {editingTestCase && (
+                  <div className="space-y-6">
+                    {/* Visibility Toggle */}
+                    <div className="flex items-center gap-3 border-4 border-border bg-muted/50 p-4">
+                      <Switch
+                        checked={editingTestCase.is_hidden}
+                        onCheckedChange={(checked) => 
+                          setEditingTestCase({ ...editingTestCase, is_hidden: checked })
+                        }
+                      />
+                      <Label className="text-sm font-bold cursor-pointer">
+                        {editingTestCase.is_hidden ? (
+                          <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                            <EyeOff className="h-4 w-4" />
+                            HIDDEN FROM STUDENTS
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                            <Eye className="h-4 w-4" />
+                            VISIBLE TO STUDENTS
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+
+                    {/* TestCaseBuilder */}
+                    <TestCaseBuilder
+                      inputs={editingTestCase.inputs}
+                      expectedOutput={editingTestCase.expected_output}
+                      onInputsChange={(inputs) => 
+                        setEditingTestCase({ ...editingTestCase, inputs })
+                      }
+                      onExpectedOutputChange={(output) => 
+                        setEditingTestCase({ ...editingTestCase, expected_output: output })
+                      }
+                      parameterNames={parameters.map(p => p.name)}
+                    />
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeTestCaseDialog}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={saveTestCaseFromDialog}
+                    className="bg-primary text-primary-foreground font-bold"
+                  >
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Code Preview */}
             {showCodePreview && testCases.length > 0 && (
