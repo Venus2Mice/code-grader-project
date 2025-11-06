@@ -86,9 +86,16 @@ def seed_test_data_command():
     
     db.session.add_all([class1, class2])
     db.session.commit()
+    
+    # CRITICAL: Generate public tokens for classes (needed for frontend routing)
+    from ..services.token_service import generate_class_token
+    class1.public_token = generate_class_token(class1.id)
+    class2.public_token = generate_class_token(class2.id)
+    db.session.commit()
+    
     print(f"✅ Đã tạo 2 Classes:")
-    print(f"   - {class1.name} (ID: {class1.id}, Invite: {class1.invite_code})")
-    print(f"   - {class2.name} (ID: {class2.id}, Invite: {class2.invite_code})")
+    print(f"   - {class1.name} (ID: {class1.id}, Token: {class1.public_token}, Invite: {class1.invite_code})")
+    print(f"   - {class2.name} (ID: {class2.id}, Token: {class2.public_token}, Invite: {class2.invite_code})")
 
     # 5. Students join classes (cross-enrollment)
     class1.students.extend([student1, student2])  # Alice & Bob in C++ class
@@ -112,18 +119,40 @@ def seed_test_data_command():
         create_rotate_image,
         create_valid_anagram,
         create_fibonacci,
-        create_container_water
+        create_container_water,
+        create_merge_sorted_arrays,
+        create_longest_common_prefix
     )
     
+    # Python problems for CS101
     problem1 = create_two_sum(class2.id)
-    problem2 = create_palindrome_number(class1.id)
-    problem3 = create_reverse_string(class1.id)
     problem4 = create_rotate_image(class2.id)
-    problem5 = create_valid_anagram(class1.id)
     problem6 = create_fibonacci(class2.id)
+    problem8 = create_merge_sorted_arrays(class2.id)
+    
+    # C++ problems for CS301
+    problem2 = create_palindrome_number(class1.id)
+    problem5 = create_valid_anagram(class1.id)
     problem7 = create_container_water(class1.id)
     
-    db.session.add_all([problem1, problem2, problem3, problem4, problem5, problem6, problem7])
+    # Java problem for CS301
+    problem3 = create_reverse_string(class1.id)
+    problem9 = create_longest_common_prefix(class1.id)
+    
+    db.session.add_all([problem1, problem2, problem3, problem4, problem5, problem6, problem7, problem8, problem9])
+    db.session.commit()
+    
+    # CRITICAL: Generate public tokens for problems (needed for frontend routing)
+    from ..services.token_service import generate_problem_token
+    problem1.public_token = generate_problem_token(problem1.id)
+    problem2.public_token = generate_problem_token(problem2.id)
+    problem3.public_token = generate_problem_token(problem3.id)
+    problem4.public_token = generate_problem_token(problem4.id)
+    problem5.public_token = generate_problem_token(problem5.id)
+    problem6.public_token = generate_problem_token(problem6.id)
+    problem7.public_token = generate_problem_token(problem7.id)
+    problem8.public_token = generate_problem_token(problem8.id)
+    problem9.public_token = generate_problem_token(problem9.id)
     db.session.commit()
     
     print(f"✅ Problem 1: {problem1.title} (Python, {len(problem1.test_cases)} test cases)")
@@ -133,6 +162,8 @@ def seed_test_data_command():
     print(f"✅ Problem 5: {problem5.title} (C++, {len(problem5.test_cases)} test cases)")
     print(f"✅ Problem 6: {problem6.title} (Python, {len(problem6.test_cases)} test cases)")
     print(f"✅ Problem 7: {problem7.title} (C++, {len(problem7.test_cases)} test cases)")
+    print(f"✅ Problem 8: {problem8.title} (Python, {len(problem8.test_cases)} test cases) - NEW")
+    print(f"✅ Problem 9: {problem9.title} (Java, {len(problem9.test_cases)} test cases) - NEW")
 
     print("\n" + "="*60)
     print("✅ HOÀN TẤT VIỆC SEED DỮ LIỆU TEST!")
@@ -140,7 +171,7 @@ def seed_test_data_command():
     
     _print_credentials(teacher_user, [student1, student2, student3])
     _print_classes([class1, class2], [student1, student2, student3])
-    _print_problems_summary([problem1, problem2, problem3, problem4, problem5, problem6, problem7])
+    _print_problems_summary([problem1, problem2, problem3, problem4, problem5, problem6, problem7, problem8, problem9])
 
 
 def _print_credentials(teacher, students):

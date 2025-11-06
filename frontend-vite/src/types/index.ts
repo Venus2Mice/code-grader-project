@@ -122,6 +122,8 @@ export interface Problem {
   function_signature: string           // Required: function signature
   function_name?: string               // Extracted from signature
   parameter_types?: string[]           // e.g., ["int[]", "int"]
+  return_type?: string                 // NEW: e.g., "int", "void", "int[]"
+  parameters?: Array<{name: string, type: string}>  // NEW: e.g., [{name: "nums", type: "int[]"}]
   time_limit_ms: number
   memory_limit_kb: number
   language_limits?: LanguageLimits

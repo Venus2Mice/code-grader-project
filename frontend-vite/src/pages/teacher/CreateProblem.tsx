@@ -101,14 +101,6 @@ export default function CreateProblemPage() {
 
       const response = await problemAPI.createWithDefinition(classToken, problemData)
       
-      // DEBUG: Direct console.log to see raw token value (bypasses logger sanitization)
-      console.log('=== RAW RESPONSE DEBUG ===')
-      console.log('response.data:', response.data)
-      console.log('response.data.token:', response.data?.token)
-      console.log('typeof token:', typeof response.data?.token)
-      console.log('token truthy?:', !!response.data?.token)
-      console.log('========================')
-      
       // CRITICAL: Extract token IMMEDIATELY before any other operations
       // Store in a const to prevent any reference issues
       const responseData = response.data
@@ -116,17 +108,12 @@ export default function CreateProblemPage() {
       
       // Validate token exists and is not a placeholder
       if (!createdProblemToken || createdProblemToken === '[REDACTED]' || createdProblemToken === 'null' || createdProblemToken === 'undefined') {
-        // Log raw response for debugging
-        console.error('❌ Invalid token received:', {
-          token: createdProblemToken,
+        logger.error('Invalid token received from server', {
           tokenType: typeof createdProblemToken,
-          responseData: responseData,
-          allKeys: responseData ? Object.keys(responseData) : []
+          hasResponseData: !!responseData
         })
         throw new Error('Problem token not returned from server or is invalid')
       }
-      
-      console.log('✅ Token extracted successfully:', createdProblemToken)
       
       // Now safe to log after token extraction
       logger.info('Problem created successfully', { 

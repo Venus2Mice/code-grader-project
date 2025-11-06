@@ -14,10 +14,14 @@ export function useCodeViewer() {
   const [codeLoading, setCodeLoading] = useState(false)
 
   const viewCode = async (submissionId: number) => {
+    // Don't open modal until data is ready
+    setCodeLoading(true)
+    
     try {
-      setCodeLoading(true)
       const response = await submissionAPI.getCode(submissionId)
+      // Set data first
       setCodeModalData(response.data)
+      // Only after successfully fetching, open the modal
       setCodeModalOpen(true)
     } catch (err) {
       logger.error('Error fetching code', err, { submissionId })
@@ -29,6 +33,7 @@ export function useCodeViewer() {
 
   const closeCodeModal = () => {
     setCodeModalOpen(false)
+    // Clear data when closing to prevent showing old code on next open
     setCodeModalData(null)
   }
 

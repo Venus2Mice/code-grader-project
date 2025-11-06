@@ -2,359 +2,188 @@
 
 import click
 from flask.cli import with_appcontext
-from ..models import Problem, User, Role, db
-from .. import rabbitmq_producer
+from ..models import Problem, User, Role, Submission, SubmissionResult, db
+from datetime import datetime, timedelta
 
 
 @click.command(name='seed_test_submissions')
 @with_appcontext
 def seed_test_submissions_command():
-    """Tạo test submissions cho tất cả các problems."""
-    from ..models import Submission, SubmissionResult
-    
-    print("\n🚀 Creating test submissions for all problems...")
+    """Create diverse test submissions to demonstrate grading system."""
+    print("\n>>> Creating test submissions for all problems...")
     print("="*60)
     
-    # Lấy tất cả problems và students
+    # Get all problems and students
     problems = Problem.query.all()
-    students = User.query.filter_by(role_id=Role.query.filter_by(name='student').first().id).all()
+    student_role = Role.query.filter_by(name='student').first()
+    if not student_role:
+        print("[ERROR] Student role not found. Run 'flask seed_db' first.")
+        return
+    
+    students = User.query.filter_by(role_id=student_role.id).all()
     
     if not problems:
-        print("❌ No problems found. Run 'flask seed_test_data' first.")
+        print("[ERROR] No problems found. Run 'flask seed_test_data' first.")
         return
     
     if not students:
-        print("❌ No students found. Run 'flask seed_test_data' first.")
+        print("[ERROR] No students found. Run 'flask seed_test_data' first.")
         return
     
-    print(f"📝 Found {len(problems)} problems and {len(students)} students")
+    print(f"[INFO] Found {len(problems)} problems and {len(students)} students")
     print("-"*60)
     
-    # Sample solutions cho mỗi problem (COMPLETE CODE WITH CLASS/FUNCTION)
-    solutions = {
-        "Two Sum": {
-            "correct": """class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        seen = {}
-        for i, num in enumerate(nums):
-            complement = target - num
-            if complement in seen:
-                return [seen[complement], i]
-            seen[num] = i
-        return []""",
-            "wrong": """class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        # Returns indices in wrong order
-        for i in range(len(nums)):
-            for j in range(i+1, len(nums)):
-                if nums[i] + nums[j] == target:
-                    return [j, i]  # Wrong order!
-        return []""",
-            "partial": """class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        # Only works for sorted arrays
-        left, right = 0, len(nums) - 1
-        while left < right:
-            total = nums[left] + nums[right]
-            if total == target:
-                return [left, right]
-            elif total < target:
-                left += 1
-            else:
-                right -= 1
-        return []"""
-        },
-        "Palindrome Number": {
-            "correct": """#include <iostream>
-#include <climits>
-using namespace std;
-
-class Solution {
-public:
-    bool isPalindrome(int x) {
-        if (x < 0) return false;
-        if (x < 10) return true;
-        int reversed = 0, original = x;
-        while (x > 0) {
-            if (reversed > INT_MAX / 10 || (reversed == INT_MAX / 10 && x % 10 > 7)) return false;
-            reversed = reversed * 10 + x % 10;
-            x /= 10;
-        }
-        return original == reversed;
-    }
-};""",
-            "wrong": """#include <iostream>
-using namespace std;
-
-class Solution {
-public:
-    bool isPalindrome(int x) {
-        // Forgot to handle negative numbers
-        int reversed = 0, original = x;
-        while (x > 0) {
-            reversed = reversed * 10 + x % 10;
-            x /= 10;
-        }
-        return original == reversed;
-    }
-};""",
-            "compile_error": """#include <iostream>
-using namespace std;
-
-class Solution {
-public:
-    bool isPalindrome(int x) {
-        if x < 0:  # Python syntax in C++!
-            return false
-        return true
-    }
-};"""
-        },
-        "Reverse String": {
-            "correct": """import java.util.*;
-
-class Solution {
-    public void reverseString(char[] s) {
-        int left = 0, right = s.length - 1;
-        while (left < right) {
-            char temp = s[left];
-            s[left] = s[right];
-            s[right] = temp;
-            left++;
-            right--;
-        }
-    }
-}""",
-            "wrong": """import java.util.*;
-
-class Solution {
-    public void reverseString(char[] s) {
-        // Creates new array instead of in-place
-        char[] reversed = new char[s.length];
-        for (int i = 0; i < s.length; i++) {
-            reversed[i] = s[s.length - 1 - i];
-        }
-        // Doesn't modify s!
-    }
-}""",
-            "runtime_error": """import java.util.*;
-
-class Solution {
-    public void reverseString(char[] s) {
-        // Array index out of bounds
-        for (int i = 0; i <= s.length; i++) {
-            s[i] = s[s.length - 1 - i];
-        }
-    }
-}"""
-        },
-        "Rotate Image": {
-            "correct": """class Solution:
-    def rotate(self, matrix: List[List[int]]) -> None:
-        n = len(matrix)
-        # Transpose
-        for i in range(n):
-            for j in range(i, n):
-                matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
-        # Reverse each row
-        for i in range(n):
-            matrix[i].reverse()""",
-            "wrong": """class Solution:
-    def rotate(self, matrix: List[List[int]]) -> None:
-        # Only rotates, doesn't transpose correctly
-        for row in matrix:
-            row.reverse()""",
-            "partial": """class Solution:
-    def rotate(self, matrix: List[List[int]]) -> None:
-        # Only works for 2x2 matrices
-        if len(matrix) == 2:
-            matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1] = matrix[1][0], matrix[0][0], matrix[1][1], matrix[0][1]"""
-        },
-        "Valid Anagram": {
-            "correct": """#include <iostream>
-#include <string>
-#include <unordered_map>
-using namespace std;
-
-class Solution {
-public:
-    bool isAnagram(string s, string t) {
-        if (s.length() != t.length()) return false;
-        unordered_map<char, int> count;
-        for (char c : s) count[c]++;
-        for (char c : t) {
-            if (--count[c] < 0) return false;
-        }
-        return true;
-    }
-};""",
-            "wrong": """#include <iostream>
-#include <string>
-using namespace std;
-
-class Solution {
-public:
-    bool isAnagram(string s, string t) {
-        // Doesn't check character frequency correctly
-        return s.length() == t.length();
-    }
-};""",
-            "partial": """#include <iostream>
-#include <string>
-#include <algorithm>
-using namespace std;
-
-class Solution {
-public:
-    bool isAnagram(string s, string t) {
-        // Only works for lowercase, but O(n log n)
-        if (s.length() != t.length()) return false;
-        sort(s.begin(), s.end());
-        sort(t.begin(), t.end());
-        return s == t;
-    }
-};"""
-        },
-        "Fibonacci Number": {
-            "correct": """class Solution:
-    def fib(self, n: int) -> int:
-        if n <= 1:
-            return n
-        a, b = 0, 1
-        for _ in range(2, n + 1):
-            a, b = b, a + b
-        return b""",
-            "wrong": """class Solution:
-    def fib(self, n: int) -> int:
-        # Exponential time - will TLE
-        if n <= 1:
-            return n
-        return self.fib(n - 1) + self.fib(n - 2)""",
-            "tle": """class Solution:
-    def fib(self, n: int) -> int:
-        # Extremely slow - nested recursion
-        if n == 0:
-            return 0
-        result = 0
-        for i in range(n):
-            result += self.fib(i)  # Recursive call in loop!
-        return result"""
-        },
-        "Container With Most Water": {
-            "correct": """#include <iostream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-class Solution {
-public:
-    int maxArea(vector<int>& height) {
-        int maxArea = 0;
-        int left = 0, right = height.size() - 1;
-        while (left < right) {
-            int h = min(height[left], height[right]);
-            int width = right - left;
-            maxArea = max(maxArea, h * width);
-            if (height[left] < height[right]) {
-                left++;
-            } else {
-                right--;
-            }
-        }
-        return maxArea;
-    }
-};""",
-            "wrong": """#include <iostream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-class Solution {
-public:
-    int maxArea(vector<int>& height) {
-        // O(n^2) brute force - will TLE
-        int maxArea = 0;
-        for (int i = 0; i < height.size(); i++) {
-            for (int j = i + 1; j < height.size(); j++) {
-                int h = min(height[i], height[j]);
-                int width = j - i;
-                maxArea = max(maxArea, h * width);
-            }
-        }
-        return maxArea;
-    }
-};""",
-            "partial": """#include <iostream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-class Solution {
-public:
-    int maxArea(vector<int>& height) {
-        // Only checks adjacent elements - wrong algorithm
-        int maxArea = 0;
-        for (int i = 0; i < height.size() - 1; i++) {
-            int h = min(height[i], height[i+1]);
-            maxArea = max(maxArea, h);
-        }
-        return maxArea;
-    }
-};"""
-        }
-    }
-
-    submission_count = 0
+    # Import solution templates and helper
+    from .problem_templates import get_sample_solutions
+    from ..services.token_service import generate_submission_token
     
-    for problem in problems:
-        print(f"\n📝 Problem: {problem.title} ({problem.language})")
+    submission_count = 0
+    base_time = datetime.utcnow() - timedelta(days=7)  # Start from 7 days ago
+    
+    for idx, problem in enumerate(problems):
+        print(f"\n[PROBLEM] {problem.title} ({problem.language})")
         
-        # Get corresponding solutions
-        problem_solutions = solutions.get(problem.title, {})
-        if not problem_solutions:
-            print(f"  ⚠️  No sample solutions defined")
+        solutions = get_sample_solutions(problem.title, problem.language)
+        if not solutions or 'correct' not in solutions:
+            print(f"  [WARN] No sample solutions available, skipping...")
             continue
         
-        # Create submissions for each student
-        for i, student in enumerate(students):
-            # Determine which solution type to use (rotate for variety)
-            solution_types = list(problem_solutions.keys())
-            solution_type = solution_types[i % len(solution_types)]
-            source_code = problem_solutions[solution_type]
-            
-            # Create submission
-            submission = Submission(
-                problem_id=problem.id,
-                student_id=student.id,
-                source_code=source_code,
-                language=problem.language,
-                status='Pending',
-                is_test=False  # Make these real submissions
+        correct_solution = solutions['correct']
+        wrong_solution = solutions.get('wrong', correct_solution)
+        
+        # Alice - Perfect student
+        if len(students) >= 1:
+            alice = students[0]
+            submission = _create_submission(
+                problem, alice, correct_solution, 'Accepted',
+                base_time + timedelta(hours=idx*2), False
             )
-            db.session.add(submission)
-            db.session.commit()
-            
-            # Publish to RabbitMQ for grading
-            try:
-                task_data = {"submission_id": submission.id}
-                rabbitmq_producer.publish_task(task_data)
+            _create_submission_results(submission, 'Accepted')
+            submission_count += 1
+            print(f"  [OK] {alice.full_name}: AC (100 points)")
+        
+        # Bob - Mixed results
+        if len(students) >= 2:
+            bob = students[1]
+            if 'wrong' in solutions:
+                sub1 = _create_submission(
+                    problem, bob, wrong_solution, 'Wrong Answer',
+                    base_time + timedelta(hours=idx*2, minutes=30), False
+                )
+                _create_submission_results(sub1, 'Wrong Answer', 40)
                 submission_count += 1
-                print(f"  ✅ {student.full_name}: Submission #{submission.id} ({solution_type}) - Published to queue")
-            except Exception as e:
-                print(f"  ❌ Failed to publish submission #{submission.id}: {str(e)}")
+                print(f"  [WA] {bob.full_name}: WA (40 points) - Try 1")
+            
+            sub2 = _create_submission(
+                problem, bob, correct_solution, 'Accepted',
+                base_time + timedelta(hours=idx*2, minutes=45), False
+            )
+            _create_submission_results(sub2, 'Accepted')
+            submission_count += 1
+            print(f"  [OK] {bob.full_name}: AC (100 points) - Try 2")
+        
+        # Charlie - Partial completion
+        if len(students) >= 3:
+            charlie = students[2]
+            if idx % 2 == 0:
+                submission = _create_submission(
+                    problem, charlie, correct_solution, 'Accepted',
+                    base_time + timedelta(hours=idx*2, minutes=60), False
+                )
+                _create_submission_results(submission, 'Accepted')
+                submission_count += 1
+                print(f"  [OK] {charlie.full_name}: AC (100 points)")
+            else:
+                if 'wrong' in solutions:
+                    submission = _create_submission(
+                        problem, charlie, wrong_solution, 'Wrong Answer',
+                        base_time + timedelta(hours=idx*2, minutes=70), False
+                    )
+                    _create_submission_results(submission, 'Wrong Answer', 30)
+                    submission_count += 1
+                    print(f"  [WA] {charlie.full_name}: WA (30 points)")
     
     print("\n" + "="*60)
-    print(f"✅ Created {submission_count} test submissions!")
+    print(f"[SUCCESS] Created {submission_count} test submissions!")
     print("="*60)
     
-    print("\n🎯 NEXT STEPS:")
-    print("1. Start Docker services: docker compose up -d")
-    print("2. Watch submissions being graded by worker")
-    print("3. Check results via API or frontend")
+    if submission_count > 0:
+        print("\n[SUMMARY] SUBMISSION STATS:")
+        print(f"  Total: {submission_count} submissions")
+
+
+def _create_submission(problem, student, source_code, status, submitted_at, is_test):
+    """Helper to create a submission with token."""
+    from ..services.token_service import generate_submission_token
     
-    print("\n📊 SUBMISSION DISTRIBUTION:")
-    print(f"  Total: {submission_count} submissions")
-    print(f"  Per Problem: ~{submission_count // len(problems)} submissions")
-    print(f"  Per Student: ~{submission_count // len(students)} submissions")
+    total_points = sum(tc.points for tc in problem.test_cases)
+    if status == 'Accepted':
+        cached_score = total_points
+    elif status == 'Wrong Answer':
+        cached_score = int(total_points * 0.4)
+    else:
+        cached_score = 0
+    
+    submission = Submission(
+        problem_id=problem.id,
+        student_id=student.id,
+        source_code=source_code,
+        language=problem.language,
+        status=status,
+        submitted_at=submitted_at,
+        is_test=is_test,
+        cached_score=cached_score
+    )
+    db.session.add(submission)
+    db.session.commit()
+    
+    submission.public_token = generate_submission_token(submission.id)
+    db.session.commit()
+    
+    return submission
 
 
+def _create_submission_results(submission, overall_status, partial_score=None):
+    """Helper to create submission results for test cases."""
+    problem = submission.problem
+    test_cases = problem.test_cases
+    
+    if overall_status == 'Accepted':
+        for tc in test_cases:
+            result = SubmissionResult(
+                submission_id=submission.id,
+                test_case_id=tc.id,
+                status='Accepted',
+                execution_time_ms=50 + (tc.id % 100),
+                memory_used_kb=2048 + (tc.id % 1000),
+                output_received="(Output matches expected)",
+                error_message=None
+            )
+            db.session.add(result)
+    
+    elif overall_status == 'Wrong Answer':
+        passed_count = int(len(test_cases) * 0.5) if partial_score is None else int(len(test_cases) * (partial_score / 100))
+        for i, tc in enumerate(test_cases):
+            if i < passed_count:
+                result = SubmissionResult(
+                    submission_id=submission.id,
+                    test_case_id=tc.id,
+                    status='Accepted',
+                    execution_time_ms=45 + (tc.id % 100),
+                    memory_used_kb=2000 + (tc.id % 1000),
+                    output_received="(Output matches expected)",
+                    error_message=None
+                )
+            else:
+                result = SubmissionResult(
+                    submission_id=submission.id,
+                    test_case_id=tc.id,
+                    status='Wrong Answer',
+                    execution_time_ms=50 + (tc.id % 100),
+                    memory_used_kb=2100 + (tc.id % 1000),
+                    output_received="(Wrong output)",
+                    error_message="Output does not match expected result"
+                )
+            db.session.add(result)
+    
+    db.session.commit()

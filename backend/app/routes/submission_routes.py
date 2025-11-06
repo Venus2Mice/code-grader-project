@@ -42,6 +42,15 @@ def create_submission():
         return jsonify({"msg": "You are not a member of the class for this problem"}), 403
     # --- Hết phần kiểm tra quyền ---
     
+    # --- Kiểm tra language: submission language phải khớp với problem language ---
+    if language != problem.language:
+        return jsonify({
+            "msg": f"Language mismatch: Problem requires {problem.language}, but submission uses {language}",
+            "required_language": problem.language,
+            "submitted_language": language
+        }), 400
+    # --- Hết phần kiểm tra language ---
+    
     # Check due date
     is_late = False
     if problem.due_date:
@@ -170,11 +179,19 @@ def get_submission_result(submission_id):
 @jwt_required()
 @role_required('student')
 def get_my_submissions():
-    """Lấy submissions của student hiện tại với pagination, có thể filter theo problem_id."""
+    """Lấy submissions của student hiện tại với pagination, có thể filter theo problem_id hoặc problem_token."""
     student_id = get_jwt_identity()
     problem_id = request.args.get('problem_id', type=int)
+    problem_token = request.args.get('problem_token', type=str)
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)  # Default 20 per page
+    
+    # If problem_token is provided, resolve it to problem_id
+    if problem_token and not problem_id:
+        from ..services.token_service import verify_problem_token
+        problem_id = verify_problem_token(problem_token)
+        if not problem_id:
+            return jsonify({"msg": "Invalid problem token"}), 400
     
     # Chỉ lấy actual submissions, không lấy test runs
     query = Submission.query.filter_by(student_id=student_id, is_test=False)
