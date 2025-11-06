@@ -80,11 +80,28 @@ func generateJavaHarnessV2(problem *models.Problem, functionName string, paramTy
 		// Call function and print result
 		if returnType == "void" {
 			sb.WriteString(fmt.Sprintf("            solution.%s(%s);\n", functionName, strings.Join(paramNames, ", ")))
-			sb.WriteString("            System.out.println(\"null\");\n")
+			// For void functions, print the first parameter (in-place modification)
+			// Special handling for char[] - convert to list for proper JSON serialization
+			if javaParamTypes[0] == "char[]" {
+				sb.WriteString("            // Convert char[] to Character[] for JSON serialization\n")
+				sb.WriteString(fmt.Sprintf("            Character[] charArray = new Character[%s.length];\n", paramNames[0]))
+				sb.WriteString(fmt.Sprintf("            for (int i = 0; i < %s.length; i++) charArray[i] = %s[i];\n", paramNames[0], paramNames[0]))
+				sb.WriteString("            System.out.println(gson.toJson(charArray));\n")
+			} else {
+				sb.WriteString(fmt.Sprintf("            System.out.println(gson.toJson(%s));\n", paramNames[0]))
+			}
 		} else {
 			sb.WriteString(fmt.Sprintf("            %s result = solution.%s(%s);\n",
 				javaReturnType, functionName, strings.Join(paramNames, ", ")))
-			sb.WriteString("            System.out.println(gson.toJson(result));\n")
+			// Special handling for char[] return type
+			if javaReturnType == "char[]" {
+				sb.WriteString("            // Convert char[] to Character[] for JSON serialization\n")
+				sb.WriteString("            Character[] charArray = new Character[result.length];\n")
+				sb.WriteString("            for (int i = 0; i < result.length; i++) charArray[i] = result[i];\n")
+				sb.WriteString("            System.out.println(gson.toJson(charArray));\n")
+			} else {
+				sb.WriteString("            System.out.println(gson.toJson(result));\n")
+			}
 		}
 
 		sb.WriteString("        } catch (Exception e) {\n")
@@ -108,6 +125,7 @@ func convertToJavaType(genericType string) string {
 		"bool":     "boolean",
 		"string":   "String",
 		"char":     "char",
+		"char[]":   "char[]",
 		"int[]":    "int[]",
 		"string[]": "String[]",
 		"double[]": "double[]",

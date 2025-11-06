@@ -394,7 +394,7 @@ func formatCppValue(value interface{}, typ string) string {
 
 // formatJavaValue formats value for Java code
 func formatJavaValue(value interface{}, typ string) string {
-	// Handle array types recursively: int[], double[], String[], int[][], etc.
+	// Handle array types recursively: int[], double[], String[], char[], int[][], etc.
 	if isJavaArrayType(typ) {
 		dims := javaArrayDims(typ)
 		base := javaArrayBaseType(typ)
@@ -426,6 +426,14 @@ func formatJavaValue(value interface{}, typ string) string {
 
 	switch v := value.(type) {
 	case string:
+		// If type is char, use single quotes; otherwise double quotes for String
+		if typ == "char" {
+			if len(v) == 1 {
+				return fmt.Sprintf("'%s'", v)
+			}
+			// If string length > 1 but type is char, take first char
+			return fmt.Sprintf("'%c'", v[0])
+		}
 		return fmt.Sprintf("\"%s\"", v)
 	case float64:
 		if float64(int(v)) == v {
@@ -488,6 +496,8 @@ func genericToJavaType(t string) string {
 		return "String"
 	case "char":
 		return "char"
+	case "char[]":
+		return "char[]"
 	case "int[]":
 		return "int[]"
 	case "string[]":

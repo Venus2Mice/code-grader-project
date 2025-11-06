@@ -75,11 +75,17 @@ func generatePythonHarnessV2(problem *models.Problem, functionName string, param
 		}
 
 		// Call function
-		sb.WriteString(fmt.Sprintf("        result = %s(%s)\n",
-			functionName, strings.Join(paramNames, ", ")))
-
-		// Output result as JSON
-		sb.WriteString("        print(json.dumps(result))\n")
+		if returnType == "void" {
+			// For void functions, call without assignment and print first parameter (in-place modification)
+			sb.WriteString(fmt.Sprintf("        %s(%s)\n",
+				functionName, strings.Join(paramNames, ", ")))
+			sb.WriteString(fmt.Sprintf("        print(json.dumps(%s))\n", paramNames[0]))
+		} else {
+			sb.WriteString(fmt.Sprintf("        result = %s(%s)\n",
+				functionName, strings.Join(paramNames, ", ")))
+			// Output result as JSON
+			sb.WriteString("        print(json.dumps(result))\n")
+		}
 		sb.WriteString("    except Exception as e:\n")
 		sb.WriteString("        print(json.dumps({\"error\": str(e)}))\n\n")
 	}
@@ -97,6 +103,7 @@ func convertToPythonType(genericType string) string {
 		"bool":     "bool",
 		"string":   "str",
 		"char":     "str",
+		"char[]":   "List[str]",
 		"int[]":    "List[int]",
 		"string[]": "List[str]",
 		"double[]": "List[float]",
