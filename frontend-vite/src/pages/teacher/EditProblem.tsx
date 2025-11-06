@@ -2,7 +2,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info, Upload, Save, Copy, Code } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, AlertTriangle, Info, Upload, Save, Copy, Code, Calendar, FileCode2, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { problemAPI, resourceAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
 import { TestCaseBuilder, FunctionTemplates } from "@/components/problem"
+import { ResourceUpload } from "@/components/problem/ResourceUpload"
+import { ResourceDisplay } from "@/components/problem/ResourceDisplay"
 import type { TestCaseInput, TestCaseOutput, Language, Difficulty, Resource, Problem } from "@/types"
 
 interface TestCaseForm {
@@ -85,6 +87,10 @@ export default function EditProblemPage() {
     type: "error" as "error" | "warning" | "success"
   })
 
+  // Resources state
+  const [resources, setResources] = useState<Resource[]>([])
+  const [isLoadingResources, setIsLoadingResources] = useState(false)
+
   useEffect(() => {
     fetchProblemData()
   }, [problemToken])
@@ -136,6 +142,25 @@ export default function EditProblemPage() {
       setIsLoading(false)
     }
   }
+
+  const fetchResources = async () => {
+    try {
+      setIsLoadingResources(true)
+      const response = await resourceAPI.getByProblem(problemToken)
+      setResources(response.data)
+    } catch (err) {
+      logger.error('Error fetching resources', err, { problemToken })
+    } finally {
+      setIsLoadingResources(false)
+    }
+  }
+
+  // Fetch resources on mount
+  useEffect(() => {
+    if (problemToken) {
+      fetchResources()
+    }
+  }, [problemToken])
 
   const addTestCase = () => {
     setTestCases([
@@ -417,10 +442,11 @@ export default function EditProblemPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <div className="border-b-4 border-border bg-card relative overflow-hidden">
         <div className="absolute -right-16 top-0 h-32 w-32 border-4 border-accent bg-accent/20" />
 
-        <div className="relative mx-auto max-w-5xl px-6 py-8">
+        <div className="relative mx-auto max-w-7xl px-6 py-8">
           <Link
             to={`/teacher/problem/${problemToken}`}
             className="mb-6 inline-flex items-center gap-2 border-4 border-border bg-white dark:bg-gray-800 px-4 py-2 font-bold uppercase tracking-wide text-foreground transition-all hover:bg-primary hover:text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
@@ -436,8 +462,12 @@ export default function EditProblemPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Two Column Layout - Classroom Style */}
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* LEFT COLUMN - Main Content */}
+          <div className="flex-1 lg:order-1 order-2">
+            <form id="edit-problem-form" onSubmit={handleSubmit} className="space-y-6">
           <Card className="border-4 border-border bg-card p-8">
             <h2 className="mb-6 border-l-8 border-primary pl-4 text-2xl font-black uppercase text-foreground">
               PROBLEM DETAILS
@@ -524,22 +554,6 @@ export default function EditProblemPage() {
                   onChange={(e) => setFormData({ ...formData, memoryLimit: Number(e.target.value) })}
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dueDate" className="text-base font-black uppercase tracking-wide">
-                  Due Date (Optional)
-                </Label>
-                <Input
-                  id="dueDate"
-                  type="datetime-local"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="border-4 border-border text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-1 focus:translate-y-1 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                />
-                <p className="text-sm font-bold text-muted-foreground border-l-4 border-orange-500 pl-3 bg-orange-50 dark:bg-orange-950 py-2">
-                  ⚠️ Students can still submit after due date, but submissions will be marked as "Late"
-                </p>
               </div>
             </div>
           </Card>
@@ -850,21 +864,135 @@ export default function EditProblemPage() {
               </DialogContent>
             </Dialog>
           </Card>
-
-          <div className="flex justify-end gap-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => navigate(`/teacher/problem/${problemToken}`)}
-            >
-              CANCEL
-            </Button>
-            <Button type="submit" className="gap-2">
-              <Save className="h-4 w-4" />
-              SAVE CHANGES
-            </Button>
-          </div>
         </form>
+      </div>
+
+          {/* RIGHT SIDEBAR - Actions & Info (like Google Classroom) */}
+          <div className="lg:w-80 lg:order-2 order-1 space-y-4">
+            {/* Action Buttons Card */}
+            <Card className="p-4 border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sticky top-4 bg-white dark:bg-gray-800">
+              <div className="space-y-3">
+                <Button 
+                  type="submit"
+                  form="edit-problem-form"
+                  className="w-full gap-2 font-bold uppercase"
+                >
+                  <Save className="h-4 w-4" />
+                  SAVE CHANGES
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="w-full font-bold uppercase"
+                  onClick={() => navigate(`/teacher/problem/${problemToken}`)}
+                >
+                  CANCEL
+                </Button>
+              </div>
+            </Card>
+
+            {/* Due Date Card */}
+            <Card className="p-4 border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-black uppercase text-foreground">DUE DATE</h3>
+              </div>
+              <Input
+                type="datetime-local"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                className="font-semibold border-2 border-border"
+              />
+              {formData.dueDate ? (
+                <p className="text-xs text-muted-foreground mt-2 font-semibold">
+                  📅 {new Date(formData.dueDate).toLocaleString('vi-VN', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  No due date set
+                </p>
+              )}
+            </Card>
+
+            {/* Problem Info Card */}
+            <Card className="p-4 border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-black uppercase text-foreground">PROBLEM INFO</h3>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between p-2 bg-muted/50 border-2 border-border">
+                  <div className="flex items-center gap-2">
+                    <FileCode2 className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground font-semibold">Language</span>
+                  </div>
+                  <span className="font-black uppercase text-foreground">{formData.language}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-muted/50 border-2 border-border">
+                  <span className="text-muted-foreground font-semibold">Difficulty</span>
+                  <span className={`font-black uppercase px-2 py-1 text-xs ${
+                    formData.difficulty === 'easy' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                    formData.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                  }`}>{formData.difficulty}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-muted/50 border-2 border-border">
+                  <span className="text-muted-foreground font-semibold">Test Cases</span>
+                  <span className="font-bold text-foreground">{testCases.length}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-muted/50 border-2 border-border">
+                  <span className="text-muted-foreground font-semibold">Resources</span>
+                  <span className="font-bold text-foreground">{resources.length}</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Resources Card */}
+            <Card className="p-4 border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Upload className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-black uppercase text-foreground">RESOURCES</h3>
+              </div>
+
+              {/* Resource Upload */}
+              <div className="mb-4">
+                <ResourceUpload 
+                  problemId={problemToken}
+                  onUploadSuccess={fetchResources}
+                  compact={true}
+                />
+              </div>
+
+              {/* Resource List */}
+              <div className="space-y-2">
+                {isLoadingResources ? (
+                  <div className="flex justify-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                ) : resources.length > 0 ? (
+                  <ResourceDisplay
+                    resources={resources}
+                    onResourceDeleted={fetchResources}
+                    canDelete={true}
+                  />
+                ) : (
+                  <div className="text-center py-4 border-2 border-dashed border-border bg-muted/30 rounded">
+                    <p className="text-xs text-muted-foreground font-semibold">
+                      No resources yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
 
       {/* Validation Modal */}

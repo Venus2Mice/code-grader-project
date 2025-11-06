@@ -27,11 +27,14 @@
   "close": "Đóng",
   "open": "Mở",
   "refresh": "Làm mới",
+  "retry": "Thử lại",
   "settings": "Cài đặt",
   "profile": "Hồ sơ",
   "help": "Trợ giúp",
   "about": "Giới thiệu",
   "contactUs": "Liên hệ",
   "privacyPolicy": "Chính sách bảo mật",
-  "termsOfService": "Điều khoản dịch vụ"
+  "termsOfService": "Điều khoản dịch vụ",
+  "adding": "Đang thêm...",
+  "updating": "Đang cập nhật..."
 }

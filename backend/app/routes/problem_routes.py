@@ -401,19 +401,39 @@ def update_problem(problem_token):
         if total_points > 100:
             return jsonify({"msg": f"Total points ({total_points}) cannot exceed 100"}), 400
         
-        # Remove old test cases
-        TestCase.query.filter_by(problem_id=problem.id).delete()
+        # Update existing test cases instead of deleting (to preserve submission_results FK)
+        existing_test_cases = TestCase.query.filter_by(problem_id=problem.id).all()
         
-        # Add new test cases
-        for tc_data in test_cases_data:
-            new_tc = TestCase(
-                problem_id=problem.id,
-                inputs=tc_data.get('inputs'),
-                expected_output=tc_data.get('expected_output'),
-                is_hidden=tc_data.get('is_hidden', False),
-                points=tc_data.get('points', 10)
-            )
-            db.session.add(new_tc)
+        # Update or create test cases
+        for i, tc_data in enumerate(test_cases_data):
+            if i < len(existing_test_cases):
+                # Update existing test case
+                tc = existing_test_cases[i]
+                tc.inputs = tc_data.get('inputs')
+                tc.expected_output = tc_data.get('expected_output')
+                tc.is_hidden = tc_data.get('is_hidden', False)
+                tc.points = tc_data.get('points', 10)
+            else:
+                # Create new test case
+                new_tc = TestCase(
+                    problem_id=problem.id,
+                    inputs=tc_data.get('inputs'),
+                    expected_output=tc_data.get('expected_output'),
+                    is_hidden=tc_data.get('is_hidden', False),
+                    points=tc_data.get('points', 10)
+                )
+                db.session.add(new_tc)
+        
+        # Delete excess test cases if new list is shorter (careful with FK!)
+        # Only delete if no submission_results reference them
+        if len(test_cases_data) < len(existing_test_cases):
+            from .models import SubmissionResult
+            for tc in existing_test_cases[len(test_cases_data):]:
+                # Check if any submission results reference this test case
+                has_results = SubmissionResult.query.filter_by(test_case_id=tc.id).first() is not None
+                if not has_results:
+                    db.session.delete(tc)
+                # If has results, keep the test case to preserve data integrity
     
     db.session.commit()
     

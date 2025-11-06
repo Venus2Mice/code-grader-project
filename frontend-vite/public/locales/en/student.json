@@ -5,7 +5,9 @@
     "myClasses": "My Classes",
     "joinClass": "Join Class",
     "noClasses": "You haven't joined any classes yet",
-    "joinFirstClass": "Join your first class using an invite code"
+    "joinFirstClass": "Join your first class using an invite code",
+    "done": "done",
+    "todo": "todo"
   },
   "class": {
     "title": "Class",

@@ -1,14 +1,19 @@
 import { useParams, Link } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { ArrowLeft, Plus, Users, BookOpen, Settings, Share2, Copy, Check } from "lucide-react"
+import { ArrowLeft, Plus, Users, BookOpen, Settings, Share2, Copy, Check, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AddStudentDialog } from "@/components/add-student-dialog"
+import { EditClassDialog } from "@/components/edit-class-dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { classAPI, problemAPI } from "@/services/api"
 import { logger } from "@/lib/logger"
+import { useTranslation } from "react-i18next"
 
 export default function ClassDetailPage() {
+  const { t } = useTranslation(['teacher', 'common'])
   const params = useParams()
   const classToken = params.token as string
   const [classData, setClassData] = useState<any>(null)
@@ -17,6 +22,10 @@ export default function ClassDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false)
+  const [isRemoveStudentOpen, setIsRemoveStudentOpen] = useState(false)
+  const [studentToRemove, setStudentToRemove] = useState<{ id: number; name: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -54,6 +63,46 @@ export default function ClassDetailPage() {
       logger.error('Failed to copy invite code', err)
       alert('Failed to copy invite code')
     }
+  }
+
+  const handleAddStudent = async (email: string) => {
+    try {
+      await classAPI.addStudent(classToken, email)
+      // Refresh students list
+      await fetchData()
+    } catch (err: any) {
+      logger.error('Error adding student', err, { email })
+      throw err
+    }
+  }
+
+  const handleUpdateClass = async (data: { name?: string; course_code?: string; description?: string }) => {
+    try {
+      await classAPI.update(classToken, data)
+      // Refresh class data
+      await fetchData()
+    } catch (err: any) {
+      logger.error('Error updating class', err)
+      throw err
+    }
+  }
+
+  const handleRemoveStudent = async (studentId: number) => {
+    try {
+      await classAPI.removeStudent(classToken, studentId)
+      // Refresh students list
+      await fetchData()
+      setIsRemoveStudentOpen(false)
+      setStudentToRemove(null)
+    } catch (err: any) {
+      logger.error('Error removing student', err, { studentId })
+      alert(err.response?.data?.msg || t('teacher:class.removeStudentError'))
+    }
+  }
+
+  const openRemoveStudentDialog = (studentId: number, studentName: string) => {
+    setStudentToRemove({ id: studentId, name: studentName })
+    setIsRemoveStudentOpen(true)
   }
 
   if (isLoading) {
@@ -95,7 +144,7 @@ export default function ClassDetailPage() {
           </Link>
 
           <div className="mt-4 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div>
+            <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <h1 className="text-2xl md:text-4xl font-black uppercase text-foreground">{classData.name}</h1>
                 <span className="border-4 border-black bg-brutal-accent px-3 md:px-4 py-2 text-xs md:text-sm font-black uppercase text-black w-fit">
@@ -104,6 +153,14 @@ export default function ClassDetailPage() {
               </div>
               <p className="mt-3 font-bold text-sm md:text-base text-foreground">{classData.description}</p>
             </div>
+            <Button
+              onClick={() => setIsEditClassOpen(true)}
+              variant="outline"
+              className="gap-2 font-black uppercase border-4 w-full md:w-auto"
+            >
+              <Edit className="h-4 w-4" />
+              {t('common:edit')}
+            </Button>
           </div>
         </div>
       </div>
@@ -192,13 +249,13 @@ export default function ClassDetailPage() {
 
           <TabsContent value="students" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h2 className="text-xl md:text-2xl font-black uppercase">STUDENTS ({students.length})</h2>
+              <h2 className="text-xl md:text-2xl font-black uppercase">{t('teacher:class.students')} ({students.length})</h2>
               <Button
-                variant="outline"
-                className="gap-2 font-black uppercase bg-transparent text-xs md:text-sm w-full sm:w-auto"
+                onClick={() => setIsAddStudentOpen(true)}
+                className="gap-2 font-black uppercase text-xs md:text-sm w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                ADD
+                {t('teacher:class.addStudent')}
               </Button>
             </div>
 
@@ -223,8 +280,19 @@ export default function ClassDetailPage() {
                         <p className="text-xs font-bold text-muted-foreground">{student.email}</p>
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-muted-foreground">
-                      ENROLLED: {student.enrolled_at ? new Date(student.enrolled_at).toLocaleDateString() : 'N/A'}
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs font-bold text-muted-foreground">
+                        ENROLLED: {student.enrolled_at ? new Date(student.enrolled_at).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openRemoveStudentDialog(student.id, student.full_name || student.email)}
+                        className="gap-1 border-4 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span className="hidden sm:inline">{t('teacher:class.removeStudent')}</span>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -335,6 +403,39 @@ export default function ClassDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Student Dialog */}
+      <AddStudentDialog
+        isOpen={isAddStudentOpen}
+        onClose={() => setIsAddStudentOpen(false)}
+        onAddStudent={handleAddStudent}
+      />
+
+      {/* Edit Class Dialog */}
+      <EditClassDialog
+        isOpen={isEditClassOpen}
+        onClose={() => setIsEditClassOpen(false)}
+        onUpdateClass={handleUpdateClass}
+        currentData={{
+          name: classData?.name || '',
+          course_code: classData?.course_code || '',
+          description: classData?.description || ''
+        }}
+      />
+
+      {/* Remove Student Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isRemoveStudentOpen}
+        onClose={() => {
+          setIsRemoveStudentOpen(false)
+          setStudentToRemove(null)
+        }}
+        onConfirm={() => studentToRemove && handleRemoveStudent(studentToRemove.id)}
+        title={t('teacher:class.removeStudent')}
+        description={t('teacher:class.removeStudentConfirm', { name: studentToRemove?.name || 'this student' })}
+        confirmText={t('common:delete')}
+        isDestructive={true}
+      />
     </div>
   )
 }

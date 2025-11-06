@@ -17,8 +17,21 @@ resource_bp = Blueprint('resources', __name__)
 
 # Configuration
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/app/uploads')
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'zip', 'rar', 'cpp', 'py', 'java', 'c', 'h', 'hpp', 'md'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_EXTENSIONS = {
+    # Code files
+    'txt', 'cpp', 'py', 'java', 'c', 'h', 'hpp', 'js', 'ts', 'jsx', 'tsx', 'go', 'rs', 'rb', 'php', 'cs', 'swift', 'kt',
+    # Documents
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'md', 'tex',
+    # Images
+    'png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff', 'tif',
+    # Archives
+    'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'tgz', 'tar.gz',
+    # Data files
+    'json', 'xml', 'csv', 'yaml', 'yml', 'sql', 'db', 'sqlite',
+    # Media (for reference materials)
+    'mp3', 'wav', 'mp4', 'avi', 'mov', 'mkv', 'webm'
+}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -115,13 +128,87 @@ def upload_file_resource(problem_token):
                 'msg': f'File too large. Maximum size: {get_file_size_readable(MAX_FILE_SIZE)}'
             }), 400
         
+        # Determine file type from extension
+        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+        file_type_map = {
+            # Documents
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls': 'application/vnd.ms-excel',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'odt': 'application/vnd.oasis.opendocument.text',
+            'ods': 'application/vnd.oasis.opendocument.spreadsheet',
+            'odp': 'application/vnd.oasis.opendocument.presentation',
+            'rtf': 'application/rtf',
+            'tex': 'application/x-tex',
+            # Text/Code files
+            'txt': 'text/plain',
+            'md': 'text/markdown',
+            'cpp': 'text/x-c++src',
+            'py': 'text/x-python',
+            'java': 'text/x-java',
+            'c': 'text/x-csrc',
+            'h': 'text/x-chdr',
+            'hpp': 'text/x-c++hdr',
+            'js': 'text/javascript',
+            'ts': 'text/typescript',
+            'jsx': 'text/javascript',
+            'tsx': 'text/typescript',
+            'go': 'text/x-go',
+            'rs': 'text/x-rust',
+            'rb': 'text/x-ruby',
+            'php': 'text/x-php',
+            'cs': 'text/x-csharp',
+            'swift': 'text/x-swift',
+            'kt': 'text/x-kotlin',
+            # Data files
+            'json': 'application/json',
+            'xml': 'application/xml',
+            'csv': 'text/csv',
+            'yaml': 'text/yaml',
+            'yml': 'text/yaml',
+            'sql': 'application/sql',
+            # Archives
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed',
+            '7z': 'application/x-7z-compressed',
+            'tar': 'application/x-tar',
+            'gz': 'application/gzip',
+            'bz2': 'application/x-bzip2',
+            'xz': 'application/x-xz',
+            'tgz': 'application/gzip',
+            # Images
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'bmp': 'image/bmp',
+            'svg': 'image/svg+xml',
+            'webp': 'image/webp',
+            'ico': 'image/x-icon',
+            'tiff': 'image/tiff',
+            'tif': 'image/tiff',
+            # Media
+            'mp3': 'audio/mpeg',
+            'wav': 'audio/wav',
+            'mp4': 'video/mp4',
+            'avi': 'video/x-msvideo',
+            'mov': 'video/quicktime',
+            'mkv': 'video/x-matroska',
+            'webm': 'video/webm'
+        }
+        determined_file_type = file_type_map.get(file_ext, 'application/octet-stream')
+        
         # Create resource record
         new_resource = Resource(
             problem_id=problem.id,
             file_name=filename,
             file_url=f'/uploads/{unique_filename}',  # Relative URL
             file_size=file_size,
-            file_type=request.content_type or 'application/octet-stream',
+            file_type=determined_file_type,
             resource_type='file',
             description=request.form.get('description'),
             uploaded_by=user_id

@@ -27,11 +27,14 @@
   "close": "Close",
   "open": "Open",
   "refresh": "Refresh",
+  "retry": "Retry",
   "settings": "Settings",
   "profile": "Profile",
   "help": "Help",
   "about": "About",
   "contactUs": "Contact Us",
   "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service"
+  "termsOfService": "Terms of Service",
+  "adding": "Adding...",
+  "updating": "Updating..."
 }

@@ -256,3 +256,79 @@ def delete_class(class_token):
     db.session.commit()
     
     return jsonify({"msg": "Class deleted successfully"}), 200
+
+
+@class_bp.route('/<string:class_token>/students', methods=['POST'])
+@jwt_required()
+@role_required('teacher')
+def add_student_to_class(class_token):
+    """Add a student to a class by email (teacher only)."""
+    target_class = find_class_by_token_or_404(class_token)
+    teacher_id = get_jwt_identity()
+    
+    # Verify teacher owns this class
+    if str(target_class.teacher_id) != teacher_id:
+        return jsonify({"msg": "Forbidden"}), 403
+    
+    data = request.get_json()
+    student_email = data.get('email')
+    
+    if not student_email:
+        return jsonify({"msg": "Student email is required"}), 400
+    
+    # Find student by email
+    student = User.query.filter_by(email=student_email).first()
+    
+    if not student:
+        return jsonify({"msg": "Student not found with this email"}), 404
+    
+    # Check if user is actually a student
+    if student.role.name != 'student':
+        return jsonify({"msg": "This user is not a student"}), 400
+    
+    # Check if already enrolled
+    if target_class in student.classes_joined:
+        return jsonify({"msg": "Student is already enrolled in this class"}), 409
+    
+    # Add student to class
+    target_class.students.append(student)
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Student added successfully",
+        "student": {
+            "id": student.id,
+            "token": student.public_token,
+            "full_name": student.full_name,
+            "email": student.email,
+            "enrolled_at": student.created_at.isoformat() if student.created_at else None
+        }
+    }), 201
+
+
+@class_bp.route('/<string:class_token>/students/<int:student_id>', methods=['DELETE'])
+@jwt_required()
+@role_required('teacher')
+def remove_student_from_class(class_token, student_id):
+    """Remove a student from a class (teacher only)."""
+    target_class = find_class_by_token_or_404(class_token)
+    teacher_id = get_jwt_identity()
+    
+    # Verify teacher owns this class
+    if str(target_class.teacher_id) != teacher_id:
+        return jsonify({"msg": "Forbidden"}), 403
+    
+    student = User.query.get(student_id)
+    
+    if not student:
+        return jsonify({"msg": "Student not found"}), 404
+    
+    # Check if student is in the class
+    if target_class not in student.classes_joined:
+        return jsonify({"msg": "Student is not enrolled in this class"}), 404
+    
+    # Remove student from class
+    target_class.students.remove(student)
+    db.session.commit()
+    
+    return jsonify({"msg": "Student removed successfully"}), 200

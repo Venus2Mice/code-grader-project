@@ -125,12 +125,12 @@ export default function StudentDashboard() {
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {enrolledClasses.map((classItem) => (
                 <Link key={classItem.id} to={`/student/class/${classItem.token}`}>
-                  <Card className="group cursor-pointer p-6 transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.5)] dark:hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.3)] border-4 border-border bg-white dark:bg-gray-900">
-                    <div className="mb-6 flex items-start justify-between">
+                  <Card className="group cursor-pointer p-6 transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.5)] dark:hover:shadow-[8px_8px_0px_0px_rgba(59,130,246,0.3)] border-4 border-border bg-white dark:bg-gray-900 relative">
+                    <div className="mb-6">
                       <div className="flex h-14 w-14 items-center justify-center border-4 border-border bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
                         <BookOpen className="h-7 w-7 text-white" />
                       </div>
-                      <span className="border-4 border-border bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 px-3 py-1 text-xs font-black uppercase text-blue-700 dark:text-blue-300">
+                      <span className="absolute top-6 right-6 border-4 border-border bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 px-3 py-1 text-xs font-black uppercase text-blue-700 dark:text-blue-300">
                         {classItem.code}
                       </span>
                     </div>
@@ -143,14 +143,14 @@ export default function StudentDashboard() {
                       {classItem.description}
                     </p>
 
-                    <div className="flex items-center gap-4 text-sm font-bold">
+                    <div className="flex items-center gap-4 text-sm font-bold flex-wrap">
                       <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                        <CheckCircle className="h-5 w-5" />
-                        <span>{classItem.problems_done || 0} {t('student:dashboard.done')}</span>
+                        <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                        <span className="whitespace-nowrap">{classItem.problems_done || 0} {t('student:dashboard.done')}</span>
                       </div>
                       <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                        <Clock className="h-5 w-5" />
-                        <span>{classItem.problems_todo || 0} {t('student:dashboard.todo')}</span>
+                        <Clock className="h-5 w-5 flex-shrink-0" />
+                        <span className="whitespace-nowrap">{classItem.problems_todo || 0} {t('student:dashboard.todo')}</span>
                       </div>
                     </div>
                   </Card>

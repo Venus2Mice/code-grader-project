@@ -174,6 +174,14 @@ export const classAPI = {
     return api.get(`/api/classes/${token}/students`)
   },
 
+  addStudent: async (token: string, email: string) => {
+    return api.post(`/api/classes/${token}/students`, { email })
+  },
+
+  removeStudent: async (token: string, studentId: number) => {
+    return api.delete(`/api/classes/${token}/students/${studentId}`)
+  },
+
   join: async (inviteCode: string) => {
     return api.post('/api/classes/join', { invite_code: inviteCode })
   },

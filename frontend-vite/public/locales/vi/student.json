@@ -5,7 +5,9 @@
     "myClasses": "Lớp học của tôi",
     "joinClass": "Tham gia lớp",
     "noClasses": "Bạn chưa tham gia lớp nào",
-    "joinFirstClass": "Tham gia lớp đầu tiên bằng mã mời"
+    "joinFirstClass": "Tham gia lớp đầu tiên bằng mã mời",
+    "done": "hoàn thành",
+    "todo": "chưa làm"
   },
   "class": {
     "title": "Lớp học",
