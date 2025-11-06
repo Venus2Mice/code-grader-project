@@ -174,28 +174,58 @@ func extractMethodBody(code string, language string) string {
 
 	// Not a method signature, return as-is
 	return code
-} // extractPythonFunctionBody extracts the body from a Python function definition
+} // extractPythonFunctionBody extracts the body from a Python function/class definition
 // E.g., "def foo():\n    body" -> "body"
+// E.g., "class Solution:\n    def foo():\n        body" -> "body" (extract method body from class)
 func extractPythonFunctionBody(code string) string {
 	code = strings.TrimSpace(code)
 	lines := strings.Split(code, "\n")
 
-	// Check if first line is a function definition
-	if len(lines) == 0 || !strings.HasPrefix(strings.TrimSpace(lines[0]), "def ") {
-		// Not a function definition, return as-is
+	if len(lines) == 0 {
 		return code
 	}
 
-	// Skip the def line and extract the body
-	if len(lines) <= 1 {
-		return ""
+	firstLine := strings.TrimSpace(lines[0])
+
+	// Case 1: Code starts with "class Solution:" or similar
+	// Extract the method body from within the class
+	if strings.HasPrefix(firstLine, "class ") {
+		// Find the method definition line (should be "def methodName(")
+		methodDefIdx := -1
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "def ") {
+				methodDefIdx = i
+				break
+			}
+		}
+
+		if methodDefIdx == -1 || methodDefIdx >= len(lines)-1 {
+			// No method found in class, return as-is
+			return code
+		}
+
+		// Extract body lines after the "def" line
+		bodyLines := lines[methodDefIdx+1:]
+		return dedent(strings.Join(bodyLines, "\n"))
 	}
 
-	// Get body lines (skip first line with "def")
-	bodyLines := lines[1:]
+	// Case 2: Code starts with "def foo():" (standalone function)
+	if strings.HasPrefix(firstLine, "def ") {
+		// Skip the def line and extract the body
+		if len(lines) <= 1 {
+			return ""
+		}
 
-	// Remove common indentation from body
-	return dedent(strings.Join(bodyLines, "\n"))
+		// Get body lines (skip first line with "def")
+		bodyLines := lines[1:]
+
+		// Remove common indentation from body
+		return dedent(strings.Join(bodyLines, "\n"))
+	}
+
+	// Case 3: Already just body code (no class/def), return as-is
+	return code
 }
 
 // dedent removes common leading whitespace from all lines
