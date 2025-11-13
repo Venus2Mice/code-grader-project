@@ -7,11 +7,18 @@ import { logger } from '@/lib/logger'
 // In Docker: Nginx serves frontend and proxies /api/* to backend
 // In dev: Direct connection to backend on localhost:5000
 const getApiUrl = () => {
-  // Check if running in browser and if it's localhost
+  // Check if running in browser
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    if (isLocalhost) {
-      // Development: direct connection to backend
+    const hostname = window.location.hostname
+    
+    // Development environments: localhost, 127.0.0.1, or Cloud Workstation
+    const isDevelopment = 
+      hostname === 'localhost' || 
+      hostname === '127.0.0.1' ||
+      hostname.includes('cloudworkstations.dev')
+    
+    if (isDevelopment) {
+      // Development: use configured API URL or default localhost
       return import.meta.env.VITE_API_URL || 'http://localhost:5000'
     } else {
       // Production in Docker: use current origin (Nginx will proxy /api)
