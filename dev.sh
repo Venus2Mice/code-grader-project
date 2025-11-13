@@ -71,7 +71,7 @@ start_services() {
     fi
     
     # Start services
-    docker-compose -f $COMPOSE_FILE up -d
+    docker compose -f $COMPOSE_FILE up -d
     
     print_status "Services started successfully!"
     echo ""
@@ -88,24 +88,24 @@ start_services() {
 
 stop_services() {
     print_status "Stopping services..."
-    docker-compose -f $COMPOSE_FILE down
+    docker compose -f $COMPOSE_FILE down
     print_status "Services stopped."
 }
 
 restart_services() {
     print_status "Restarting services..."
-    docker-compose -f $COMPOSE_FILE restart
+    docker compose -f $COMPOSE_FILE restart
     print_status "Services restarted."
 }
 
 show_logs() {
     print_status "Showing logs (press Ctrl+C to exit)..."
-    docker-compose -f $COMPOSE_FILE logs -f
+    docker compose -f $COMPOSE_FILE logs -f
 }
 
 build_images() {
     print_status "Building images..."
-    docker-compose -f $COMPOSE_FILE build --no-cache
+    docker compose -f $COMPOSE_FILE build --no-cache
     
     # Build sandbox image
     print_status "Building sandbox image..."
@@ -116,7 +116,7 @@ build_images() {
 
 show_status() {
     print_status "Service status:"
-    docker-compose -f $COMPOSE_FILE ps
+    docker compose -f $COMPOSE_FILE ps
 }
 
 clean_all() {
@@ -125,7 +125,7 @@ clean_all() {
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_status "Cleaning up..."
-        docker-compose -f $COMPOSE_FILE down -v --rmi all
+        docker compose -f $COMPOSE_FILE down -v --rmi all
         print_status "Cleanup complete."
     else
         print_status "Cleanup cancelled."

@@ -43,7 +43,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		RabbitMQHost:       getEnv("RABBITMQ_HOST", "localhost"),
 		RabbitMQQueue:      getEnv("RABBITMQ_QUEUE", "grading_queue"),
-		DatabaseURL:        getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/code_grader?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgresql://user:password123@localhost:5432/code_grader_db?sslmode=disable"),
 		BackendAPIURL:      getEnv("BACKEND_API_URL", "http://localhost:5000"),
 		DockerImage:        getEnv("DOCKER_IMAGE", "code-grader-project-sandbox:latest"),
 		ContainerPoolSize:  getEnvInt("CONTAINER_POOL_SIZE", 3),

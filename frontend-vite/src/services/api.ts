@@ -14,11 +14,11 @@ const getApiUrl = () => {
       return import.meta.env.VITE_API_URL || 'http://localhost:5000'
     } else {
       // Production in Docker: use /api proxy (Nginx proxies to backend)
-      return '/api'
+      return ''
     }
   }
   // SSR fallback
-  return '/api'
+  return ''
 }
 
 const API_BASE_URL = getApiUrl()
