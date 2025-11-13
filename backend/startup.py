@@ -123,8 +123,16 @@ def seed_database():
         capture_output=True,
         text=True
     )
+
+    #seed test submissions
+    result3 = subprocess.run(
+        "flask seed_test_submissions",
+        shell=True,
+        capture_output=True,
+        text=True
+    )
     
-    if result1.returncode == 0 and result2.returncode == 0:
+    if result1.returncode == 0 and result2.returncode == 0 and result3.returncode == 0:
         print("✅ Database seeded successfully!")
         print("   Teacher: teacher.test@example.com / password123")
         print("   Student: student.test@example.com / password123")
