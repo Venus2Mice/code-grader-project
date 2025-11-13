@@ -115,11 +115,11 @@ export const authAPI = {
     password: string
     role: 'student' | 'teacher'
   }) => {
-    return api.post('/auth/register', data)
+    return api.post('/api/auth/register', data)
   },
 
   login: async (data: { email: string; password: string }) => {
-    const response = await api.post('/auth/login', data)
+    const response = await api.post('/api/auth/login', data)
     
     // ✅ Backend trả về: { status: 'success', data: { access_token, user } }
     const token = response.data.data?.access_token || response.data.access_token
@@ -139,7 +139,7 @@ export const authAPI = {
   },
 
   getProfile: async () => {
-    const response = await api.get('/auth/profile')
+    const response = await api.get('/api/auth/profile')
     
     // ✅ Backend trả về: { status: 'success', data: { id, full_name, email, role } }
     const userData = response.data.data || response.data
@@ -162,39 +162,39 @@ export const authAPI = {
 
 export const classAPI = {
   create: async (data: { name: string; course_code?: string; description?: string }) => {
-    return api.post('/classes', data)
+    return api.post('/api/classes', data)
   },
 
   getAll: async () => {
-    return api.get('/classes')
+    return api.get('/api/classes')
   },
 
   getByToken: async (token: string) => {
-    return api.get(`/classes/${token}`)
+    return api.get(`/api/classes/${token}`)
   },
 
   update: async (token: string, data: { name?: string; course_code?: string; description?: string }) => {
-    return api.put(`/classes/${token}`, data)
+    return api.put(`/api/classes/${token}`, data)
   },
 
   delete: async (token: string) => {
-    return api.delete(`/classes/${token}`)
+    return api.delete(`/api/classes/${token}`)
   },
 
   getStudents: async (token: string) => {
-    return api.get(`/classes/${token}/students`)
+    return api.get(`/api/classes/${token}/students`)
   },
 
   addStudent: async (token: string, email: string) => {
-    return api.post(`/classes/${token}/students`, { email })
+    return api.post(`/api/classes/${token}/students`, { email })
   },
 
   removeStudent: async (token: string, studentId: number) => {
-    return api.delete(`/classes/${token}/students/${studentId}`)
+    return api.delete(`/api/classes/${token}/students/${studentId}`)
   },
 
   join: async (inviteCode: string) => {
-    return api.post('/classes/join', { invite_code: inviteCode })
+    return api.post('/api/classes/join', { invite_code: inviteCode })
   },
 }
 
@@ -220,7 +220,7 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.post(`/classes/${classToken}/problems`, data)
+    return api.post(`/api/classes/${classToken}/problems`, data)
   },
 
   createWithDefinition: async (
@@ -244,15 +244,15 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.post(`/classes/${classToken}/problems/define`, data)
+    return api.post(`/api/classes/${classToken}/problems/define`, data)
   },
 
   getByClass: async (classToken: string) => {
-    return api.get(`/classes/${classToken}/problems`)
+    return api.get(`/api/classes/${classToken}/problems`)
   },
 
   getByToken: async (token: string) => {
-    return api.get(`/problems/${token}`)
+    return api.get(`/api/problems/${token}`)
   },
 
   update: async (
@@ -276,17 +276,17 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.put(`/problems/${problemToken}`, data)
+    return api.put(`/api/problems/${problemToken}`, data)
   },
 
   getSubmissions: async (token: string, page: number = 1, perPage: number = 20) => {
-    return api.get(`/problems/${token}/submissions`, {
+    return api.get(`/api/problems/${token}/submissions`, {
       params: { page, per_page: perPage }
     })
   },
 
   delete: async (problemToken: string) => {
-    return api.delete(`/problems/${problemToken}`)
+    return api.delete(`/api/problems/${problemToken}`)
   },
 }
 
@@ -294,30 +294,30 @@ export const problemAPI = {
 
 export const submissionAPI = {
   create: async (data: { problem_id: number; source_code: string; language?: string }) => {
-    return api.post('/submissions', data)
+    return api.post('/api/submissions', data)
   },
 
   getById: async (id: number) => {
-    return api.get(`/submissions/${id}`)
+    return api.get(`/api/submissions/${id}`)
   },
 
   getMySubmissions: async (problemToken?: string) => {
     const params = problemToken ? { problem_token: problemToken } : {}
-    return api.get('/submissions/me', { params })
+    return api.get('/api/submissions/me', { params })
   },
 
   getCode: async (id: number) => {
-    return api.get(`/submissions/${id}/code`)
+    return api.get(`/api/submissions/${id}/code`)
   },
 
   // NEW: Run code without saving to database (for testing before submit)
   runCode: async (data: { problem_id: number; source_code: string; language?: string }) => {
-    return api.post('/submissions/run', data)
+    return api.post('/api/submissions/run', data)
   },
 
   // NEW: Manual grading by teacher
   manualGrade: async (id: number, data: { manual_score: number; teacher_comment?: string }) => {
-    return api.post(`/submissions/${id}/manual-grade`, data)
+    return api.post(`/api/submissions/${id}/manual-grade`, data)
   },
 }
 
@@ -325,11 +325,11 @@ export const submissionAPI = {
 
 export const studentAPI = {
   getProblemsStatus: async (classToken: string) => {
-    return api.get(`/students/me/classes/${classToken}/problems-status`)
+    return api.get(`/api/students/me/classes/${classToken}/problems-status`)
   },
 
   getMyProgress: async () => {
-    return api.get('/students/me/progress')
+    return api.get('/api/students/me/progress')
   },
 }
 
@@ -337,11 +337,11 @@ export const studentAPI = {
 
 export const resourceAPI = {
   getByProblem: async (problemToken: string) => {
-    return api.get(`/problems/${problemToken}/resources`)
+    return api.get(`/api/problems/${problemToken}/resources`)
   },
 
   upload: async (problemToken: string, formData: FormData) => {
-    return api.post(`/problems/${problemToken}/resources/upload`, formData, {
+    return api.post(`/api/problems/${problemToken}/resources/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -349,15 +349,15 @@ export const resourceAPI = {
   },
 
   addDriveLink: async (problemToken: string, data: { drive_link: string; description?: string }) => {
-    return api.post(`/problems/${problemToken}/resources/drive-link`, data)
+    return api.post(`/api/problems/${problemToken}/resources/drive-link`, data)
   },
 
   addExternalLink: async (problemToken: string, data: { file_url: string; file_name: string; description?: string }) => {
-    return api.post(`/problems/${problemToken}/resources/external-link`, data)
+    return api.post(`/api/problems/${problemToken}/resources/external-link`, data)
   },
 
   delete: async (resourceId: number) => {
-    return api.delete(`/resources/${resourceId}`)
+    return api.delete(`/api/resources/${resourceId}`)
   },
 }
 
@@ -365,15 +365,15 @@ export const resourceAPI = {
 
 export const languageAPI = {
   getPreference: async () => {
-    return api.get('/language/preference')
+    return api.get('/api/language/preference')
   },
 
   updatePreference: async (language: 'en' | 'vi') => {
-    return api.put('/language/preference', { language })
+    return api.put('/api/language/preference', { language })
   },
 
   getSupportedLanguages: async () => {
-    return api.get('/language/supported')
+    return api.get('/api/language/supported')
   },
 }
 
