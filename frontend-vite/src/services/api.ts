@@ -11,19 +11,22 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname
     
-    // Development environments: localhost, 127.0.0.1, or Cloud Workstation
-    const isDevelopment = 
-      hostname === 'localhost' || 
-      hostname === '127.0.0.1' ||
-      hostname.includes('cloudworkstations.dev')
-    
-    if (isDevelopment) {
-      // Development: use configured API URL or default localhost
-      return import.meta.env.VITE_API_URL || 'http://localhost:5000'
-    } else {
-      // Production in Docker: use current origin (Nginx will proxy /api)
-      return ''
+    // Cloud Workstation: auto-construct backend URL
+    if (hostname.includes('cloudworkstations.dev')) {
+      // Extract the base URL and change port to 5000
+      // Frontend: https://5173-project-xxx.cloudworkstations.dev
+      // Backend:  https://5000-project-xxx.cloudworkstations.dev
+      const backendUrl = window.location.origin.replace(/:\d+-/, ':5000-').replace(/^https:\/\/\d+/, 'https://5000')
+      return backendUrl
     }
+    
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return import.meta.env.VITE_API_URL || 'http://localhost:5000'
+    }
+    
+    // Production in Docker: use current origin (Nginx will proxy /api)
+    return ''
   }
   // SSR fallback
   return ''
