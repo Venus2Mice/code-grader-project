@@ -89,6 +89,17 @@ start_services() {
 stop_services() {
     print_status "Stopping services..."
     docker compose -f $COMPOSE_FILE down
+    
+    # Find and remove sandbox containers by image name
+    print_status "Cleaning up sandbox containers..."
+    SANDBOX_CONTAINERS=$(docker ps -aq --filter "ancestor=code-grader-project-sandbox:latest" 2>/dev/null || true)
+    if [ ! -z "$SANDBOX_CONTAINERS" ]; then
+        docker rm -f $SANDBOX_CONTAINERS
+        print_status "Removed sandbox containers."
+    else
+        print_status "No sandbox containers found."
+    fi
+    
     print_status "Services stopped."
 }
 
