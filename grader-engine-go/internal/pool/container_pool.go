@@ -27,7 +27,7 @@ type ContainerPoolImpl struct {
 // NewContainerPool creates and initializes a new container pool
 // Returns the interface type for dependency inversion
 func NewContainerPool(size int, imageName string) (ContainerPool, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.44"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}

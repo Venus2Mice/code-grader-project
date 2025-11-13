@@ -2,23 +2,24 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosError } from 'axios'
 import { logger } from '@/lib/logger'
 
-// Base API URL - use /api proxy in Docker, localhost in dev
-// In Docker: Nginx will proxy /api requests to backend:5000
-// In dev (npm run dev): Vite dev server proxies to VITE_API_URL
+// Base API URL - use empty string to let axios use current origin
+// Backend routes already have /api prefix, so we just need the base domain
+// In Docker: Nginx serves frontend and proxies /api/* to backend
+// In dev: Direct connection to backend on localhost:5000
 const getApiUrl = () => {
   // Check if running in browser and if it's localhost
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     if (isLocalhost) {
-      // Development: use env var or localhost:5000
+      // Development: direct connection to backend
       return import.meta.env.VITE_API_URL || 'http://localhost:5000'
     } else {
-      // Production in Docker: use /api proxy (Nginx proxies to backend)
-      return '/api'
+      // Production in Docker: use current origin (Nginx will proxy /api)
+      return ''
     }
   }
   // SSR fallback
-  return '/api'
+  return ''
 }
 
 const API_BASE_URL = getApiUrl()
@@ -104,11 +105,11 @@ export const authAPI = {
     password: string
     role: 'student' | 'teacher'
   }) => {
-    return api.post('/api/auth/register', data)
+    return api.post('/auth/register', data)
   },
 
   login: async (data: { email: string; password: string }) => {
-    const response = await api.post('/api/auth/login', data)
+    const response = await api.post('/auth/login', data)
     
     // ✅ Backend trả về: { status: 'success', data: { access_token, user } }
     const token = response.data.data?.access_token || response.data.access_token
@@ -128,7 +129,7 @@ export const authAPI = {
   },
 
   getProfile: async () => {
-    const response = await api.get('/api/auth/profile')
+    const response = await api.get('/auth/profile')
     
     // ✅ Backend trả về: { status: 'success', data: { id, full_name, email, role } }
     const userData = response.data.data || response.data
@@ -151,39 +152,39 @@ export const authAPI = {
 
 export const classAPI = {
   create: async (data: { name: string; course_code?: string; description?: string }) => {
-    return api.post('/api/classes', data)
+    return api.post('/classes', data)
   },
 
   getAll: async () => {
-    return api.get('/api/classes')
+    return api.get('/classes')
   },
 
   getByToken: async (token: string) => {
-    return api.get(`/api/classes/${token}`)
+    return api.get(`/classes/${token}`)
   },
 
   update: async (token: string, data: { name?: string; course_code?: string; description?: string }) => {
-    return api.put(`/api/classes/${token}`, data)
+    return api.put(`/classes/${token}`, data)
   },
 
   delete: async (token: string) => {
-    return api.delete(`/api/classes/${token}`)
+    return api.delete(`/classes/${token}`)
   },
 
   getStudents: async (token: string) => {
-    return api.get(`/api/classes/${token}/students`)
+    return api.get(`/classes/${token}/students`)
   },
 
   addStudent: async (token: string, email: string) => {
-    return api.post(`/api/classes/${token}/students`, { email })
+    return api.post(`/classes/${token}/students`, { email })
   },
 
   removeStudent: async (token: string, studentId: number) => {
-    return api.delete(`/api/classes/${token}/students/${studentId}`)
+    return api.delete(`/classes/${token}/students/${studentId}`)
   },
 
   join: async (inviteCode: string) => {
-    return api.post('/api/classes/join', { invite_code: inviteCode })
+    return api.post('/classes/join', { invite_code: inviteCode })
   },
 }
 
@@ -209,7 +210,7 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.post(`/api/classes/${classToken}/problems`, data)
+    return api.post(`/classes/${classToken}/problems`, data)
   },
 
   createWithDefinition: async (
@@ -233,15 +234,15 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.post(`/api/classes/${classToken}/problems/define`, data)
+    return api.post(`/classes/${classToken}/problems/define`, data)
   },
 
   getByClass: async (classToken: string) => {
-    return api.get(`/api/classes/${classToken}/problems`)
+    return api.get(`/classes/${classToken}/problems`)
   },
 
   getByToken: async (token: string) => {
-    return api.get(`/api/problems/${token}`)
+    return api.get(`/problems/${token}`)
   },
 
   update: async (
@@ -265,17 +266,17 @@ export const problemAPI = {
       }>
     }
   ) => {
-    return api.put(`/api/problems/${problemToken}`, data)
+    return api.put(`/problems/${problemToken}`, data)
   },
 
   getSubmissions: async (token: string, page: number = 1, perPage: number = 20) => {
-    return api.get(`/api/problems/${token}/submissions`, {
+    return api.get(`/problems/${token}/submissions`, {
       params: { page, per_page: perPage }
     })
   },
 
   delete: async (problemToken: string) => {
-    return api.delete(`/api/problems/${problemToken}`)
+    return api.delete(`/problems/${problemToken}`)
   },
 }
 
@@ -283,30 +284,30 @@ export const problemAPI = {
 
 export const submissionAPI = {
   create: async (data: { problem_id: number; source_code: string; language?: string }) => {
-    return api.post('/api/submissions', data)
+    return api.post('/submissions', data)
   },
 
   getById: async (id: number) => {
-    return api.get(`/api/submissions/${id}`)
+    return api.get(`/submissions/${id}`)
   },
 
   getMySubmissions: async (problemToken?: string) => {
     const params = problemToken ? { problem_token: problemToken } : {}
-    return api.get('/api/submissions/me', { params })
+    return api.get('/submissions/me', { params })
   },
 
   getCode: async (id: number) => {
-    return api.get(`/api/submissions/${id}/code`)
+    return api.get(`/submissions/${id}/code`)
   },
 
   // NEW: Run code without saving to database (for testing before submit)
   runCode: async (data: { problem_id: number; source_code: string; language?: string }) => {
-    return api.post('/api/submissions/run', data)
+    return api.post('/submissions/run', data)
   },
 
   // NEW: Manual grading by teacher
   manualGrade: async (id: number, data: { manual_score: number; teacher_comment?: string }) => {
-    return api.post(`/api/submissions/${id}/manual-grade`, data)
+    return api.post(`/submissions/${id}/manual-grade`, data)
   },
 }
 
@@ -314,11 +315,11 @@ export const submissionAPI = {
 
 export const studentAPI = {
   getProblemsStatus: async (classToken: string) => {
-    return api.get(`/api/students/me/classes/${classToken}/problems-status`)
+    return api.get(`/students/me/classes/${classToken}/problems-status`)
   },
 
   getMyProgress: async () => {
-    return api.get('/api/students/me/progress')
+    return api.get('/students/me/progress')
   },
 }
 
@@ -326,11 +327,11 @@ export const studentAPI = {
 
 export const resourceAPI = {
   getByProblem: async (problemToken: string) => {
-    return api.get(`/api/problems/${problemToken}/resources`)
+    return api.get(`/problems/${problemToken}/resources`)
   },
 
   upload: async (problemToken: string, formData: FormData) => {
-    return api.post(`/api/problems/${problemToken}/resources/upload`, formData, {
+    return api.post(`/problems/${problemToken}/resources/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -338,15 +339,15 @@ export const resourceAPI = {
   },
 
   addDriveLink: async (problemToken: string, data: { drive_link: string; description?: string }) => {
-    return api.post(`/api/problems/${problemToken}/resources/drive-link`, data)
+    return api.post(`/problems/${problemToken}/resources/drive-link`, data)
   },
 
   addExternalLink: async (problemToken: string, data: { file_url: string; file_name: string; description?: string }) => {
-    return api.post(`/api/problems/${problemToken}/resources/external-link`, data)
+    return api.post(`/problems/${problemToken}/resources/external-link`, data)
   },
 
   delete: async (resourceId: number) => {
-    return api.delete(`/api/resources/${resourceId}`)
+    return api.delete(`/resources/${resourceId}`)
   },
 }
 
@@ -354,15 +355,15 @@ export const resourceAPI = {
 
 export const languageAPI = {
   getPreference: async () => {
-    return api.get('/api/language/preference')
+    return api.get('/language/preference')
   },
 
   updatePreference: async (language: 'en' | 'vi') => {
-    return api.put('/api/language/preference', { language })
+    return api.put('/language/preference', { language })
   },
 
   getSupportedLanguages: async () => {
-    return api.get('/api/language/supported')
+    return api.get('/language/supported')
   },
 }
 

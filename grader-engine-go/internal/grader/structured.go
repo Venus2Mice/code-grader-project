@@ -19,7 +19,7 @@ import (
 // gradeStructured performs LeetCode-style grading with structured inputs
 func (s *GraderService) gradeStructured(submission *models.Submission, containerID string) (*models.GradingResult, error) {
 	ctx := context.Background()
-	cli, _ := client.NewClientWithOpts(client.FromEnv)
+	cli, _ := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.44"))
 	defer cli.Close()
 
 	submissionID := submission.ID
