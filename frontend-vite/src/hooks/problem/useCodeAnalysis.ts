@@ -5,7 +5,7 @@ import type { CodeAnalysis } from "@/types"
 export function useCodeAnalysis() {
   const analyzeCppCode = (code: string): CodeAnalysis => {
     // Remove comments to avoid false positives
-    let cleanCode = code
+    const cleanCode = code
       // Remove single-line comments
       .replace(/\/\/.*$/gm, '')
       // Remove multi-line comments

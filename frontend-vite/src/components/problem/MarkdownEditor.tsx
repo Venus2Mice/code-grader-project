@@ -12,7 +12,7 @@ interface MarkdownEditorProps {
 
 // Simple markdown to HTML preview without external dependencies
 function renderMarkdownPreview(markdown: string): string {
-  let html = markdown
+  const html = markdown
     // Code blocks
     .replace(/```(.*?)\n([\s\S]*?)```/g, "<pre><code>$2</code></pre>")
     // Headers

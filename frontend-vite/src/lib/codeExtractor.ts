@@ -52,7 +52,7 @@ export function extractPythonFunctionBody(code: string): string {
   
   if (defMatch && defMatch[1]) {
     // Remove trailing pass and whitespace
-    let body = defMatch[1].trim()
+    const body = defMatch[1].trim()
     // Remove "pass" if it's the only statement
     if (body === 'pass') {
       return ''
