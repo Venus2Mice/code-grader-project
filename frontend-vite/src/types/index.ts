@@ -201,6 +201,32 @@ export interface SubmitCodeRequest {
   is_test?: boolean
 }
 
+// Code Quality Types
+export interface ComplexityMetrics {
+  cyclomatic_complexity: number
+  cognitive_complexity?: number
+  max_nesting_depth: number
+  function_length: number
+  comment_lines: number
+  maintainability_index?: number
+}
+
+export interface QualityIssue {
+  line: number
+  column?: number
+  severity: 'error' | 'warning' | 'info'
+  category: 'style' | 'complexity' | 'security' | 'best-practice'
+  message: string
+  code?: string
+}
+
+export interface CodeQuality {
+  qualityScore: number
+  complexityMetrics: ComplexityMetrics
+  styleIssues: QualityIssue[]
+  securityWarnings: QualityIssue[]
+}
+
 export interface SubmissionResult {
   submission_id?: number
   status: SubmissionStatus
@@ -209,6 +235,8 @@ export interface SubmissionResult {
   passed_tests?: number
   total_tests?: number
   test_results?: TestResult[]
+  // Code quality analysis (NEW)
+  codeQuality?: CodeQuality
   // Legacy/convenience fields
   isTest?: boolean
   results?: TestResult[]  // Alias for test_results

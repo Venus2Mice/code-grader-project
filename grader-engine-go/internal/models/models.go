@@ -44,7 +44,10 @@ type Problem struct {
 	MemoryLimitKb     int             `gorm:"column:memory_limit_kb;default:256000"`
 	LanguageLimits    LanguageLimits  `gorm:"column:language_limits;type:jsonb"` // Language-specific limits
 	DueDate           *time.Time      `gorm:"column:due_date"`
-	CreatedAt         time.Time       `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+    CreatedAt         time.Time       `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	
+	// Code quality grading configuration
+	QualityWeight        int  `gorm:"column:quality_weight;default:40"`
 
 	// Associations
 	TestCases []TestCase `gorm:"foreignKey:ProblemID"`
@@ -86,8 +89,39 @@ func (SubmissionResult) TableName() string {
 
 // GradingResult represents the overall grading result
 type GradingResult struct {
-	OverallStatus string           `json:"overall_status"`
-	Results       []TestCaseResult `json:"results"`
+	OverallStatus  string           `json:"overall_status"`
+	Results        []TestCaseResult `json:"results"`
+	QualityMetrics *QualityMetrics  `json:"quality_metrics,omitempty"` // NEW: Code quality analysis
+}
+
+// QualityMetrics represents code quality analysis results
+type QualityMetrics struct {
+	QualityScore    int               `json:"quality_score"`
+	ComplexityScore int               `json:"complexity_score"`
+	StyleScore      int               `json:"style_score"`
+	SecurityScore   int               `json:"security_score"`
+	Issues          []QualityIssue    `json:"issues"`
+	Metrics         ComplexityMetrics `json:"metrics"`
+}
+
+// QualityIssue represents a single code quality issue
+type QualityIssue struct {
+	Line     int    `json:"line"`
+	Column   int    `json:"column,omitempty"`
+	Severity string `json:"severity"` // "error", "warning", "info"
+	Category string `json:"category"` // "style", "complexity", "security", "best-practice"
+	Message  string `json:"message"`
+	Code     string `json:"code,omitempty"`
+}
+
+// ComplexityMetrics holds code complexity measurements
+type ComplexityMetrics struct {
+	CyclomaticComplexity int     `json:"cyclomatic_complexity"`
+	CognitiveComplexity  int     `json:"cognitive_complexity,omitempty"`
+	MaxNestingDepth      int     `json:"max_nesting_depth"`
+	FunctionLength       int     `json:"function_length"`
+	CommentLines         int     `json:"comment_lines"`
+	MaintainabilityIndex float64 `json:"maintainability_index,omitempty"`
 }
 
 // TestCaseResult represents the result of a single test case

@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"time"
 
+	"grader-engine-go/internal/analyzer"
 	"grader-engine-go/internal/config"
 	"grader-engine-go/internal/models"
 	"grader-engine-go/internal/pool"
 
+	"github.com/docker/docker/client"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -72,6 +74,37 @@ func (s *GraderService) GradeSubmission(submissionID int) (*models.GradingResult
 		Results:       []models.TestCaseResult{},
 	}
 
+	// Run static code analysis for all supported languages
+	var qualityMetrics *models.QualityMetrics
+	if analyzer.ShouldAnalyze(submission.Language) {
+		log.Printf("[%d] Running code quality analysis...", submissionID)
+		
+		// Create Docker client for analyzer
+		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.44"))
+		if err != nil {
+			log.Printf("[%d] Failed to create Docker client for analyzer: %v", submissionID, err)
+		} else {
+			defer cli.Close()
+			
+			// Get analyzer for language
+			analyzerFactory := analyzer.NewFactory(containerID, cli)
+			codeAnalyzer, err := analyzerFactory.GetAnalyzer(submission.Language)
+			if err != nil {
+				log.Printf("[%d] Failed to get analyzer: %v", submissionID, err)
+			} else {
+				// Run analysis
+				analysisResult, err := codeAnalyzer.AnalyzeCode(submission.SourceCode, submission.Language)
+				if err != nil {
+					log.Printf("[%d] Code analysis failed: %v", submissionID, err)
+				} else {
+					// Convert analyzer.AnalysisResult to models.QualityMetrics
+					qualityMetrics = convertAnalysisResult(analysisResult)
+					log.Printf("[%d] Code quality analysis complete: score=%d", submissionID, qualityMetrics.QualityScore)
+				}
+			}
+		}
+	}
+
 	// Use unified LeetCode-style grading
 	result, err = s.gradeStructured(&submission, containerID)
 
@@ -87,6 +120,9 @@ func (s *GraderService) GradeSubmission(submissionID int) (*models.GradingResult
 			},
 		}
 	}
+
+	// Attach quality metrics to result
+	result.QualityMetrics = qualityMetrics
 
 	// Update backend asynchronously
 	go s.updateBackend(submissionID, result)
@@ -127,3 +163,35 @@ func (s *GraderService) updateBackend(submissionID int, result *models.GradingRe
 
 	log.Printf("[%d] ❌ Failed to update backend after %d attempts", submissionID, maxRetries)
 }
+
+// convertAnalysisResult converts analyzer.AnalysisResult to models.QualityMetrics
+func convertAnalysisResult(analysisResult *analyzer.AnalysisResult) *models.QualityMetrics {
+	issues := make([]models.QualityIssue, len(analysisResult.Issues))
+	for i, issue := range analysisResult.Issues {
+		issues[i] = models.QualityIssue{
+			Line:     issue.Line,
+			Column:   issue.Column,
+			Severity: issue.Severity,
+			Category: issue.Category,
+			Message:  issue.Message,
+			Code:     issue.Code,
+		}
+	}
+
+	return &models.QualityMetrics{
+		QualityScore:    analysisResult.QualityScore,
+		ComplexityScore: analysisResult.ComplexityScore,
+		StyleScore:      analysisResult.StyleScore,
+		SecurityScore:   analysisResult.SecurityScore,
+		Issues:          issues,
+		Metrics: models.ComplexityMetrics{
+			CyclomaticComplexity: analysisResult.Metrics.CyclomaticComplexity,
+			CognitiveComplexity:  analysisResult.Metrics.CognitiveComplexity,
+			MaxNestingDepth:      analysisResult.Metrics.MaxNestingDepth,
+			FunctionLength:       analysisResult.Metrics.FunctionLength,
+			CommentLines:         analysisResult.Metrics.CommentLines,
+			MaintainabilityIndex: analysisResult.Metrics.MaintainabilityIndex,
+		},
+	}
+}
+

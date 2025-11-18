@@ -110,6 +110,9 @@ class Problem(Base):
     due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Code quality grading configuration
+    quality_weight = Column(Integer, default=40)  # Percentage weight of quality score (0-100)
+    
     class_obj = relationship('Class', back_populates='problems')
     test_cases = relationship('TestCase', back_populates='problem', cascade="all, delete-orphan")
     submissions = relationship('Submission', back_populates='problem', cascade="all, delete-orphan")
@@ -173,6 +176,12 @@ class Submission(Base):
     graded_by_teacher_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # Teacher who graded
     graded_at = Column(DateTime, nullable=True)  # When teacher graded
     teacher_comment = Column(Text, nullable=True)  # Teacher's feedback comment
+    
+    # Code quality analysis results
+    quality_score = Column(Integer, nullable=True)  # Overall quality score (0-100)
+    complexity_metrics = Column(JSONB, nullable=True)  # Complexity metrics: cyclomatic, cognitive, nesting, etc.
+    style_issues = Column(JSONB, nullable=True)  # Style issues array: [{line, severity, message, category}]
+    security_warnings = Column(JSONB, nullable=True)  # Security warnings array
     
     problem = relationship('Problem', back_populates='submissions')
     student = relationship('User', back_populates='submissions', foreign_keys=[student_id])

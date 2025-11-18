@@ -24,6 +24,20 @@ def update_submission_result(submission_id):
     overall_status = data.get('overall_status', STATUS_SYSTEM_ERROR)
     submission.status = overall_status
     
+    # NEW: Store quality metrics if provided
+    quality_metrics = data.get('quality_metrics')
+    if quality_metrics:
+        submission.quality_score = quality_metrics.get('quality_score')
+        submission.complexity_metrics = quality_metrics.get('metrics')
+        submission.style_issues = quality_metrics.get('issues')
+        # Extract security warnings from issues
+        security_warnings = [
+            issue for issue in quality_metrics.get('issues', [])
+            if issue.get('category') == 'security'
+        ]
+        submission.security_warnings = security_warnings
+        logger.info(f"Submission {submission_id}: quality_score={submission.quality_score}")
+    
     # Xóa các kết quả cũ (nếu có) để tránh trùng lặp
     SubmissionResult.query.filter_by(submission_id=submission_id).delete()
 

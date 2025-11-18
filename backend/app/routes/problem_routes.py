@@ -564,3 +564,6 @@ def delete_problem(problem_token):
         "submissions_deleted": submission_count,
         "had_submissions": submission_count > 0
     }), 200
+
+
+# NEW ENDPOINT: PATCH /api/problems/<problem_token>/quality-settings

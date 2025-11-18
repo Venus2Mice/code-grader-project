@@ -169,7 +169,13 @@ def get_submission_result(submission_id):
         "totalTests": total_tests,    # Changed to camelCase
         "language": submission.language,
         "submittedAt": submission.submitted_at.isoformat(),  # Changed to camelCase
-        "results": results
+        "results": results,
+        "codeQuality": {  # NEW: Code quality metrics
+            "qualityScore": submission.quality_score,
+            "complexityMetrics": submission.complexity_metrics,
+            "styleIssues": submission.style_issues,
+            "securityWarnings": submission.security_warnings
+        } if submission.quality_score is not None else None
     })
 
 

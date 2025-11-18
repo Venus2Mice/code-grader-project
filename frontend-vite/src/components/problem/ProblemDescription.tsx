@@ -74,9 +74,12 @@ export function ProblemDescription({
   return (
     <div className="p-4 md:p-6">
       <Tabs defaultValue="description">
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="description" className="font-black uppercase text-xs md:text-sm">
             DESC
+          </TabsTrigger>
+          <TabsTrigger value="testcases" className="font-black uppercase text-xs md:text-sm">
+            TESTS
           </TabsTrigger>
           <TabsTrigger value="submissions" className="font-black uppercase text-xs md:text-sm">
             SUBS
@@ -120,53 +123,53 @@ export function ProblemDescription({
               </p>
             </div>
           )}
+        </TabsContent>
 
-          <div>
-            <h3 className="mb-3 text-lg font-black uppercase text-foreground">TEST CASES</h3>
-            <div className="space-y-4">
-              {problem.test_cases && problem.test_cases.length > 0 ? (
-                problem.test_cases
-                  .filter((tc: any) => !tc.is_hidden)
-                  .map((testCase: any, index: number) => (
-                    <Card 
-                      key={testCase.id} 
-                      className={`border-4 border-border p-4 ${
-                        index % 3 === 0 ? "bg-white dark:bg-yellow-950/20" : 
-                        index % 3 === 1 ? "bg-white dark:bg-pink-950/20" : 
-                        "bg-white dark:bg-blue-950/20"
-                      }`}
-                    >
-                      <div className="mb-2 text-sm font-black uppercase text-foreground">
-                        TEST CASE {index + 1}
-                        {testCase.points > 0 && (
-                          <span className="ml-2 text-xs bg-foreground text-background px-2 py-1 rounded">
-                            {testCase.points} PTS
-                          </span>
-                        )}
+        <TabsContent value="testcases" className="mt-4 md:mt-6 space-y-4">
+          <h3 className="mb-3 text-lg font-black uppercase text-foreground">TEST CASES</h3>
+          <div className="space-y-4">
+            {problem.test_cases && problem.test_cases.length > 0 ? (
+              problem.test_cases
+                .filter((tc: any) => !tc.is_hidden)
+                .map((testCase: any, index: number) => (
+                  <Card 
+                    key={testCase.id} 
+                    className={`border-4 border-border p-4 ${
+                      index % 3 === 0 ? "bg-white dark:bg-yellow-950/20" : 
+                      index % 3 === 1 ? "bg-white dark:bg-pink-950/20" : 
+                      "bg-white dark:bg-blue-950/20"
+                    }`}
+                  >
+                    <div className="mb-2 text-sm font-black uppercase text-foreground">
+                      TEST CASE {index + 1}
+                      {testCase.points > 0 && (
+                        <span className="ml-2 text-xs bg-foreground text-background px-2 py-1 rounded">
+                          {testCase.points} PTS
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
+                        <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
+                          <code>{formatTestCaseData(testCase.inputs, true, problem.function_signature)}</code>
+                        </pre>
                       </div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">INPUT:</div>
-                          <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
-                            <code>{formatTestCaseData(testCase.inputs, true, problem.function_signature)}</code>
-                          </pre>
-                        </div>
-                        <div>
-                          <div className="mb-1 text-xs font-black uppercase text-foreground">OUTPUT:</div>
-                          <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
-                            <code>{formatTestCaseData(testCase.expected_output, false)}</code>
-                          </pre>
-                        </div>
+                      <div>
+                        <div className="mb-1 text-xs font-black uppercase text-foreground">OUTPUT:</div>
+                        <pre className="border-4 border-border bg-card p-2 text-xs font-mono text-foreground">
+                          <code>{formatTestCaseData(testCase.expected_output, false)}</code>
+                        </pre>
                       </div>
-                    </Card>
-                  ))
-              ) : (
-                <div className="text-center py-8 border-4 border-dashed border-border bg-muted">
-                  <AlertCircle className="mx-auto mb-3 h-16 w-16 text-muted-foreground" />
-                  <p className="font-black uppercase text-foreground">NO TEST CASES AVAILABLE</p>
-                </div>
-              )}
-            </div>
+                    </div>
+                  </Card>
+                ))
+            ) : (
+              <div className="text-center py-8 border-4 border-dashed border-border bg-muted">
+                <AlertCircle className="mx-auto mb-3 h-16 w-16 text-muted-foreground" />
+                <p className="font-black uppercase text-foreground">NO TEST CASES AVAILABLE</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 

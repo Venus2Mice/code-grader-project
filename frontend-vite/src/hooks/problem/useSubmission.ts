@@ -60,6 +60,12 @@ export function useSubmission({ problemToken, problem, onSubmissionComplete }: U
       ? 'Accepted' 
       : (submissionData.status === 'Compile Error' ? 'Compile Error' : 'error')
 
+    // 🔍 DEBUG: Log codeQuality data
+    console.log('🔍 VITE CODE QUALITY:', {
+      hasCodeQuality: !!submissionData.codeQuality,
+      codeQuality: submissionData.codeQuality
+    })
+
     return {
       status: finalStatus as any,
       message: submissionData.status,
@@ -68,7 +74,8 @@ export function useSubmission({ problemToken, problem, onSubmissionComplete }: U
       passed_tests: passedTestsComputed,
       total_tests: totalTestsComputed,
       test_results: resultsArr,
-      results: resultsArr  // Alias
+      results: resultsArr,  // Alias
+      codeQuality: submissionData.codeQuality  // ✅ FIX: Include code quality data
     }
   }, [])
 
