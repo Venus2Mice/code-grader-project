@@ -37,7 +37,7 @@ async function fileToBase64(file: File): Promise<string> {
  * Clean markdown code blocks from response
  */
 function cleanMarkdown(text: string): string {
-  let cleaned = text.trim();
+  const cleaned = text.trim();
   
   // Remove starting ``` or ```language
   const lines = cleaned.split('\n');
